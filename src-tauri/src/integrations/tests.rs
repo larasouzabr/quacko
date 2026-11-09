@@ -327,6 +327,7 @@ fn desconectar_preserva_hooks_de_terceiros_no_arquivo() {
     );
 }
 
+#[cfg(unix)]
 #[test]
 fn prwatch_cria_o_link_e_nao_atropela_outro() {
     let (_dir, paths) = temp_home();
@@ -426,6 +427,14 @@ const EXE: &str = r"C:\Users\Ana Maria\AppData\Local\Quacko\quacko-hook.exe";
 
 fn exe() -> Hook {
     Hook::Exe(PathBuf::from(EXE))
+}
+
+#[test]
+fn reconhece_o_notify_sh_com_barras_do_windows() {
+    assert!(is_quacko(
+        r"'C:\Users\Ana\.claude\hooks\notify.sh' --from claude"
+    ));
+    assert!(!is_quacko(r"C:\tools\lint.exe"));
 }
 
 #[test]

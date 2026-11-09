@@ -55,6 +55,7 @@ pub fn powershell_call(exe: &Path, args: &[String]) -> String {
 }
 
 pub(super) fn is_quacko(command: &str) -> bool {
+    let command = command.replace('\\', "/");
     QUACKO_MARKERS.iter().any(|m| command.contains(m))
 }
 

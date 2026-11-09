@@ -58,7 +58,9 @@ fn reregister_if_moved(app: &AppHandle) {
 }
 
 fn is_inside_app_bundle(exe: &std::path::Path) -> bool {
-    exe.to_string_lossy().contains(".app/Contents/MacOS/")
+    exe.to_string_lossy()
+        .replace('\\', "/")
+        .contains(".app/Contents/MacOS/")
 }
 
 pub fn needs_reregister(registered: Option<&std::path::Path>, current: &std::path::Path) -> bool {

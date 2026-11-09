@@ -59,7 +59,7 @@ jobs:
         run: |
           npm test
           npx tsc --noEmit
-          cargo test --workspace --manifest-path src-tauri/Cargo.toml
+          cargo test --workspace --no-fail-fast --manifest-path src-tauri/Cargo.toml
           bash scripts/tests/notify.test.sh
           cargo build -p quacko-hook --manifest-path src-tauri/Cargo.toml
           QUACKO_NOTIFY="$CARGO_TARGET_DIR/debug/quacko-hook" bash scripts/tests/notify.test.sh
@@ -135,7 +135,7 @@ jobs:
         run: |
           npm test
           npx tsc --noEmit
-          cargo test --workspace --manifest-path src-tauri/Cargo.toml
+          cargo test --workspace --no-fail-fast --manifest-path src-tauri/Cargo.toml
           QUACKO_NOTIFY="$CARGO_TARGET_DIR/release/quacko-hook.exe" bash scripts/tests/notify.test.sh
 
       - name: Build e release
