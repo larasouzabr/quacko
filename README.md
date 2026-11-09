@@ -81,7 +81,7 @@ curl -s -X POST localhost:4747/notify -H 'Content-Type: application/json' \
   -d '{"source":"custom","status":"ok","title":"Backup","message":"Backup finished","project":"server"}'
 ```
 
-Fields: `source` (`agent`, `claude`, `ci`, `custom`), `status` (`ok`, `fail`, `attention`, `info`) and, optionally, `message` (up to 140 characters), `title` (60), `project` (80), `url` (`http`/`https` only) and `ttl_ms` (2000 to 30000). The full contract is in section 5 of [quacko-spec.md](quacko-spec.md) (in Portuguese).
+Fields: `source` (`agent`, `claude`, `ci`, `custom`), `status` (`ok`, `fail`, `attention`, `info`) and, optionally, `message` (up to 140 characters), `title` (60), `project` (80), `url` (`http`/`https` only) and `ttl_ms` (2000 to 30000).
 
 ## Configuration
 
@@ -129,7 +129,7 @@ The universal build uses Apple's toolchain in a clean environment (`scripts/buil
 
 `build:mac` runs `tauri build` with two macOS tweaks: it puts the Xcode tools at the **end** of `PATH` (without that, the `.dmg` step can fail with `tool 'SetFile' not found` when the terminal uses a Nix SDK; at the start of `PATH` they swap the compiler and linking fails) and, at the end, removes the build copy from the system's app registry (`scripts/after-build.sh`), so a second "Quacko" doesn't show up in the app list. The build folder is called `target.noindex` for the same reason: Spotlight doesn't index folders with that suffix.
 
-Layout: `src/` is the overlay (React + TypeScript), `src-tauri/` is the app (Rust: local server, window, menu, config), `scripts/` holds the integrations and `tools/` has the character and icon generators (how to regenerate them: section 8 of [quacko-spec.md](quacko-spec.md)). The specs, in Portuguese, are [quacko-spec.md](quacko-spec.md) (v1), [quacko-spec-v2-produto.md](quacko-spec-v2-produto.md) and [quacko-spec-personalizacao.md](quacko-spec-personalizacao.md).
+Layout: `src/` is the overlay (React + TypeScript), `src-tauri/` is the app (Rust: local server, window, menu, config), `scripts/` holds the integrations and `tools/` has the character and icon generators.
 
 ## Releases
 
@@ -162,7 +162,7 @@ Never put certificates, passwords or tokens in the repository.
 - **Build not signed by Apple** (ad-hoc signature, free): hence the warning on first launch. Signing and notarizing require an Apple Developer account.
 - **`macOSPrivateApi`** (needed for the transparent window) rules out the Mac App Store; distribution is direct.
 - **"Open at Login" in development mode** registers the development binary, which doesn't start on its own without `npm run tauri dev`. Turn it on from the installed app.
-- **Windows and Linux**: not yet. The code is portable, but the unfocused window, the tray icon and the scripts need their own versions (planned in the v2 spec).
+- **Windows and Linux**: not yet. The code is portable, but the unfocused window, the tray icon and the scripts need their own versions (planned).
 
 ## Privacy
 
