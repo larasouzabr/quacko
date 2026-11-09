@@ -19,6 +19,7 @@ const samples: Notification[] = [
   { ...base, id: 1, source: "ci", status: "info", title: "PR #445 · Corrige o parser de datas", message: "3 de 12 checks concluídos", project: "pondworks/breadcrumbs#445", progress: { done: 3, total: 12, failed: 0 } },
   { ...base, id: 2, source: "ci", status: "fail", title: "PR #446 · Atualiza dependências", message: "7 de 12 checks concluídos · 1 falhou", project: "pondworks/breadcrumbs#446", progress: { done: 7, total: 12, failed: 1 } },
   { ...base, id: 3, source: "ci", status: "ok", title: "PR #447 · Ajusta o README", message: "12 checks passaram", project: "pondworks/breadcrumbs#447", progress: { done: 12, total: 12, failed: 0 } },
+  { ...base, id: 6, source: "ci", status: "ok", sticky: true, title: "PR #445 · Platform: AI Assistant panel with streaming responses and tool calls", message: "All 10 checks passed", project: "pondworks/breadcrumbs-studio#445", progress: { done: 10, total: 10, failed: 0 } },
   { ...base, id: 4, source: "agent", status: "ok", title: "Claude Code", message: "“adicione testes para o parser de datas”", project: "miau-watch" },
   { ...base, id: 5, source: "agent", status: "attention", title: "Claude Code", message: "Claude needs your permission to use Bash", project: "miau-watch" },
 ];
@@ -74,7 +75,15 @@ if (params.get("view") === "customize") {
     <div className="preview-grid">
       {samples.map((n) => (
         <div className="preview-slot" key={n.id}>
-          <Card notification={n} lang={lang} leaving={false} hovered={false} pixelSize={3} onActivate={() => {}} onDismiss={() => {}} />
+          <Card
+            notification={n}
+            lang={lang}
+            leaving={false}
+            hovered={new URLSearchParams(location.search).get("hover") === String(n.id)}
+            pixelSize={3}
+            onActivate={() => {}}
+            onDismiss={() => {}}
+          />
         </div>
       ))}
     </div>

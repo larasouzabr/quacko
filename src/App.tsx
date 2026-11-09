@@ -31,7 +31,7 @@ const CARD_GAP = 8;
 const CAT_BUBBLE_GAP = 2;
 const BUBBLE_WIDTH = 278;
 /** Altura máxima do balão (3 linhas de mensagem + projeto), com a margem de baixo. */
-const BUBBLE_MAX_HEIGHT = 132; // +11 da barra de progresso
+const BUBBLE_MAX_HEIGHT = 148; // +11 da barra de progresso, +16 da 2ª linha do título
 
 /** Janela do tamanho exato para `maxCards` cartões com o personagem atual. */
 function overlaySize(cat: { width: number; height: number }, maxCards: number) {

@@ -47,6 +47,9 @@ const QUERY: &str = r#"query($q: String!) {
   }
 }"#;
 
+/// O título do PR é o que mais ajuda a reconhecê-lo: vai além do limite da API local (60).
+pub const MAX_PR_TITLE_CHARS: usize = 120;
+
 const POLL_PENDING: Duration = Duration::from_secs(30);
 const POLL_IDLE: Duration = Duration::from_secs(180);
 const BACKOFF_START: Duration = Duration::from_secs(30);
@@ -283,7 +286,8 @@ pub fn notification(id: u64, change: &Change, lang: Lang) -> Notification {
         id,
         source: Source::Ci,
         status,
-        title: Some(clip(&title, crate::model::MAX_TITLE_CHARS)),
+        // Título do PR inteiro (até 120): o cartão mostra 2 linhas e o resto ao passar o mouse.
+        title: Some(clip(&title, MAX_PR_TITLE_CHARS)),
         message: Some(checks_text(lang, change, pr.checks)),
         // dono/repo#N: dois PRs do mesmo repo não se substituem; o mesmo PR se atualiza.
         project: Some(clip(
@@ -920,10 +924,7 @@ mod tests {
         p.repo = "o".repeat(200);
         p.url = "javascript:alert(1)".into();
         let n = notification(1, &Change::Passed(p), Lang::PtBr);
-        assert_eq!(
-            n.title.unwrap().chars().count(),
-            crate::model::MAX_TITLE_CHARS
-        );
+        assert_eq!(n.title.unwrap().chars().count(), MAX_PR_TITLE_CHARS);
         assert_eq!(
             n.project.unwrap().chars().count(),
             crate::model::MAX_PROJECT_CHARS

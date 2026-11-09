@@ -139,10 +139,10 @@ body,
    alinhado pela base, não cai entre dois pixels físicos. */
 .bubble-head {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 6px;
   min-width: 0;
-  height: 16px;
+  min-height: 16px;
 }
 
 .badge {
@@ -177,14 +177,22 @@ body,
 .status-info .badge { color: var(--info-fg); background: var(--info-bg); }
 .status-info .badge-icon { background: var(--info-fg); }
 
+/* Título em até 2 linhas (ex.: "PR #445 · Platform: AI Assistant…"); com o mouse em
+   cima, o cartão mostra o título inteiro. */
 .title {
   min-width: 0;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   font-size: 12px;
   line-height: 16px;
   font-weight: 700;
+}
+.card.is-hovered .title {
+  -webkit-line-clamp: unset;
+  display: block;
 }
 
 .message {

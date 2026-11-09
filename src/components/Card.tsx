@@ -50,7 +50,9 @@ export default function Card({
             </span>
             {t.statusLabel[n.status]}
           </span>
-          <span className="title">{n.title ?? t.sourceLabel[n.source]}</span>
+          <span className="title" title={n.title ?? undefined}>
+            {n.title ?? t.sourceLabel[n.source]}
+          </span>
         </div>
         <p className="message">{n.message ?? t.defaultMessage[n.status]}</p>
         {n.progress && n.progress.total > 0 && <ProgressBar {...n.progress} />}
