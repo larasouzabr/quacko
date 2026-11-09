@@ -26,14 +26,26 @@ jobs:
             mac="macOS: build sem assinatura da Apple. Na primeira abertura, use Ajustes do Sistema → Privacidade e Segurança → Abrir Mesmo Assim (instruções no README)."
           fi
           win="Windows: instalador sem certificado. Se o SmartScreen avisar, clique em Mais informações → Executar assim mesmo."
-          gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --draft \
-            --title "Quacko $GITHUB_REF_NAME" --notes "$mac"$'\n\n'"$win"
-          id=$(gh api "repos/$GITHUB_REPOSITORY/releases" --jq "map(select(.tag_name == \"$GITHUB_REF_NAME\" and .draft)) | first | .id")
+          id=$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$GITHUB_REF_NAME" --jq .id 2>/dev/null || true)
+          case "$id" in "" | *[!0-9]*) id="" ;; esac
+          if [ -n "$id" ]; then
+            echo "usando a release que já existe para $GITHUB_REF_NAME"
+          else
+            id=$(gh api "repos/$GITHUB_REPOSITORY/releases" \
+              -f tag_name="$GITHUB_REF_NAME" -f name="Quacko $GITHUB_REF_NAME" \
+              -f body="$mac"$'\n\n'"$win" -F draft=true --jq .id)
+          fi
+          case "$id" in "" | *[!0-9]*) id="" ;; esac
+          if [ -z "$id" ]; then
+            echo "::error::o GitHub não devolveu o id do rascunho"
+            exit 1
+          fi
+          echo "rascunho $id"
           echo "id=$id" >> "$GITHUB_OUTPUT"
 
   macos:
     needs: draft
-    if: always() && needs.draft.result != 'failure'
+    if: always() && (needs.draft.result == 'success' || needs.draft.result == 'skipped')
     runs-on: macos-latest
     env:
       CARGO_TARGET_DIR: ${{ github.workspace }}/target
@@ -95,6 +107,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_ID: ${{ needs.draft.outputs.id }}
         run: |
+          test -n "$RELEASE_ID" || { echo "::error::sem o id do rascunho"; exit 1; }
           file=$(ls target/universal-apple-darwin/release/bundle/dmg/*.dmg | head -1)
           curl -fsS -X POST -o /dev/null \
             -H "Authorization: Bearer $GH_TOKEN" \
@@ -116,7 +129,7 @@ jobs:
 
   windows:
     needs: draft
-    if: always() && needs.draft.result != 'failure'
+    if: always() && (needs.draft.result == 'success' || needs.draft.result == 'skipped')
     runs-on: windows-latest
     env:
       CARGO_TARGET_DIR: ${{ github.workspace }}/target
@@ -166,6 +179,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_ID: ${{ needs.draft.outputs.id }}
         run: |
+          test -n "$RELEASE_ID" || { echo "::error::sem o id do rascunho"; exit 1; }
           file=$(ls target/release/bundle/nsis/*-setup.exe | head -1)
           curl -fsS -X POST -o /dev/null \
             -H "Authorization: Bearer $GH_TOKEN" \
