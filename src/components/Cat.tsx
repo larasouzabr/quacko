@@ -6,7 +6,7 @@ import { useDevicePixelRatio } from "../hooks/useDevicePixelRatio";
 
 interface CatProps {
   mood: Mood;
-  /** Personagem a desenhar; o padrão é o embutido. Trocável no futuro (pacotes .miaupack). */
+  /** Personagem a desenhar; o padrão é o embutido. Trocável no futuro (pacotes .quackopack). */
   character?: Character;
   /** Pixel art: px por pixel de desenho (inteiro: 3, 4, 5, 6 ou 8). */
   pixelSize?: number;

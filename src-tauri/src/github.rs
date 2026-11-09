@@ -314,10 +314,10 @@ pub fn stored_token_present() -> bool {
     crate::github_auth::KeychainStore.load().is_some()
 }
 
-/// Client ID do GitHub App: `MIAU_GITHUB_CLIENT_ID` vence a config. Sem ele, o login
+/// Client ID do GitHub App: `QUACKO_GITHUB_CLIENT_ID` vence a config. Sem ele, o login
 /// por código fica desligado (só o `gh`).
 pub fn device_flow_client_id(config: &crate::config::Config) -> Option<String> {
-    std::env::var("MIAU_GITHUB_CLIENT_ID")
+    std::env::var("QUACKO_GITHUB_CLIENT_ID")
         .ok()
         .map(|v| v.trim().to_string())
         .filter(|v| crate::github_auth::valid_client_id(v))
@@ -328,7 +328,7 @@ pub fn device_flow_client_id(config: &crate::config::Config) -> Option<String> {
 
 /// Procura o `gh`: lugares comuns, o shell de login da pessoa e, por último, o Nix.
 pub fn find_gh(home: &Path) -> Option<PathBuf> {
-    if let Some(custom) = std::env::var_os("MIAU_GH").map(PathBuf::from) {
+    if let Some(custom) = std::env::var_os("QUACKO_GH").map(PathBuf::from) {
         if custom.is_file() {
             return Some(custom);
         }
@@ -485,7 +485,7 @@ pub enum Report {
 async fn run(app: AppHandle, mut enabled: watch::Receiver<bool>) {
     let client = match reqwest::Client::builder()
         .user_agent(concat!(
-            "Miau/",
+            "Quacko/",
             env!("CARGO_PKG_VERSION"),
             " (desktop notifier)"
         ))

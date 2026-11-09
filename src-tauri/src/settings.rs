@@ -104,7 +104,7 @@ pub fn broadcast(app: &AppHandle) {
     }
 }
 
-/// O sistema é a fonte da verdade do "Iniciar com o login": se a pessoa tirou o Miau
+/// O sistema é a fonte da verdade do "Iniciar com o login": se a pessoa tirou o Quacko
 /// dos itens de login nos Ajustes do Sistema, a config passa a refletir isso.
 pub fn reconcile_autostart(app: &AppHandle) {
     use tauri_plugin_autostart::ManagerExt;
@@ -166,7 +166,7 @@ fn login_item_program(app: &AppHandle) -> Option<PathBuf> {
         .config()
         .product_name
         .clone()
-        .unwrap_or_else(|| "Miau".into());
+        .unwrap_or_else(|| "Quacko".into());
     let file = dirs::home_dir()?
         .join("Library/LaunchAgents")
         .join(format!("{name}.plist"));
@@ -245,7 +245,7 @@ mod tests {
     #[test]
     fn registra_de_novo_so_quando_o_caminho_mudou() {
         let dir = tempfile::tempdir().unwrap();
-        let current = dir.path().join("Miau.app/Contents/MacOS/miau");
+        let current = dir.path().join("Quacko.app/Contents/MacOS/quacko");
         std::fs::create_dir_all(current.parent().unwrap()).unwrap();
         std::fs::write(&current, "").unwrap();
         let current = current.canonicalize().unwrap();
@@ -264,7 +264,7 @@ mod tests {
         assert!(needs_reregister(Some(&other), &current), "outro executável");
         assert!(is_inside_app_bundle(&current));
         assert!(!is_inside_app_bundle(std::path::Path::new(
-            "/x/target/debug/miau"
+            "/x/target/debug/quacko"
         )));
     }
 

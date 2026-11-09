@@ -1,7 +1,7 @@
-# Miau: notificador desktop com gatinho (Tauri v2)
+# Quacko: notificador desktop com gatinho (Tauri v2)
 
 > Como usar este documento: coloque na raiz do repositório e peça ao Claude Code:
-> "Leia miau-spec.md e implemente um marco por vez, na ordem. Ao fim de cada marco, rode os critérios de aceite, me diga como testar e pare para eu validar. Confira a documentação atual do Tauri v2 antes de usar qualquer chave de configuração ou API marcada como VERIFICAR."
+> "Leia quacko-spec.md e implemente um marco por vez, na ordem. Ao fim de cada marco, rode os critérios de aceite, me diga como testar e pare para eu validar. Confira a documentação atual do Tauri v2 antes de usar qualquer chave de configuração ou API marcada como VERIFICAR."
 
 ## 1. Objetivo
 
@@ -48,7 +48,7 @@ O app é uma **camada adicional**: se ele não estiver rodando, tudo continua fu
                                         └─> curl POST 127.0.0.1:4747/notify
                                                       │
                                           ┌───────────▼────────────┐
-                                          │  Miau (Tauri v2)       │
+                                          │  Quacko (Tauri v2)       │
                                           │  Rust: axum + estado   │
                                           │     │ emit("notify")   │
                                           │  Webview: React + TS   │
@@ -64,7 +64,7 @@ Responsabilidades:
 
 ## 5. Contrato da API local
 
-Bind apenas em `127.0.0.1`. Porta padrão `4747` (sobrescrevível por `MIAU_PORT` ou pelo arquivo de config).
+Bind apenas em `127.0.0.1`. Porta padrão `4747` (sobrescrevível por `QUACKO_PORT` ou pelo arquivo de config).
 
 ### `POST /notify`
 
@@ -98,7 +98,7 @@ Se "Não perturbe" estiver ligado: responder `202` com `{"delivered": false}` e 
 
 ### `GET /health`
 
-Responde `200` com `{"app":"miau","version":"x.y.z"}`. Usado pelos scripts para testar se o app está de pé.
+Responde `200` com `{"app":"quacko","version":"x.y.z"}`. Usado pelos scripts para testar se o app está de pé.
 
 ### Segurança (local, mas importante)
 
@@ -144,15 +144,15 @@ Cartão:
 - Clique: dispensa; se tiver `url`, abre no navegador padrão (plugin opener do Tauri). Botão "x" visível ao passar o mouse.
 - Respeitar `prefers-reduced-motion`: sem bounce, só fade.
 - Textos padrão (quando `message` ausente), por idioma:
-  - pt-BR: ok "Seu pedido finalizou!", fail "Algo deu errado por aqui", attention "Preciso de você!", info "Aviso do Miau"
-  - en: ok "Your request finished!", fail "Something went wrong", attention "I need you!", info "Miau notice"
+  - pt-BR: ok "Seu pedido finalizou!", fail "Algo deu errado por aqui", attention "Preciso de você!", info "Aviso do Quacko"
+  - en: ok "Your request finished!", fail "Something went wrong", attention "I need you!", info "Quacko notice"
 - Quando `message` vier no payload, ela tem prioridade sobre os textos padrão.
 
 ## 8. Arte do gato (v1)
 
-Não usar personagens ou imagens de terceiros. **Atualização:** o personagem padrão passou a ser o **"Pato Pixel"** (`src/assets/characters/pato-pixel`, mesmo formato; gerador em `tools/make_pixel_duck.py`, convertido para 1x sem perda por `tools/pack_to_1x.py`); o gato abaixo continua disponível como opção. O gato é o **"Gato Pixel"**, um personagem original em pixel art (licença CC0-1.0), embutido no app em `src/assets/characters/gato-pixel/` no formato de pacote `.miaupack` da spec v2 (seção 11.1): `manifest.json`, `preview.png` e `assets/{ok,fail,attention,info}.png`.
+Não usar personagens ou imagens de terceiros. **Atualização:** o personagem padrão passou a ser o **"Pato Pixel"** (`src/assets/characters/pato-pixel`, mesmo formato; gerador em `tools/make_pixel_duck.py`, convertido para 1x sem perda por `tools/pack_to_1x.py`); o gato abaixo continua disponível como opção. O gato é o **"Gato Pixel"**, um personagem original em pixel art (licença CC0-1.0), embutido no app em `src/assets/characters/gato-pixel/` no formato de pacote `.quackopack` da spec v2 (seção 11.1): `manifest.json`, `preview.png` e `assets/{ok,fail,attention,info}.png`.
 
-- Manifest `schema: 2` com `pixel_art: true`, `grid` 28x28, `bubble: "pixel"` e `palette` (papéis recoloríveis), conforme `miau-spec-personalizacao.md`.
+- Manifest `schema: 2` com `pixel_art: true`, `grid` 28x28, `bubble: "pixel"` e `palette` (papéis recoloríveis), conforme `quacko-spec-personalizacao.md`.
 - Cada estado é um **sprite sheet em 1x**: 2 quadros lado a lado (56x28; cada quadro 28x28, um pixel da imagem por pixel do desenho), a 3 quadros por segundo. Grade, quadros, colunas e fps vêm do `manifest.json`, não do código.
 - O componente React `Cat` (prop `mood`: `ok | fail | attention | info`) desenha o sprite num `<div>` com `background-image`, `image-rendering: pixelated` (sem borrar o pixel art) e animação CSS de `background-position` em `steps(N)`. Com `prefers-reduced-motion`, mostra só o primeiro quadro, parado.
 - **Tamanho do pixel**: inteiro (3, 4, 5, 6 ou 8 px por pixel de desenho; padrão 3, ou seja, gato de 84 px). O valor é normalizado pelo `devicePixelRatio` para cada pixel do desenho ocupar um número inteiro de pixels físicos, e o gato é alinhado à grade de pixels físicos. Até existir a janela de Configurações, escolhe-se pelo campo `pixel_size` da config (seção 10), com o app reiniciado. A janela do overlay cresce junto com o gato.
@@ -161,12 +161,12 @@ Não usar personagens ou imagens de terceiros. **Atualização:** o personagem p
 **Regenerar o desenho.** O gerador fica em `tools/make_pixel_cat.py` (precisa do Pillow). Para editar, mexa nas listas de pixels e nas funções `build_*` do script e rode:
 
 ```bash
-python3 -m venv /tmp/miau-venv && /tmp/miau-venv/bin/pip install pillow   # uma vez
-/tmp/miau-venv/bin/python tools/make_pixel_cat.py /tmp/miau-characters
-cp -R /tmp/miau-characters/gato-pixel/. src/assets/characters/gato-pixel/
+python3 -m venv /tmp/quacko-venv && /tmp/quacko-venv/bin/pip install pillow   # uma vez
+/tmp/quacko-venv/bin/python tools/make_pixel_cat.py /tmp/quacko-characters
+cp -R /tmp/quacko-characters/gato-pixel/. src/assets/characters/gato-pixel/
 ```
 
-O venv evita instalar o Pillow no Python do sistema (que, quando vem do Nix ou do Homebrew, recusa `pip install` global). Com o mesmo desenho, o script gera os mesmos pixels; só a compressão dos PNGs pode mudar entre versões do Pillow. O script também gera `preview-sheet.png`, `preview.gif` e o `gato-pixel.miaupack` na pasta de saída, úteis para conferir o desenho. Esses arquivos não precisam entrar no repositório.
+O venv evita instalar o Pillow no Python do sistema (que, quando vem do Nix ou do Homebrew, recusa `pip install` global). Com o mesmo desenho, o script gera os mesmos pixels; só a compressão dos PNGs pode mudar entre versões do Pillow. O script também gera `preview-sheet.png`, `preview.gif` e o `gato-pixel.quackopack` na pasta de saída, úteis para conferir o desenho. Esses arquivos não precisam entrar no repositório.
 
 ## 9. Tray (barra de menus)
 
@@ -183,7 +183,7 @@ Tooltip do ícone mostra a porta em uso. Se a porta estiver ocupada ao iniciar, 
 
 ## 10. Config
 
-Arquivo `~/.config/miau/config.json`, criado com padrões se não existir:
+Arquivo `~/.config/quacko/config.json`, criado com padrões se não existir:
 
 ```json
 { "port": 4747, "lang": "auto", "dnd": false, "autostart": false, "max_cards": 3 }
@@ -193,10 +193,10 @@ Arquivo `~/.config/miau/config.json`, criado com padrões se não existir:
 
 Regras da leitura (Marco 4):
 - Cada campo é validado sozinho: um valor inválido volta ao padrão sem descartar os outros, e o log diz quais campos foram ignorados. JSON quebrado não trava o app; o arquivo é regravado na próxima mudança pelo menu.
-- `port`: 1 a 65535. A variável `MIAU_PORT` vence o arquivo. Mudar a porta exige reiniciar o app.
+- `port`: 1 a 65535. A variável `QUACKO_PORT` vence o arquivo. Mudar a porta exige reiniciar o app.
 - `max_cards`: 1 a 3 (a janela comporta 3 cartões).
 - `pixel_size`: 3, 4, 5, 6 ou 8 (padrão 3). Tamanho do pixel do personagem pixel art; ver seção 8.
-- `autostart`: o sistema é a fonte da verdade. Se a pessoa tirar o Miau dos itens de login nos Ajustes do Sistema, a config passa a refletir isso no próximo start. Implementado com LaunchAgent (`~/Library/LaunchAgents`), sem pedir permissão de Automação.
+- `autostart`: o sistema é a fonte da verdade. Se a pessoa tirar o Quacko dos itens de login nos Ajustes do Sistema, a config passa a refletir isso no próximo start. Implementado com LaunchAgent (`~/Library/LaunchAgents`), sem pedir permissão de Automação.
 - Gravação atômica (arquivo temporário + rename).
 
 Ler no start, gravar quando o tray alterar algo. Valores inválidos caem no padrão (não travar o app).
@@ -204,8 +204,8 @@ Ler no start, gravar quando o tray alterar algo. Valores inválidos caem no padr
 ## 11. Estrutura do repositório
 
 ```
-miau/
-├─ miau-spec.md
+quacko/
+├─ quacko-spec.md
 ├─ package.json
 ├─ vite.config.ts
 ├─ index.html
@@ -217,7 +217,7 @@ miau/
 │  ├─ components/Card.tsx
 │  ├─ components/Cat.tsx      # sprite sheet + mood
 │  ├─ character/              # tipos e leitura do manifest do personagem
-│  ├─ assets/characters/gato-pixel/   # personagem padrão (.miaupack descompactado)
+│  ├─ assets/characters/gato-pixel/   # personagem padrão (.quackopack descompactado)
 │  ├─ i18n.ts
 │  └─ styles.css
 ├─ src-tauri/
@@ -264,10 +264,10 @@ Comportamento:
 4. Envia o aviso com `curl -s --max-time 1` em segundo plano, ignorando erros. JSON montado com `jq -n --arg` (sem `jq`, só os campos de lista fechada).
 5. **Sempre sai com 0** e não escreve nada no stdout (o stdout do `UserPromptSubmit` entraria no contexto do Claude), exceto as respostas que o Cursor espera. Medido: 0,24 s num hook real; 0,014 s com o app fechado.
 6. Retrocompatível: chamado só com um caminho de som (uso antigo), trata como `--sound`; se vier o JSON de um hook, já mostra o gato.
-7. Log em `/tmp/miau-notify.log`, sem o texto das mensagens.
+7. Log em `/tmp/quacko-notify.log`, sem o texto das mensagens.
 
 Texto do cartão, neutro de idioma (o selo "Concluído/Falhou" já vem traduzido pelo app):
-- **Claude `Stop`**: título "Claude Code", mensagem = o pedido que o Claude respondeu, entre aspas (“adicione testes para o parser…”, até 100 caracteres), projeto = pasta do `cwd`. O `Stop` não traz o pedido (só `last_assistant_message`), então o hook `UserPromptSubmit` guarda o `prompt` em `~/.cache/miau/prompt-claude-<session_id>` (pasta 700), e o `Stop` lê e apaga. Sem o pedido, cai no texto padrão. `StopFailure` → fail.
+- **Claude `Stop`**: título "Claude Code", mensagem = o pedido que o Claude respondeu, entre aspas (“adicione testes para o parser…”, até 100 caracteres), projeto = pasta do `cwd`. O `Stop` não traz o pedido (só `last_assistant_message`), então o hook `UserPromptSubmit` guarda o `prompt` em `~/.cache/quacko/prompt-claude-<session_id>` (pasta 700), e o `Stop` lê e apaga. Sem o pedido, cai no texto padrão. `StopFailure` → fail.
 - **Claude `Notification`**: mensagem = `message` do Claude Code. `notification_type` `agent_completed` → ok; `auth_success`, `elicitation_complete`, `elicitation_response`, `quota_*`, `plugin_notification` → info; o resto (permissão, ociosidade, perguntas) → attention.
 - **Cursor `stop`**: título "Cursor", projeto = pasta do primeiro `workspace_roots`, mensagem = pedido guardado no `beforeSubmitPrompt`. `status` `completed` → ok, `error` → fail, `aborted` → não avisa. Responde `{}` (sem mensagem de continuação).
 - **Cursor `beforeSubmitPrompt`**: só guarda o pedido e responde `{"continue":true}` (a documentação não diz o que acontece sem resposta; responder explicitamente garante que o envio nunca é bloqueado).
@@ -302,7 +302,7 @@ Usar caminho absoluto (a documentação recomenda; o `install.sh` imprime o bloc
 }
 ```
 
-O `notify.sh` continua em `~/.claude/hooks/` para não quebrar os hooks atuais do Claude; quem só usa Cursor também usa esse caminho na v1 (a v2 troca tudo pelo CLI `miau`).
+O `notify.sh` continua em `~/.claude/hooks/` para não quebrar os hooks atuais do Claude; quem só usa Cursor também usa esse caminho na v1 (a v2 troca tudo pelo CLI `quacko`).
 
 ### `scripts/prwatch` (script executável)
 
@@ -342,7 +342,7 @@ Copia `notify.sh` e `prwatch` para `~/.claude/hooks/` com permissão de execuç�
 - Aceite: os 4 estados visualmente distintos; janela não rouba foco do editor; clicar dispensa; passar o mouse pausa o timer.
 
 **Marco 4: tray e config**
-- Não perturbe, Testar, Idioma, Iniciar com o login; config persistida em `~/.config/miau/config.json`.
+- Não perturbe, Testar, Idioma, Iniciar com o login; config persistida em `~/.config/quacko/config.json`.
 - Aceite: com "Não perturbe" ligado, o `curl` retorna `{"delivered":false}` e nada aparece; idioma troca os textos padrão.
 
 **Marco 5: integração**

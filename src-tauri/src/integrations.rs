@@ -5,10 +5,10 @@
 //! - Arquivo de config inexistente é criado. Link simbólico é seguido; se o destino
 //!   estiver em `/nix/store`, for somente leitura ou não for JSON válido: **modo manual**
 //!   (nada é alterado; o trecho vai para a área de transferência).
-//! - Backup antes de alterar (`<arquivo>.miau-backup-<timestamp>`).
-//! - Mescla idempotente: as entradas do Miau são reconhecidas pelo caminho do
+//! - Backup antes de alterar (`<arquivo>.quacko-backup-<timestamp>`).
+//! - Mescla idempotente: as entradas do Quacko são reconhecidas pelo caminho do
 //!   `notify.sh`; as dos outros ficam intactas, na mesma ordem.
-//! - Gravação atômica (temporário + rename). "Desconectar" remove só as do Miau.
+//! - Gravação atômica (temporário + rename). "Desconectar" remove só as do Quacko.
 
 use std::fs;
 use std::io::{self, Write};
@@ -21,9 +21,9 @@ use serde_json::{json, Map, Value};
 const NOTIFY_SH: &str = include_str!("../../scripts/notify.sh");
 const PRWATCH: &str = include_str!("../../scripts/prwatch");
 
-/// Um comando é do Miau se aponta para o notify.sh instalado por ele (inclui os hooks
+/// Um comando é do Quacko se aponta para o notify.sh instalado por ele (inclui os hooks
 /// da v1 no formato antigo) ou para o CLI da v2.
-const MIAU_MARKERS: [&str; 2] = ["/.claude/hooks/notify.sh", "miau hook"];
+const QUACKO_MARKERS: [&str; 2] = ["/.claude/hooks/notify.sh", "quacko hook"];
 
 const CLAUDE_HOOKS: [(&str, &str); 3] = [
     ("UserPromptSubmit", "--from claude"),
@@ -108,8 +108,8 @@ impl Paths {
 
 // ---------- mescla (funções puras) ----------
 
-fn is_miau(command: &str) -> bool {
-    MIAU_MARKERS.iter().any(|m| command.contains(m))
+fn is_quacko(command: &str) -> bool {
+    QUACKO_MARKERS.iter().any(|m| command.contains(m))
 }
 
 /// Aspas simples quando o caminho tem caractere que o shell interpretaria.
@@ -151,7 +151,7 @@ fn commands_in(tool: Tool, entries: &[Value]) -> Vec<String> {
     }
 }
 
-/// Está conectado se todos os eventos têm um comando do Miau no formato novo.
+/// Está conectado se todos os eventos têm um comando do Quacko no formato novo.
 pub fn is_connected(tool: Tool, doc: &Value) -> bool {
     let flag = match tool {
         Tool::Claude => "--from claude",
@@ -164,13 +164,13 @@ pub fn is_connected(tool: Tool, doc: &Value) -> bool {
             .is_some_and(|entries| {
                 commands_in(tool, entries)
                     .iter()
-                    .any(|c| is_miau(c) && c.contains(flag))
+                    .any(|c| is_quacko(c) && c.contains(flag))
             })
     })
 }
 
-/// Tira as entradas do Miau de um evento; grupos que ficam vazios somem.
-fn strip_miau(tool: Tool, entries: &mut Vec<Value>) {
+/// Tira as entradas do Quacko de um evento; grupos que ficam vazios somem.
+fn strip_quacko(tool: Tool, entries: &mut Vec<Value>) {
     match tool {
         Tool::Claude => {
             entries.retain_mut(|group| {
@@ -181,7 +181,7 @@ fn strip_miau(tool: Tool, entries: &mut Vec<Value>) {
                 hooks.retain(|h| {
                     !h.get("command")
                         .and_then(Value::as_str)
-                        .is_some_and(is_miau)
+                        .is_some_and(is_quacko)
                 });
                 !(hooks.is_empty() && before > 0)
             });
@@ -189,7 +189,7 @@ fn strip_miau(tool: Tool, entries: &mut Vec<Value>) {
         Tool::Cursor => entries.retain(|h| {
             !h.get("command")
                 .and_then(Value::as_str)
-                .is_some_and(is_miau)
+                .is_some_and(is_quacko)
         }),
     }
 }
@@ -247,13 +247,13 @@ fn apply_in_place(
             .get_mut(*event)
             .and_then(Value::as_array_mut)
             .ok_or(ManualReason::Invalid)?;
-        strip_miau(tool, entries);
+        strip_quacko(tool, entries);
         if connect {
             entries.push(new_entry(tool, command_for(notify, args)));
         }
     }
     if !connect {
-        // Só limpa os eventos que o Miau mexe; listas vazias de outros eventos ficam.
+        // Só limpa os eventos que o Quacko mexe; listas vazias de outros eventos ficam.
         let ours: Vec<&str> = events(tool).iter().map(|(e, _)| *e).collect();
         hooks.retain(|k, v| {
             !(ours.contains(&k.as_str()) && v.as_array().is_some_and(Vec::is_empty))
@@ -306,7 +306,7 @@ fn prepare(path: &Path) -> Result<(PathBuf, Value, bool), ManualReason> {
 
 /// Testa se dá para criar arquivo na pasta (o rename atômico precisa disso).
 fn tempfile_in(dir: &Path) -> io::Result<()> {
-    let probe = dir.join(format!(".miau-probe-{}", std::process::id()));
+    let probe = dir.join(format!(".quacko-probe-{}", std::process::id()));
     fs::File::create(&probe)?;
     fs::remove_file(&probe)
 }
@@ -317,7 +317,7 @@ fn write_atomic(path: &Path, contents: &str) -> io::Result<()> {
         .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "caminho sem pasta"))?;
     fs::create_dir_all(dir)?;
     let tmp = dir.join(format!(
-        ".{}.miau-tmp-{}",
+        ".{}.quacko-tmp-{}",
         path.file_name()
             .and_then(|n| n.to_str())
             .unwrap_or("arquivo"),
@@ -356,7 +356,7 @@ fn install_script(path: &Path, contents: &str) -> io::Result<()> {
     Ok(())
 }
 
-/// Lê a config e diz se o Miau já está ligado nela (para a marca do menu).
+/// Lê a config e diz se o Quacko já está ligado nela (para a marca do menu).
 pub fn status(paths: &Paths, tool: Tool) -> bool {
     match prepare(&paths.config_file(tool)) {
         Ok((_, doc, _)) => is_connected(tool, &doc),
@@ -398,7 +398,7 @@ pub fn set_connected(paths: &Paths, tool: Tool, connect: bool) -> io::Result<Out
             .unwrap_or("config");
         fs::copy(
             &target,
-            target.with_file_name(format!("{name}.miau-backup-{}", timestamp())),
+            target.with_file_name(format!("{name}.quacko-backup-{}", timestamp())),
         )?;
     }
     let mut text = serde_json::to_string_pretty(&doc).map_err(io::Error::other)?;
@@ -411,11 +411,13 @@ pub fn set_connected(paths: &Paths, tool: Tool, connect: bool) -> io::Result<Out
     })
 }
 
-/// Marca presente nos scripts do Miau (variáveis MIAU_*): só esses são atualizados.
-const OURS_MARKER: &str = "MIAU_";
+/// Marca presente nos scripts do Quacko (variáveis QUACKO_*): só esses são atualizados.
+const OURS_MARKER: &str = "QUACKO_";
+/// Scripts instalados pela versão com o nome antigo (variáveis MIAU_*): também são nossos.
+const LEGACY_MARKER: &str = "MIAU_";
 
-/// Ao abrir o app: se o `notify.sh` ou o `prwatch` instalados forem do Miau mas de outra
-/// versão, troca pelos embutidos (com backup). Scripts que não são do Miau, ou que não
+/// Ao abrir o app: se o `notify.sh` ou o `prwatch` instalados forem do Quacko mas de outra
+/// versão, troca pelos embutidos (com backup). Scripts que não são do Quacko, ou que não
 /// existem (a pessoa nunca conectou), ficam como estão. Devolve os nomes atualizados.
 pub fn sync_installed_scripts(paths: &Paths) -> Vec<String> {
     let mut updated = Vec::new();
@@ -423,7 +425,9 @@ pub fn sync_installed_scripts(paths: &Paths) -> Vec<String> {
         let Ok(current) = fs::read_to_string(&path) else {
             continue;
         };
-        if current == embedded || !current.contains(OURS_MARKER) {
+        if current == embedded
+            || !(current.contains(OURS_MARKER) || current.contains(LEGACY_MARKER))
+        {
             continue;
         }
         match install_script(&path, embedded) {
@@ -541,7 +545,7 @@ mod tests {
     }
 
     #[test]
-    fn hooks_antigos_do_miau_sao_atualizados() {
+    fn hooks_antigos_do_quacko_sao_atualizados() {
         // Formato da v1: notify.sh só com o som, sem --from.
         let mut doc: Value = serde_json::from_str(&format!(
             r#"{{"hooks":{{"Stop":[{{"hooks":[{{"type":"command","command":"{NOTIFY} /System/Library/Sounds/Glass.aiff"}}]}}]}}}}"#
@@ -558,7 +562,7 @@ mod tests {
     }
 
     #[test]
-    fn grupo_misto_perde_so_a_entrada_do_miau() {
+    fn grupo_misto_perde_so_a_entrada_do_quacko() {
         let mut doc: Value = serde_json::from_str(&format!(
             r#"{{"hooks":{{"Stop":[{{"hooks":[{{"type":"command","command":"/opt/a.sh"}},{{"type":"command","command":"{NOTIFY}"}}]}}]}}}}"#
         ))
@@ -572,7 +576,7 @@ mod tests {
     }
 
     #[test]
-    fn desconectar_tira_so_o_miau_e_limpa_o_que_ficou_vazio() {
+    fn desconectar_tira_so_o_quacko_e_limpa_o_que_ficou_vazio() {
         let mut doc: Value = serde_json::from_str(
             r#"{"model":"opus","hooks":{"PreToolUse":[{"hooks":[{"type":"command","command":"/opt/guard.sh"}]}]}}"#,
         )
@@ -582,10 +586,10 @@ mod tests {
         apply(Tool::Claude, &mut doc, &notify(), false).unwrap();
         assert_eq!(doc, original);
 
-        let mut only_miau = json!({});
-        connect(Tool::Claude, &mut only_miau);
-        apply(Tool::Claude, &mut only_miau, &notify(), false).unwrap();
-        assert_eq!(only_miau, json!({}));
+        let mut only_quacko = json!({});
+        connect(Tool::Claude, &mut only_quacko);
+        apply(Tool::Claude, &mut only_quacko, &notify(), false).unwrap();
+        assert_eq!(only_quacko, json!({}));
     }
 
     #[test]
@@ -639,7 +643,7 @@ mod tests {
             cmd,
             "'/Users/Ana Maria/.claude/hooks/notify.sh' --from claude"
         );
-        assert!(is_miau(&cmd));
+        assert!(is_quacko(&cmd));
         assert_eq!(command_for(&notify(), "-x"), format!("{NOTIFY} -x"));
     }
 
@@ -687,7 +691,7 @@ mod tests {
         let backups: Vec<String> = fs::read_dir(&claude_dir)
             .unwrap()
             .filter_map(|e| e.ok()?.file_name().into_string().ok())
-            .filter(|n| n.starts_with("settings.json.miau-backup-"))
+            .filter(|n| n.starts_with("settings.json.quacko-backup-"))
             .collect();
         assert_eq!(backups.len(), 1);
         assert_eq!(
@@ -815,7 +819,7 @@ mod tests {
     }
 
     #[test]
-    fn sincroniza_so_scripts_do_miau_desatualizados() {
+    fn sincroniza_so_scripts_do_quacko_desatualizados() {
         let (_dir, paths) = temp_home();
         assert!(
             sync_installed_scripts(&paths).is_empty(),
@@ -825,7 +829,7 @@ mod tests {
         fs::create_dir_all(paths.hooks_dir()).unwrap();
         fs::write(
             paths.notify_sh(),
-            "#!/bin/bash\n# versão antiga\nPORT=\"${MIAU_PORT:-4747}\"\n",
+            "#!/bin/bash\n# versão antiga\nPORT=\"${QUACKO_PORT:-4747}\"\n",
         )
         .unwrap();
         fs::write(
@@ -845,12 +849,28 @@ mod tests {
         assert_eq!(
             fs::read_to_string(paths.prwatch()).unwrap(),
             "#!/bin/bash\necho script de outra pessoa\n",
-            "script que não é do Miau fica intocado"
+            "script que não é do Quacko fica intocado"
         );
         assert!(
             sync_installed_scripts(&paths).is_empty(),
             "já atualizado: nada a fazer"
         );
+    }
+
+    #[test]
+    fn scripts_da_versao_com_nome_antigo_sao_atualizados() {
+        let (_dir, paths) = temp_home();
+        fs::create_dir_all(paths.hooks_dir()).unwrap();
+        fs::write(
+            paths.notify_sh(),
+            "#!/bin/bash\nPORT=\"${MIAU_PORT:-4747}\"\n",
+        )
+        .unwrap();
+        assert_eq!(
+            sync_installed_scripts(&paths),
+            vec!["notify.sh".to_string()]
+        );
+        assert_eq!(fs::read_to_string(paths.notify_sh()).unwrap(), NOTIFY_SH);
     }
 
     #[test]

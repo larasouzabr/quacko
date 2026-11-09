@@ -2,7 +2,7 @@
   "schema": 2,
   "id": "gato-pixel",
   "name": "Gato Pixel",
-  "author": "Miau",
+  "author": "Quacko",
   "license": "CC0-1.0",
   "preview": "preview.png",
   "pixel_art": true,
@@ -69,7 +69,7 @@
         "Preciso de você!"
       ],
       "info": [
-        "Aviso do Miau"
+        "Aviso do Quacko"
       ]
     },
     "en": {
@@ -84,7 +84,7 @@
         "I need you!"
       ],
       "info": [
-        "Miau notice"
+        "Quacko notice"
       ]
     }
   }

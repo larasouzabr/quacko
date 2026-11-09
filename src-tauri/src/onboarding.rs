@@ -197,8 +197,8 @@ pub fn open(app: &AppHandle) {
         return;
     }
     let title = match app.state::<Settings>().lang() {
-        crate::i18n::Lang::PtBr => "Bem-vindo ao Miau",
-        crate::i18n::Lang::En => "Welcome to Miau",
+        crate::i18n::Lang::PtBr => "Bem-vindo ao Quacko",
+        crate::i18n::Lang::En => "Welcome to Quacko",
     };
     let built = WebviewWindowBuilder::new(
         app,

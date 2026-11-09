@@ -27,7 +27,7 @@ pub fn join_all_spaces_and_fullscreen<R: Runtime>(window: &WebviewWindow<R>) {
     ns_window.setCollectionBehavior(behavior);
 }
 
-/// pid do último app em primeiro plano que não é o Miau.
+/// pid do último app em primeiro plano que não é o Quacko.
 static PREVIOUS_APP: AtomicI32 = AtomicI32::new(0);
 
 pub fn remember_frontmost_app() {
@@ -40,7 +40,7 @@ pub fn remember_frontmost_app() {
     }
 }
 
-/// Se um clique no cartão ativou o Miau, devolve o foco ao app anterior.
+/// Se um clique no cartão ativou o Quacko, devolve o foco ao app anterior.
 pub fn restore_frontmost_app() {
     if !NSRunningApplication::currentApplication().isActive() {
         return;

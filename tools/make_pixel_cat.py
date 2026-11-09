@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Gera o personagem original "Gato Pixel" do Miau (pixel art, 4 estados, 2 quadros cada).
+"""Gera o personagem original "Gato Pixel" do Quacko (pixel art, 4 estados, 2 quadros cada).
 
-Saidas (em ./miau-characters):
+Saidas (em ./quacko-characters):
   gato-pixel/manifest.json (schema 2), preview.png, assets/{ok,fail,attention,info}.png
   (sprite sheets em 1x: 56x28, 2 quadros de 28x28; o app amplia por CSS)
-  preview-sheet.png, preview.gif, gato-pixel.miaupack (zip)
+  preview-sheet.png, preview.gif, gato-pixel.quackopack (zip)
 
 Uso: python3 make_pixel_cat.py [pasta_de_saida]
 Para editar o desenho, mexa nas listas de pixels e nas funcoes build_*.
@@ -233,12 +233,12 @@ def main(out):
         sheet.paste(frames[s][1], (W, 0))
         up(sheet, SCALE).save(os.path.join(assets, f"{s}.png"))
 
-    # manifest no formato .miaupack (schema 2, miau-spec-personalizacao.md)
+    # manifest no formato .quackopack (schema 2, quacko-spec-personalizacao.md)
     manifest = {
         "schema": 2,
         "id": "gato-pixel",
         "name": "Gato Pixel",
-        "author": "Miau",
+        "author": "Quacko",
         "license": "CC0-1.0",
         "preview": "preview.png",
         "pixel_art": True,
@@ -259,13 +259,13 @@ def main(out):
                 "ok": ["Seu pedido finalizou!", "Prontinho!"],
                 "fail": ["Algo deu errado por aqui"],
                 "attention": ["Preciso de você!"],
-                "info": ["Aviso do Miau"],
+                "info": ["Aviso do Quacko"],
             },
             "en": {
                 "ok": ["Your request finished!", "All done!"],
                 "fail": ["Something went wrong"],
                 "attention": ["I need you!"],
-                "info": ["Miau notice"],
+                "info": ["Quacko notice"],
             },
         },
     }
@@ -311,8 +311,8 @@ def main(out):
     gif[0].save(os.path.join(out, "preview.gif"), save_all=True, append_images=gif[1:],
                 duration=420, loop=0, disposal=2)
 
-    # .miaupack (zip com manifest na raiz)
-    zpath = os.path.join(out, "gato-pixel.miaupack")
+    # .quackopack (zip com manifest na raiz)
+    zpath = os.path.join(out, "gato-pixel.quackopack")
     with zipfile.ZipFile(zpath, "w", zipfile.ZIP_DEFLATED) as z:
         z.write(os.path.join(pack, "manifest.json"), "manifest.json")
         z.write(os.path.join(pack, "preview.png"), "preview.png")
@@ -323,4 +323,4 @@ def main(out):
 
 
 if __name__ == "__main__":
-    main(sys.argv[1] if len(sys.argv) > 1 else "miau-characters")
+    main(sys.argv[1] if len(sys.argv) > 1 else "quacko-characters")

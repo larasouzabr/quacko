@@ -1,13 +1,13 @@
 #!/bin/bash
-# Instala os scripts de integração do Miau em ~/.claude/hooks/ (com backup) e mostra o
+# Instala os scripts de integração do Quacko em ~/.claude/hooks/ (com backup) e mostra o
 # que configurar. Não edita ~/.claude/settings.json, ~/.cursor/hooks.json nem ~/.zshrc.
 #
 # Uso: scripts/install.sh
-# Variável: MIAU_HOOKS_DIR (padrão ~/.claude/hooks)
+# Variável: QUACKO_HOOKS_DIR (padrão ~/.claude/hooks)
 set -eu
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
-DEST="${MIAU_HOOKS_DIR:-$HOME/.claude/hooks}"
+DEST="${QUACKO_HOOKS_DIR:-$HOME/.claude/hooks}"
 STAMP="$(date +%Y%m%d-%H%M%S)"
 
 install_one() { # origem, nome
@@ -25,7 +25,7 @@ install_one() { # origem, nome
 }
 
 mkdir -p "$DEST"
-echo "Miau: instalando scripts em $DEST"
+echo "Quacko: instalando scripts em $DEST"
 install_one notify.sh notify.sh
 install_one prwatch prwatch
 
@@ -33,7 +33,7 @@ N="$DEST/notify.sh"
 cat <<EOF
 
 1) Claude Code (~/.claude/settings.json)
-   Hooks antigos que chamam "notify.sh <som>" já mostram o gato sem mudar nada.
+   Hooks antigos que chamam "notify.sh <som>" já mostram o pato sem mudar nada.
    Para o cartão dizer qual pedido o Claude terminou, use estes hooks
    (o UserPromptSubmit guarda o pedido; ele não toca som nem mostra nada):
 
@@ -79,6 +79,6 @@ cat <<EOF
 
    Uso: prwatch 1234   |   prwatch https://github.com/dono/repo/pull/1234   |   prwatch (PR da branch atual)
 
-Teste rápido (com o app Miau aberto):
-  $N --source ci --status fail --title "PR #1" --message "Teste do Miau" --project teste
+Teste rápido (com o app Quacko aberto):
+  $N --source ci --status fail --title "PR #1" --message "Teste do Quacko" --project teste
 EOF

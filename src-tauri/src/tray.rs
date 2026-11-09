@@ -53,7 +53,7 @@ impl ServerStatus {
     }
 
     fn tooltip(&self, t: &TrayTexts) -> String {
-        format!("Miau · {}", self.menu_text(t))
+        format!("Quacko · {}", self.menu_text(t))
     }
 }
 
@@ -221,7 +221,7 @@ fn toggle_autostart(app: &AppHandle) {
 
 // ---------- Conectar (Claude Code, Cursor, prwatch) ----------
 
-/// Submenu "Conectar": a marca (✓) diz se a ferramenta já está ligada ao Miau.
+/// Submenu "Conectar": a marca (✓) diz se a ferramenta já está ligada ao Quacko.
 fn connect_submenu(app: &AppHandle, t: &TrayTexts) -> tauri::Result<Submenu<Wry>> {
     let paths = Paths::from_home();
     let connected = |tool| {
@@ -356,7 +356,7 @@ pub fn tell(app: &AppHandle, status: Status, message: String) {
             source: Source::Custom,
             status,
             message: Some(message),
-            title: Some("Miau".into()),
+            title: Some("Quacko".into()),
             project: None,
             url: None,
             ttl_ms: 12_000,

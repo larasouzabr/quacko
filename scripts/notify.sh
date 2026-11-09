@@ -1,5 +1,5 @@
 #!/bin/bash
-# Miau: avisa que algo terminou. Pausa a mídia, toca um som e manda o aviso ao app Miau.
+# Quacko: avisa que algo terminou. Pausa a mídia, toca um som e manda o aviso ao app Quacko.
 #
 # Uso:
 #   notify.sh [--from claude|cursor] [--sound CAMINHO] [--source agent|claude|ci|custom]
@@ -19,15 +19,15 @@
 # Leitura do JSON: usa o jq se existir; senão o plutil do macOS (12+); senão um leitor
 # em awk para os campos simples. Nenhum deles precisa ser instalado.
 #
-# Variáveis: MIAU_PORT (4747), MIAU_LOG, MIAU_STATE_DIR, MIAU_DRY_RUN=1 (testes: não
-# pausa, não toca, não envia; escreve o aviso no stderr), MIAU_JSON=jq|plutil|awk
+# Variáveis: QUACKO_PORT (4747), QUACKO_LOG, QUACKO_STATE_DIR, QUACKO_DRY_RUN=1 (testes: não
+# pausa, não toca, não envia; escreve o aviso no stderr), QUACKO_JSON=jq|plutil|awk
 # (força o leitor de JSON; usado nos testes).
 
 PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:$PATH"
-PORT="${MIAU_PORT:-4747}"
-STATE_DIR="${MIAU_STATE_DIR:-${XDG_CACHE_HOME:-$HOME/.cache}/miau}"
-LOG="${MIAU_LOG:-/tmp/miau-notify.log}"
-DRY_RUN="${MIAU_DRY_RUN:-}"
+PORT="${QUACKO_PORT:-4747}"
+STATE_DIR="${QUACKO_STATE_DIR:-${XDG_CACHE_HOME:-$HOME/.cache}/quacko}"
+LOG="${QUACKO_LOG:-/tmp/quacko-notify.log}"
+DRY_RUN="${QUACKO_DRY_RUN:-}"
 PROMPT_CHARS=100
 # Cortes de texto contam caracteres (não bytes) mesmo quando quem chama não define locale.
 export LC_ALL=en_US.UTF-8
@@ -84,7 +84,7 @@ if [ -p /dev/stdin ] || [ -f /dev/stdin ] || [ -S /dev/stdin ]; then
 fi
 
 # Leitor de JSON: jq (preferido) → plutil → awk.
-JSON_TOOL="${MIAU_JSON:-}"
+JSON_TOOL="${QUACKO_JSON:-}"
 if [ -z "$JSON_TOOL" ]; then
   if command -v jq >/dev/null; then
     JSON_TOOL=jq

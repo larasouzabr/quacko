@@ -1,4 +1,4 @@
-// Tamanho do pixel do pixel art (miau-spec-personalizacao.md, seção 4).
+// Tamanho do pixel do pixel art (quacko-spec-personalizacao.md, seção 4).
 
 /** Valores oferecidos: px por pixel de desenho. Sempre inteiros. */
 export const PIXEL_SIZES = [3, 4, 5, 6, 8] as const;

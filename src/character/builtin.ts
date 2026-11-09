@@ -1,6 +1,6 @@
 // Personagens embutidos: cada pasta em src/assets/characters/<id> (manifest + assets).
 // Padrão: "Pato Pixel". O "Gato Pixel" continua disponível como opção.
-// Para regenerar os sprites, veja a seção 8 do miau-spec.md e tools/.
+// Para regenerar os sprites, veja a seção 8 do quacko-spec.md e tools/.
 import { buildCharacter } from "./load";
 import type { Character, CharacterManifest } from "./types";
 

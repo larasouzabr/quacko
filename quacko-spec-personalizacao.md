@@ -1,10 +1,10 @@
-# Miau: personalização de personagens, balões e cores
+# Quacko: personalização de personagens, balões e cores
 
-> Documento independente, extraído da spec v2 (`miau-spec-v2-produto.md`, seção 11). Descreve como o usuário personaliza o personagem que avisa, o estilo do balão e as cores.
+> Documento independente, extraído da spec v2 (`quacko-spec-v2-produto.md`, seção 11). Descreve como o usuário personaliza o personagem que avisa, o estilo do balão e as cores.
 >
 > Pré-requisitos: overlay e cartão funcionando (Marco 3 da spec v1) e janela de Configurações (Marco 12 da spec v2). Se algum não existir ainda, implemente a parte visual primeiro e deixe a personalização para depois.
 >
-> Como usar: coloque na raiz do repositório e peça ao Claude Code: "Leia miau-spec-personalizacao.md e implemente na ordem da seção 8, um passo por vez. Ao fim de cada passo, rode os critérios de aceite, me diga como testar e pare para eu validar. Itens marcados VERIFICAR devem ser conferidos na documentação atual antes de usar."
+> Como usar: coloque na raiz do repositório e peça ao Claude Code: "Leia quacko-spec-personalizacao.md e implemente na ordem da seção 8, um passo por vez. Ao fim de cada passo, rode os critérios de aceite, me diga como testar e pare para eu validar. Itens marcados VERIFICAR devem ser conferidos na documentação atual antes de usar."
 
 Quatro camadas independentes, que o usuário combina livremente:
 
@@ -13,13 +13,13 @@ Quatro camadas independentes, que o usuário combina livremente:
 - **Cores**: três cores escolhidas pelo usuário (papel, tinta, destaque), das quais o app deriva o resto.
 - **Layout e comportamento**: posição, tamanho, animações. É preferência do usuário e não faz parte dos pacotes.
 
-Dois tipos de pacote: `.miaupack` (personagem) e `.miautheme` (balão + cores). O balão e as cores formam um **tema**.
+Dois tipos de pacote: `.quackopack` (personagem) e `.quackotheme` (balão + cores). O balão e as cores formam um **tema**.
 
 Princípio de segurança: **pacotes de personagem e de tema são dados, nunca código.** Isso permite compartilhar pacotes sem risco de executar algo malicioso.
 
-## 1. Pacote de personagem (`.miaupack`)
+## 1. Pacote de personagem (`.quackopack`)
 
-Pasta ou arquivo zip renomeado para `.miaupack`:
+Pasta ou arquivo zip renomeado para `.quackopack`:
 
 ```
 meu-personagem/
@@ -64,7 +64,7 @@ meu-personagem/
       "ok": ["Seu pedido finalizou!", "Prontinho!"],
       "fail": ["Algo deu errado por aqui"],
       "attention": ["Preciso de você!"],
-      "info": ["Aviso do Miau"]
+      "info": ["Aviso do Quacko"]
     },
     "en": { "ok": ["Your request finished!", "All done!"] }
   }
@@ -106,18 +106,18 @@ Nas Configurações, aba Aparência:
 4. Ajustar tamanho, espelhar e posição em relação ao balão.
 5. Editar as frases por estado e por idioma (campos de texto simples).
 6. Pré-visualizar cada estado ao vivo; salvar com um nome.
-7. **Exportar** como `.miaupack` para compartilhar.
+7. **Exportar** como `.quackopack` para compartilhar.
 
 **"Recolorir"** (só para personagens pixel art com `palette`)
 
 - Um seletor de cor por papel (pelagem, sombra, mancha, mancha clara, mancha escura, bochecha, contorno), com pré-visualização ao vivo dos 4 estados.
 - Atalhos de pelagem prontos (ex.: laranja e branco, preto, cinza, siamês, rosa) e botão "Restaurar original".
-- Funcionamento: o app desenha o sprite em um canvas local e troca cada cor exata pela cor escolhida. Sem rede, sem arquivos novos. A escolha fica no perfil do usuário (seção 5) e pode ser exportada junto ao `.miaupack` como paleta alternativa.
+- Funcionamento: o app desenha o sprite em um canvas local e troca cada cor exata pela cor escolhida. Sem rede, sem arquivos novos. A escolha fica no perfil do usuário (seção 5) e pode ser exportada junto ao `.quackopack` como paleta alternativa.
 - Aviso de contraste quando o usuário deixar o contorno muito parecido com o pelo (o personagem some).
 
 Direitos autorais: o app **não inclui** personagens de terceiros e não baixa pacotes sozinho. Imagens que o usuário importa são responsabilidade dele. O formato exige os campos `author` e `license`, que aparecem na tela de confirmação de importação.
 
-## 3. Tema (`.miautheme`): balão e cores
+## 3. Tema (`.quackotheme`): balão e cores
 
 Arquivo JSON, sem CSS livre (evita injeção e quebras de layout). O tema escolhe um **preset** de balão e pode ajustar cada escolha individualmente.
 
@@ -201,7 +201,7 @@ Presets para depois da v2: `rpg` (shape pixel, border double, tail nametag, deco
 
 ## 5. Gerenciamento e combinações
 
-- Diretórios no app data: `packs/characters/<id>/` e `packs/themes/<id>.miautheme`.
+- Diretórios no app data: `packs/characters/<id>/` e `packs/themes/<id>.quackotheme`.
 - Importar: arrastar o arquivo para a janela de Configurações ou botão "Importar". Mostrar resumo (nome, autor, licença, tamanho, estados incluídos, aviso de contraste) e pedir confirmação.
 - Remover e exportar pelos mesmos controles. Embutidos não podem ser removidos, só ocultados.
 - **Perfis de aparência**: combinação salva de personagem (com a paleta recolorida, se houver) + tema + layout (ex.: "Trabalho", "Divertido").
@@ -226,7 +226,7 @@ Presets `rpg` e `note`, balão de vidro translúcido, balão de quadrinhos para 
 
 ## 8. Marco de implementação
 
-- Formatos `.miaupack` e `.miautheme` (schema 2, lendo também schema 1), validador de importação (limites, zip slip, extensões, cores, listas fechadas), personagem e temas embutidos.
+- Formatos `.quackopack` e `.quackotheme` (schema 2, lendo também schema 1), validador de importação (limites, zip slip, extensões, cores, listas fechadas), personagem e temas embutidos.
 - **Migrar o Gato Pixel para 1x:** no gerador (`tools/make_pixel_cat.py`), usar `SCALE = 1` e acrescentar no manifest `schema: 2`, `pixel_art: true`, `grid` (28x28), `bubble: "pixel"` e `palette` com os papéis `fur`, `fur_shade`, `patch`, `patch_light`, `patch_dark`, `blush`, `outline` (valores iguais às cores do dicionário `PAL`: `W`, `S`, `G`, `g`, `D`, `P`, `K`).
 - Tamanho do pixel inteiro (3, 4, 5, 6, 8) com `image-rendering: pixelated`, normalizado pelo `devicePixelRatio`.
 - Balão por presets (`pixel`, `soft`, `thought`, `terminal`) e escolhas individuais; 3 cores (`paper`, `ink`, `accent`) com derivação das demais e verificação de contraste.
@@ -243,7 +243,7 @@ Presets `rpg` e `note`, balão de vidro translúcido, balão de quadrinhos para 
 
 Ordem sugerida (cada passo termina com algo testável):
 
-1. **Formatos e validador:** `.miaupack` e `.miautheme` (schema 2, lendo também schema 1), importação e exportação, validações da seção 6.
+1. **Formatos e validador:** `.quackopack` e `.quackotheme` (schema 2, lendo também schema 1), importação e exportação, validações da seção 6.
 2. **Pixel nítido:** migrar o Gato Pixel para 1x, tamanho do pixel inteiro, normalização pelo `devicePixelRatio`.
 3. **Balão por presets:** `pixel`, `soft`, `thought`, `terminal` e as escolhas individuais.
 4. **Cores:** 3 cores editáveis, derivação das demais, verificação de contraste, tema escuro derivado.

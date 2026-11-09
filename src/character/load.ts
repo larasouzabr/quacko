@@ -9,7 +9,7 @@ import {
   type SpriteState,
 } from "./types";
 
-/** Limites da miau-spec-personalizacao.md, seção 1. */
+/** Limites da quacko-spec-personalizacao.md, seção 1. */
 const MAX_DIMENSION = 1024;
 const MAX_GRID = 128;
 const MAX_FPS = 30;

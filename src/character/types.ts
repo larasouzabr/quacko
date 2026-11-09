@@ -2,7 +2,7 @@
 export type Mood = "ok" | "fail" | "attention" | "info";
 export const MOODS: readonly Mood[] = ["ok", "fail", "attention", "info"];
 
-/** Presets de balão conhecidos (miau-spec-personalizacao.md, seção 3). */
+/** Presets de balão conhecidos (quacko-spec-personalizacao.md, seção 3). */
 export const BUBBLE_PRESETS = ["pixel", "soft", "thought", "terminal"] as const;
 export type BubblePreset = (typeof BUBBLE_PRESETS)[number];
 
@@ -33,7 +33,7 @@ export interface Character {
   bubble?: BubblePreset;
 }
 
-/** Formato do `manifest.json` de um `.miaupack` (schema 1 ou 2), só os campos usados. */
+/** Formato do `manifest.json` de um `.quackopack` (schema 1 ou 2), só os campos usados. */
 export interface ManifestState {
   type: string;
   file: string;

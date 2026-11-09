@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """Gera o personagem original "Pato Pixel" (pixel art, de frente, 4 estados, 2 quadros cada).
 
-Mesmo molde do gato: grade 28x28, contorno escuro automatico, .miaupack schema 1.
+Mesmo molde do gato: grade 28x28, contorno escuro automatico, .quackopack schema 1.
 Desenho simetrico (espelho em x -> 27 - x).
 
-Saidas (em ./miau-characters):
+Saidas (em ./quacko-characters):
   pato-pixel/manifest.json, preview.png, assets/{ok,fail,attention,info}.png
-  preview-pato.png, preview-pato.gif, pato-pixel.miaupack (zip)
+  preview-pato.png, preview-pato.gif, pato-pixel.quackopack (zip)
 
 Uso: python3 make_pixel_duck.py [pasta_de_saida]
 """
@@ -180,7 +180,7 @@ def main(out):
         "schema": 1,
         "id": "pato-pixel",
         "name": "Pato Pixel",
-        "author": "Miau",
+        "author": "Quacko",
         "license": "CC0-1.0",
         "preview": "preview.png",
         "size": {"width": W * SCALE, "height": H * SCALE},
@@ -243,7 +243,7 @@ def main(out):
     gif[0].save(os.path.join(out, "preview-pato.gif"), save_all=True,
                 append_images=gif[1:], duration=420, loop=0, disposal=2)
 
-    zpath = os.path.join(out, "pato-pixel.miaupack")
+    zpath = os.path.join(out, "pato-pixel.quackopack")
     with zipfile.ZipFile(zpath, "w", zipfile.ZIP_DEFLATED) as z:
         z.write(os.path.join(pack, "manifest.json"), "manifest.json")
         z.write(os.path.join(pack, "preview.png"), "preview.png")
@@ -253,4 +253,4 @@ def main(out):
 
 
 if __name__ == "__main__":
-    main(sys.argv[1] if len(sys.argv) > 1 else "miau-characters")
+    main(sys.argv[1] if len(sys.argv) > 1 else "quacko-characters")

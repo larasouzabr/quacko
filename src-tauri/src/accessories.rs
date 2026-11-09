@@ -33,7 +33,7 @@ pub struct AccessoryInfo {
 
 /// Pasta dos acessórios do usuário (criada ao abrir o app).
 pub fn user_dir() -> Option<PathBuf> {
-    dirs::home_dir().map(|home| home.join(".config").join("miau").join("accessories"))
+    dirs::home_dir().map(|home| home.join(".config").join("quacko").join("accessories"))
 }
 
 pub fn ensure_user_dir() -> Option<PathBuf> {

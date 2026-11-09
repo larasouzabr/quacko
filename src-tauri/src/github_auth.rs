@@ -12,7 +12,7 @@
 //!   troca os dois tokens (o antigo deixa de valer).
 //!
 //! O token fica no Keychain (nunca em arquivo). Só o `client_id`, que é público, fica na
-//! config ou na variável `MIAU_GITHUB_CLIENT_ID`.
+//! config ou na variável `QUACKO_GITHUB_CLIENT_ID`.
 
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
@@ -21,7 +21,9 @@ use serde_json::Value;
 
 pub const GITHUB_WEB: &str = "https://github.com";
 const DEVICE_GRANT: &str = "urn:ietf:params:oauth:grant-type:device_code";
-const KEYCHAIN_SERVICE: &str = "dev.miau.notifier.github";
+const KEYCHAIN_SERVICE: &str = "dev.quacko.notifier.github";
+/// Serviço do Keychain na versão com o nome antigo (migrado no primeiro uso).
+const LEGACY_KEYCHAIN_SERVICE: &str = "dev.miau.notifier.github";
 const KEYCHAIN_ACCOUNT: &str = "device-flow";
 /// Renova o token quando faltar menos que isso para expirar.
 const REFRESH_MARGIN_S: u64 = 300;
@@ -112,7 +114,7 @@ impl Client {
         }
         let http = reqwest::Client::builder()
             .user_agent(concat!(
-                "Miau/",
+                "Quacko/",
                 env!("CARGO_PKG_VERSION"),
                 " (desktop notifier)"
             ))
@@ -239,7 +241,16 @@ impl KeychainStore {
 
 impl TokenStore for KeychainStore {
     fn load(&self) -> Option<StoredToken> {
-        serde_json::from_str(&Self::entry()?.get_password().ok()?).ok()
+        if let Some(token) = Self::entry().and_then(|e| e.get_password().ok()) {
+            return serde_json::from_str(&token).ok();
+        }
+        // Login guardado pela versão com o nome antigo: passa para o nome novo.
+        let legacy = keyring::Entry::new(LEGACY_KEYCHAIN_SERVICE, KEYCHAIN_ACCOUNT).ok()?;
+        let token: StoredToken = serde_json::from_str(&legacy.get_password().ok()?).ok()?;
+        if self.save(&token).is_ok() {
+            let _ = legacy.delete_credential();
+        }
+        Some(token)
     }
     fn save(&self, token: &StoredToken) -> Result<(), String> {
         let json = serde_json::to_string(token).map_err(|e| e.to_string())?;

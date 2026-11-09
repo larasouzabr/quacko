@@ -9,7 +9,7 @@ Uso:
       -> manifest schema 2 (pixel_art, grid) + assets/*.png em 1x
   python3 tools/pack_to_1x.py acessorio PASTA_DO_ACESSORIO_6X PASTA_SAIDA [escala]
       -> accessory.json igual + PNGs em 1x
-(precisa do Pillow; ver seção 8 do miau-spec.md para o venv)
+(precisa do Pillow; ver seção 8 do quacko-spec.md para o venv)
 """
 import json
 import os

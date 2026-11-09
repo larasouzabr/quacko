@@ -13,7 +13,7 @@ use tauri::{AppHandle, Manager};
 
 use crate::model::{Notification, Source, Status};
 
-pub const TRAY_ID: &str = "miau-tray";
+pub const TRAY_ID: &str = "quacko-tray";
 
 /// Estado de alerta do ícone.
 #[derive(Default)]

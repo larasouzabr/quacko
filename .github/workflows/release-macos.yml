@@ -1,4 +1,4 @@
-# Release do Miau para macOS: gera o .dmg universal (Apple Silicon + Intel) e cria um
+# Release do Quacko para macOS: gera o .dmg universal (Apple Silicon + Intel) e cria um
 # release em RASCUNHO quando uma tag v* é enviada (ex.: git tag v0.1.0 && git push origin v0.1.0).
 # Não roda em pull request nem em push comum. O rascunho só fica público quando alguém
 # clicar em "Publish release" no GitHub.
@@ -55,7 +55,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tagName: ${{ github.ref_name }}
-          releaseName: Miau ${{ github.ref_name }}
+          releaseName: Quacko ${{ github.ref_name }}
           releaseBody: "Build sem assinatura da Apple: na primeira abertura, use Ajustes do Sistema → Privacidade e Segurança → Abrir Mesmo Assim (instruções no README)."
           releaseDraft: true
           args: --target universal-apple-darwin
@@ -74,7 +74,7 @@ jobs:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         with:
           tagName: ${{ github.ref_name }}
-          releaseName: Miau ${{ github.ref_name }}
+          releaseName: Quacko ${{ github.ref_name }}
           releaseBody: "Build assinado e notarizado pela Apple."
           releaseDraft: true
           args: --target universal-apple-darwin

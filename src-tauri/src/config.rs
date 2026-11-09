@@ -1,4 +1,4 @@
-//! Config em `~/.config/miau/config.json` (seção 10 da spec).
+//! Config em `~/.config/quacko/config.json` (seção 10 da spec).
 //!
 //! Leitura tolerante: cada campo é validado sozinho; um valor inválido cai no padrão
 //! sem descartar os outros. Arquivo ausente é criado com os padrões. JSON quebrado não
@@ -46,7 +46,7 @@ pub struct Config {
     pub dnd: bool,
     pub autostart: bool,
     pub max_cards: u8,
-    /// Personagem pixel art: px por pixel de desenho (miau-spec-personalizacao.md, seção 4).
+    /// Personagem pixel art: px por pixel de desenho (quacko-spec-personalizacao.md, seção 4).
     /// Fica no arquivo até a janela de Configurações existir.
     pub pixel_size: u8,
     /// Monitor de PRs do GitHub ligado (menu Conectar → GitHub).
@@ -56,7 +56,7 @@ pub struct Config {
     /// Já viu a tela de boas-vindas (ela só abre sozinha na primeira vez).
     pub onboarded: bool,
     /// Client ID do GitHub App para o login por código (público). Também por
-    /// MIAU_GITHUB_CLIENT_ID. Sem ele, o login por código fica desligado.
+    /// QUACKO_GITHUB_CLIENT_ID. Sem ele, o login por código fica desligado.
     pub github_client_id: Option<String>,
     /// Personagem escolhido (id do pacote).
     pub character: String,
@@ -232,7 +232,7 @@ impl Config {
 }
 
 pub fn default_path() -> Option<PathBuf> {
-    dirs::home_dir().map(|home| home.join(".config").join("miau").join("config.json"))
+    dirs::home_dir().map(|home| home.join(".config").join("quacko").join("config.json"))
 }
 
 /// Lê a config; se o arquivo não existe, cria com os padrões.

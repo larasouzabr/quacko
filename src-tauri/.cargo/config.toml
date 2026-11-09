@@ -1,4 +1,4 @@
-# Pasta de build com sufixo .noindex: o Spotlight não indexa, e o Miau.app gerado no
-# build não aparece como um segundo "Miau" na lista de apps do macOS.
+# Pasta de build com sufixo .noindex: o Spotlight não indexa, e o Quacko.app gerado no
+# build não aparece como um segundo "Quacko" na lista de apps do macOS.
 [build]
 target-dir = "target.noindex"

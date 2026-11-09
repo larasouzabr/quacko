@@ -22,7 +22,7 @@ cat >"$WORK/bin/notify" <<'NT'
 printf '%s\n' "$@" >"$FAKE_NOTIFY_LOG"
 NT
 chmod +x "$WORK/bin/gh" "$WORK/bin/notify"
-export PATH="$WORK/bin:$PATH" MIAU_NOTIFY="$WORK/bin/notify"
+export PATH="$WORK/bin:$PATH" QUACKO_NOTIFY="$WORK/bin/notify"
 export FAKE_GH_LOG="$WORK/gh.log" FAKE_NOTIFY_LOG="$WORK/notify.log"
 
 pass=0

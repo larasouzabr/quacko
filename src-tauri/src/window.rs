@@ -49,7 +49,7 @@ impl OverlayState {
 pub fn create_overlay(app: &AppHandle) -> tauri::Result<WebviewWindow> {
     let window =
         WebviewWindowBuilder::new(app, OVERLAY_LABEL, WebviewUrl::App("index.html".into()))
-            .title("Miau")
+            .title("Quacko")
             .inner_size(OVERLAY_WIDTH, OVERLAY_HEIGHT)
             .decorations(false)
             .transparent(true)
@@ -280,7 +280,7 @@ pub fn set_interactive(app: AppHandle, interactive: bool) {
 }
 
 /// Clique num cartão. Com `url` http(s) válida, abre no navegador; senão devolve o foco
-/// ao app que estava em uso (o clique pode ter ativado o Miau).
+/// ao app que estava em uso (o clique pode ter ativado o Quacko).
 #[tauri::command]
 pub fn card_action(app: AppHandle, url: Option<String>) {
     if let Some(url) = url.as_deref().and_then(crate::model::clean_url) {

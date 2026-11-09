@@ -1,7 +1,7 @@
 import type { Lang } from "../i18n";
 
 const PT = {
-  title: "Bem-vindo ao Miau",
+  title: "Bem-vindo ao Quacko",
   intro: "O patinho avisa quando o Claude, o Cursor ou a CI dos seus PRs terminam. Três passos e pronto:",
   ok: "OK",
   pending: "Pendente",
@@ -20,7 +20,7 @@ const PT = {
   enable: "Ativar",
   recheck: "Verificar de novo",
   signIn: "Entrar",
-  deviceCode: "Seu código é {code} (já copiado). Abri o GitHub no navegador: cole o código e autorize o Miau.",
+  deviceCode: "Seu código é {code} (já copiado). Abri o GitHub no navegador: cole o código e autorize o Quacko.",
   deviceWaiting: "Esperando você autorizar no GitHub…",
   deviceDenied: "Login cancelado no GitHub. Clique em Entrar para tentar de novo.",
   deviceExpired: "O código expirou. Clique em Entrar para pedir outro.",
@@ -38,7 +38,7 @@ const PT = {
 export type WelcomeTexts = typeof PT;
 
 const EN: WelcomeTexts = {
-  title: "Welcome to Miau",
+  title: "Welcome to Quacko",
   intro: "The duck lets you know when Claude, Cursor or your PRs' CI finish. Three steps and you're set:",
   ok: "OK",
   pending: "Pending",
@@ -57,7 +57,7 @@ const EN: WelcomeTexts = {
   enable: "Turn on",
   recheck: "Check again",
   signIn: "Sign in",
-  deviceCode: "Your code is {code} (already copied). GitHub is open in your browser: paste the code and authorize Miau.",
+  deviceCode: "Your code is {code} (already copied). GitHub is open in your browser: paste the code and authorize Quacko.",
   deviceWaiting: "Waiting for you to authorize on GitHub…",
   deviceDenied: "Sign-in was canceled on GitHub. Click Sign in to try again.",
   deviceExpired: "The code expired. Click Sign in to get a new one.",

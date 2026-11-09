@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Gera o ícone do app Miau a partir do Gato Pixel (sprite 1x do pacote embutido).
+"""Gera o ícone do app Quacko a partir do Pato Pixel (sprite 1x do pacote embutido).
 
 Saída: src-tauri/icons/app-icon.png (1024x1024). Depois rode `npx tauri icon
 src-tauri/icons/app-icon.png` para gerar os tamanhos de cada sistema.
 
-Uso (precisa do Pillow; ver seção 8 do miau-spec.md para o venv):
+Uso (precisa do Pillow; ver seção 8 do quacko-spec.md para o venv):
   python3 tools/make_icon.py
 """
 import os
@@ -13,15 +13,15 @@ import sys
 from PIL import Image, ImageDraw
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SPRITE = os.path.join(ROOT, "src/assets/characters/gato-pixel/assets/info.png")
+SPRITE = os.path.join(ROOT, "src/assets/characters/pato-pixel/assets/info.png")
 OUT = os.path.join(ROOT, "src-tauri/icons/app-icon.png")
 
 SIZE = 1024
 # Área útil de ícones do macOS: ~824 px centrados, com cantos arredondados.
 PLATE = 824
 RADIUS = 186
-BG_TOP = (255, 214, 226)     # rosa claro
-BG_BOTTOM = (247, 181, 205)  # rosa um pouco mais forte
+BG_TOP = (214, 236, 255)     # azul-água claro
+BG_BOTTOM = (168, 210, 246)  # azul-água um pouco mais forte
 FRAME = 28                    # um quadro do sprite (grade 28x28)
 SCALE = 24                    # inteiro: o pixel art não deforma (28 x 24 = 672 px)
 

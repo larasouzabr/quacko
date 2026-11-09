@@ -1,11 +1,11 @@
 [package]
-name = "miau"
+name = "quacko"
 version = "0.1.0"
 description = "Notificador desktop com gatinho"
 edition = "2021"
 
 [lib]
-name = "miau_lib"
+name = "quacko_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]

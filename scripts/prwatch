@@ -1,5 +1,5 @@
 #!/bin/bash
-# prwatch: espera a CI de um PR terminar e avisa (som, pausa de mídia e gato do Miau).
+# prwatch: espera a CI de um PR terminar e avisa (som, pausa de mídia e gato do Quacko).
 #
 # Uso: prwatch [NÚMERO | URL | BRANCH] [--repo DONO/REPO] [outras opções do gh pr checks]
 #
@@ -7,9 +7,9 @@
 # o PR. O código de saída é o do `gh pr checks` (0 = passou). Interrompido com Ctrl+C,
 # não avisa.
 #
-# Variável: MIAU_NOTIFY (caminho do notify.sh; padrão ~/.claude/hooks/notify.sh).
+# Variável: QUACKO_NOTIFY (caminho do notify.sh; padrão ~/.claude/hooks/notify.sh).
 
-NOTIFY="${MIAU_NOTIFY:-$HOME/.claude/hooks/notify.sh}"
+NOTIFY="${QUACKO_NOTIFY:-$HOME/.claude/hooks/notify.sh}"
 
 gh pr checks "$@" --watch --interval 15
 rc=$?

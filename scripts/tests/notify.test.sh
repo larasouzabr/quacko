@@ -1,9 +1,9 @@
 #!/bin/bash
-# Testes do notify.sh em modo seco (MIAU_DRY_RUN=1): não pausa mídia, não toca som,
+# Testes do notify.sh em modo seco (QUACKO_DRY_RUN=1): não pausa mídia, não toca som,
 # não envia nada. Confere o aviso gerado, o stdout e o código de saída.
 #
 # A suíte roda uma vez para cada leitor de JSON do script: jq (preferido), plutil e awk
-# (os caminhos sem jq). O leitor é forçado com MIAU_JSON porque no macOS 15+ o jq vem em
+# (os caminhos sem jq). O leitor é forçado com QUACKO_JSON porque no macOS 15+ o jq vem em
 # /usr/bin, junto com bash/awk/sed, e não dá para tirá-lo do PATH só para o teste.
 # Os testes usam o jq para conferir o JSON gerado (isso é do teste, não do script).
 # Uso: bash scripts/tests/notify.test.sh
@@ -12,7 +12,7 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 NOTIFY="$HERE/../notify.sh"
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
-export MIAU_DRY_RUN=1 MIAU_STATE_DIR="$WORK/state" MIAU_LOG="$WORK/log"
+export QUACKO_DRY_RUN=1 QUACKO_STATE_DIR="$WORK/state" QUACKO_LOG="$WORK/log"
 
 pass=0
 fail=0
@@ -155,7 +155,7 @@ expect_payload "pega o primeiro campo e tolera null" '.project=="x"'
 }
 
 for tool in jq plutil awk; do
-  export MIAU_JSON="$tool"
+  export QUACKO_JSON="$tool"
   before=$fail
   suite
   echo "  leitor $tool: $([ "$fail" = "$before" ] && echo ok || echo "$((fail - before)) falha(s)")"
@@ -179,7 +179,7 @@ if command -v node >/dev/null; then
     PAYLOAD=$(sed -n 's/^payload: //p' "$WORK/err")
   }
   export OUT_FILE="$WORK/out" ERR_FILE="$WORK/err"
-  unset MIAU_JSON
+  unset QUACKO_JSON
   rm -rf "$WORK/state"
   run_socket '{"session_id":"sock","cwd":"/Users/x/app","hook_event_name":"UserPromptSubmit","prompt":"pedido pelo socket"}' --from claude
   expect_no_payload "socket: UserPromptSubmit só guarda o pedido"

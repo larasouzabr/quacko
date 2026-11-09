@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Miau",
+  "productName": "Quacko",
   "version": "0.1.0",
-  "identifier": "dev.miau.notifier",
+  "identifier": "dev.quacko.notifier",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",
@@ -31,8 +31,8 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "shortDescription": "Gatinho que avisa quando o Claude, o Cursor ou a CI terminam",
-    "copyright": "Gato Pixel: CC0-1.0",
+    "shortDescription": "Patinho que avisa quando o Claude, o Cursor ou a CI terminam",
+    "copyright": "Pato Pixel e Gato Pixel: CC0-1.0",
     "macOS": {
       "signingIdentity": "-",
       "minimumSystemVersion": "11.0"

@@ -8,6 +8,7 @@ mod integrations;
 #[cfg(target_os = "macos")]
 mod macos;
 mod media;
+mod migrate;
 mod model;
 mod onboarding;
 mod server;
@@ -33,7 +34,7 @@ pub fn run() {
 
     let builder = tauri::Builder::default();
 
-    // Não ativar o app ao iniciar: o Miau não pode roubar o foco do editor.
+    // Não ativar o app ao iniciar: o Quacko não pode roubar o foco do editor.
     #[cfg(target_os = "macos")]
     let builder = builder.activate_ignoring_other_apps(false);
 
@@ -64,6 +65,10 @@ pub fn run() {
             #[cfg(target_os = "macos")]
             app.set_activation_policy(tauri::ActivationPolicy::Accessory);
 
+            // Nome antigo (Miau) → Quacko: pastas antes de ler a config.
+            if let Some(home) = dirs::home_dir() {
+                migrate::migrate_dirs(&home);
+            }
             app.manage(Settings::load());
             app.manage(IdGen::default());
             // Pasta dos acessórios do usuário (para importar outros no futuro).
@@ -72,6 +77,7 @@ pub fn run() {
             app.manage(onboarding::PendingDevice::default());
             let github_on = app.state::<Settings>().snapshot().github;
             github::spawn(app.handle(), github_on);
+            migrate::migrate_login_item(app.handle());
             settings::reconcile_autostart(app.handle());
 
             window::create_overlay(app.handle())?;
@@ -93,13 +99,13 @@ pub fn run() {
             }
         })
         .run(tauri::generate_context!())
-        .expect("erro ao iniciar o Miau");
+        .expect("erro ao iniciar o Quacko");
 }
 
 fn start_server(app: &tauri::AppHandle) -> tray::ServerStatus {
     let settings = app.state::<Settings>();
     let port = server::resolve_port(
-        std::env::var("MIAU_PORT").ok().as_deref(),
+        std::env::var("QUACKO_PORT").ok().as_deref(),
         settings.snapshot().port,
     );
 

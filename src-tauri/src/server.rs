@@ -51,7 +51,7 @@ impl ServerState {
     }
 }
 
-/// Porta: `MIAU_PORT` se for um número válido (1–65535); senão a da config.
+/// Porta: `QUACKO_PORT` se for um número válido (1–65535); senão a da config.
 pub fn resolve_port(env_value: Option<&str>, configured: u16) -> u16 {
     env_value
         .and_then(|v| v.trim().parse::<u16>().ok())
@@ -104,7 +104,7 @@ async fn guard(State(state): State<ServerState>, req: Request, next: Next) -> Re
 }
 
 async fn health() -> Json<serde_json::Value> {
-    Json(json!({ "app": "miau", "version": env!("CARGO_PKG_VERSION") }))
+    Json(json!({ "app": "quacko", "version": env!("CARGO_PKG_VERSION") }))
 }
 
 async fn notify(State(state): State<ServerState>, headers: HeaderMap, body: Body) -> Response {
@@ -282,7 +282,7 @@ mod tests {
             .unwrap();
         let (status, body) = send(&h.state, req).await;
         assert_eq!(status, StatusCode::OK);
-        assert_eq!(body["app"], "miau");
+        assert_eq!(body["app"], "quacko");
         assert_eq!(body["version"], env!("CARGO_PKG_VERSION"));
     }
 
