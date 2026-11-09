@@ -300,6 +300,18 @@ pub fn notification(id: u64, change: &Change, lang: Lang) -> Notification {
     }
 }
 
+// ---------- login por código (passo 6) ----------
+
+/// Há token do login por código guardado no Keychain? (Passo 6; por enquanto, não.)
+pub fn stored_token_present() -> bool {
+    false
+}
+
+/// Client ID do GitHub App, se configurado. (Passo 6; por enquanto, nenhum.)
+pub fn device_flow_client_id(_config: &crate::config::Config) -> Option<String> {
+    None
+}
+
 // ---------- token via gh ----------
 
 /// Procura o `gh`: lugares comuns, o shell de login da pessoa e, por último, o Nix.

@@ -53,6 +53,8 @@ pub struct Config {
     pub github: bool,
     /// Já avisou que falta o nowplaying-cli (para não repetir a cada abertura).
     pub media_warned: bool,
+    /// Já viu a tela de boas-vindas (ela só abre sozinha na primeira vez).
+    pub onboarded: bool,
 }
 
 /// Tamanhos de pixel oferecidos: sempre inteiros, para o pixel art não deformar.
@@ -70,6 +72,7 @@ impl Default for Config {
             pixel_size: DEFAULT_PIXEL_SIZE,
             github: false,
             media_warned: false,
+            onboarded: false,
         }
     }
 }
@@ -127,6 +130,12 @@ impl Config {
             {
                 Some(n) => config.pixel_size = n as u8,
                 None => invalid.push("pixel_size"),
+            }
+        }
+        if let Some(v) = map.get("onboarded") {
+            match v.as_bool() {
+                Some(b) => config.onboarded = b,
+                None => invalid.push("onboarded"),
             }
         }
         if let Some(v) = map.get("media_warned") {
@@ -203,7 +212,7 @@ mod tests {
         let c = Config::default();
         assert_eq!(
             serde_json::to_value(&c).unwrap(),
-            serde_json::json!({"port": 4747, "lang": "auto", "dnd": false, "autostart": false, "max_cards": 3, "pixel_size": 3, "github": false, "media_warned": false})
+            serde_json::json!({"port": 4747, "lang": "auto", "dnd": false, "autostart": false, "max_cards": 3, "pixel_size": 3, "github": false, "media_warned": false, "onboarded": false})
         );
     }
 
@@ -223,6 +232,7 @@ mod tests {
                 pixel_size: 5,
                 github: false,
                 media_warned: false,
+                onboarded: false,
             }
         );
     }

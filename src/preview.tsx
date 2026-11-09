@@ -6,6 +6,8 @@ import Card from "./components/Card";
 import type { Lang } from "./i18n";
 import type { Notification } from "./types";
 import "./styles.css";
+import type { OnboardingStatus, WelcomeApi } from "./welcome/api";
+import Welcome from "./welcome/Welcome";
 
 const lang = (new URLSearchParams(location.search).get("lang") as Lang) ?? "pt-BR";
 
@@ -18,7 +20,34 @@ const samples: Notification[] = [
   { ...base, id: 5, source: "agent", status: "attention", title: "Claude Code", message: "Claude needs your permission to use Bash", project: "miau-watch" },
 ];
 
-createRoot(document.getElementById("root")!).render(
+const params = new URLSearchParams(location.search);
+
+// ?view=welcome: boas-vindas com um estado de exemplo (padrão: Claude ok, gh deslogado).
+const mockStatus: OnboardingStatus = {
+  claude_connected: params.get("claude") !== "no",
+  cursor_present: true,
+  cursor_connected: false,
+  github: (params.get("github") as OnboardingStatus["github"] | null) ?? "gh_logged_out",
+  github_device_flow: false,
+  nowplaying: false,
+};
+const mockApi: WelcomeApi = {
+  settings: async () => ({ lang, max_cards: 3, pixel_size: 3 }),
+  status: async () => mockStatus,
+  connectClaude: async () => "ok",
+  enableGithub: async () => {},
+  test: async () => {},
+  finish: async () => {},
+};
+
+const root = createRoot(document.getElementById("root")!);
+if (params.get("view") === "welcome") {
+  root.render(
+    <StrictMode>
+      <Welcome api={mockApi} />
+    </StrictMode>,
+  );
+} else root.render(
   <StrictMode>
     <div className="preview-grid">
       {samples.map((n) => (

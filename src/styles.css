@@ -308,3 +308,140 @@ body,
 .preview-grid .card {
   animation: none;
 }
+
+/* ---------- janela de boas-vindas ---------- */
+body.welcome-page {
+  --page-bg: #fbf7f3;
+  background: var(--page-bg);
+  color: var(--bubble-fg);
+  overflow: auto;
+  -webkit-user-select: text;
+  user-select: text;
+}
+@media (prefers-color-scheme: dark) {
+  body.welcome-page {
+    --page-bg: #1d181b;
+  }
+}
+.welcome {
+  box-sizing: border-box;
+  min-height: 100%;
+  padding: 24px 28px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.welcome-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.welcome-head h1 {
+  margin: 0 0 4px;
+  font-size: 20px;
+}
+.welcome-head p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--bubble-muted);
+}
+.steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.step {
+  border: 2px solid var(--bubble-border);
+  border-radius: 12px;
+  background: var(--bubble-bg);
+  padding: 12px 14px;
+  box-shadow: 3px 3px 0 var(--bubble-shadow);
+}
+.step-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.step-head h2 {
+  flex: 1;
+  margin: 0;
+  font-size: 14px;
+}
+.step-n {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--bubble-bg);
+  background: var(--info-fg);
+}
+.step.is-ok .step-n {
+  background: var(--ok-fg);
+}
+.chip {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.chip.ok {
+  color: var(--ok-fg);
+  background: var(--ok-bg);
+}
+.chip.pending {
+  color: var(--attention-fg);
+  background: var(--attention-bg);
+}
+.step-body {
+  margin: 8px 0 0 32px;
+  font-size: 13px;
+  line-height: 18px;
+}
+.step-body p {
+  margin: 0 0 8px;
+}
+.step-body .warn {
+  color: var(--attention-fg);
+}
+.hint {
+  font-size: 12px;
+  line-height: 17px;
+  color: var(--bubble-muted);
+}
+.hint.media {
+  margin: 0;
+}
+.welcome button {
+  font: inherit;
+  font-size: 13px;
+  padding: 5px 14px;
+  border-radius: 8px;
+  border: 2px solid var(--bubble-border);
+  background: var(--bubble-bg);
+  color: var(--bubble-fg);
+  cursor: pointer;
+}
+.welcome button.primary,
+.step-body button:not(.secondary) {
+  background: var(--bubble-fg);
+  color: var(--bubble-bg);
+}
+.welcome button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.welcome-foot {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}

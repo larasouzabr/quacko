@@ -1,7 +1,12 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Permissões da janela overlay",
-  "windows": ["overlay"],
-  "permissions": ["core:default"]
+  "description": "Permissões do overlay e da janela de boas-vindas",
+  "windows": [
+    "overlay",
+    "welcome"
+  ],
+  "permissions": [
+    "core:default"
+  ]
 }

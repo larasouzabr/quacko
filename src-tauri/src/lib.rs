@@ -6,6 +6,7 @@ mod integrations;
 mod macos;
 mod media;
 mod model;
+mod onboarding;
 mod server;
 mod settings;
 mod tray;
@@ -43,6 +44,11 @@ pub fn run() {
             window::set_overlay_size,
             window::card_action,
             settings::get_settings,
+            onboarding::onboarding_status,
+            onboarding::onboarding_connect_claude,
+            onboarding::onboarding_enable_github,
+            onboarding::onboarding_test,
+            onboarding::onboarding_finish,
         ])
         .setup(|app| {
             // Só barra de menus, sem ícone no Dock.
@@ -60,7 +66,18 @@ pub fn run() {
             tray::create(app.handle(), status)?;
             tray::sync_scripts_on_start(app.handle());
             tray::warn_media_on_start(app.handle());
+            if !app.state::<Settings>().snapshot().onboarded {
+                onboarding::open(app.handle());
+            }
             Ok(())
+        })
+        .on_window_event(|window, event| {
+            // Fechar as boas-vindas (pelo botão ou pelo X) conta como visto.
+            if window.label() == onboarding::WELCOME_LABEL
+                && matches!(event, tauri::WindowEvent::Destroyed)
+            {
+                onboarding::mark_done(window.app_handle());
+            }
         })
         .run(tauri::generate_context!())
         .expect("erro ao iniciar o Miau");

@@ -29,6 +29,7 @@ mod ids {
     pub const CONNECT_CURSOR: &str = "connect-cursor";
     pub const PRWATCH: &str = "prwatch";
     pub const CONNECT_GITHUB: &str = "connect-github";
+    pub const WELCOME: &str = "welcome";
 }
 
 #[derive(Debug, Clone)]
@@ -80,6 +81,7 @@ fn build_menu(app: &AppHandle) -> tauri::Result<(Menu<Wry>, String)> {
         MenuItem::with_id(app, ids::STATUS, status.menu_text(t), false, None::<&str>)?;
     let dnd = CheckMenuItem::with_id(app, ids::DND, t.dnd, true, config.dnd, None::<&str>)?;
     let test = MenuItem::with_id(app, ids::TEST, t.test, true, None::<&str>)?;
+    let welcome = MenuItem::with_id(app, ids::WELCOME, t.welcome, true, None::<&str>)?;
     let autostart = CheckMenuItem::with_id(
         app,
         ids::AUTOSTART,
@@ -126,6 +128,7 @@ fn build_menu(app: &AppHandle) -> tauri::Result<(Menu<Wry>, String)> {
             &connect,
             &autostart,
             &language,
+            &welcome,
             &PredefinedMenuItem::separator(app)?,
             &quit,
         ],
@@ -135,7 +138,7 @@ fn build_menu(app: &AppHandle) -> tauri::Result<(Menu<Wry>, String)> {
 
 /// Remonta menu e tooltip. Feito no próximo ciclo da thread principal, depois que o
 /// menu que gerou o clique já fechou.
-fn refresh(app: &AppHandle) {
+pub fn refresh(app: &AppHandle) {
     let handle = app.clone();
     let _ = app.run_on_main_thread(move || {
         let Some(tray) = handle.tray_by_id(TRAY_ID) else {
@@ -159,6 +162,7 @@ fn on_menu_event(app: &AppHandle, event: MenuEvent) {
             return;
         }
         ids::TEST => crate::window::run_test_sequence(app),
+        ids::WELCOME => crate::onboarding::open(app),
         ids::DND => {
             let c = settings.update(|c| c.dnd = !c.dnd);
             tracing::info!(dnd = c.dnd, "não perturbe alterado");
@@ -354,7 +358,7 @@ fn tilde(paths: &Paths, file: &std::path::Path) -> String {
 }
 
 /// Modo manual: o trecho vai para a área de transferência.
-fn copy_to_clipboard(text: &str) {
+pub fn copy_to_clipboard(text: &str) {
     #[cfg(target_os = "macos")]
     {
         use std::io::Write;

@@ -74,6 +74,7 @@ pub struct TrayTexts {
     pub github_off: &'static str,
     pub scripts_updated: &'static str,
     pub media_missing: &'static str,
+    pub welcome: &'static str,
 }
 
 pub fn tray_texts(lang: Lang) -> &'static TrayTexts {
@@ -113,6 +114,7 @@ static PT_BR: TrayTexts = TrayTexts {
     github_expired: "O login do GitHub expirou. Rode “gh auth login” e conecte de novo.",
     github_off: "GitHub desconectado.",
     scripts_updated: "Atualizei os scripts do Miau ({files}). O backup ficou em ~/.claude/hooks.",
+    welcome: "Boas-vindas…",
     media_missing: "O Spotify já pausa sozinho. Para pausar YouTube e outros players, instale o nowplaying-cli (brew install nowplaying-cli).",
 };
 
@@ -146,6 +148,7 @@ static EN: TrayTexts = TrayTexts {
     github_expired: "Your GitHub login expired. Run “gh auth login” and connect again.",
     github_off: "GitHub disconnected.",
     scripts_updated: "Updated the Miau scripts ({files}). Backup kept in ~/.claude/hooks.",
+    welcome: "Welcome…",
     media_missing: "Spotify already pauses. To pause YouTube and other players, install nowplaying-cli (brew install nowplaying-cli).",
 };
 
