@@ -403,11 +403,19 @@ pub fn github_report(app: &AppHandle, report: crate::github::Report) {
             tell(app, Status::Ok, msg);
         }
         Report::NoGh | Report::LoginExpired => {
-            let msg = if matches!(report, Report::NoGh) {
+            let device_flow =
+                crate::github::device_flow_client_id(&app.state::<Settings>().snapshot()).is_some();
+            let msg = if device_flow {
+                t.github_sign_in
+            } else if matches!(report, Report::NoGh) {
                 t.github_no_gh
             } else {
                 t.github_expired
             };
+            if device_flow {
+                // A tela de boas-vindas tem o botão "Entrar com código".
+                crate::onboarding::open(app);
+            }
             app.state::<Settings>().update(|c| c.github = false);
             app.state::<crate::github::Monitor>().set_enabled(false);
             tell(app, Status::Attention, msg.to_string());

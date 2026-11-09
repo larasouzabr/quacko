@@ -20,6 +20,15 @@ export interface WelcomeApi {
   enableGithub(): Promise<void>;
   test(): Promise<void>;
   finish(): Promise<void>;
+  /** Login por código: pede o código (já copiado) e abre a página do GitHub. */
+  deviceStart(): Promise<DevicePrompt>;
+  /** Espera a autorização: "ok", "denied" ou "expired". */
+  deviceWait(): Promise<string>;
+}
+
+export interface DevicePrompt {
+  user_code: string;
+  verification_uri: string;
 }
 
 export const tauriWelcomeApi: WelcomeApi = {
@@ -29,4 +38,6 @@ export const tauriWelcomeApi: WelcomeApi = {
   enableGithub: () => invoke("onboarding_enable_github"),
   test: () => invoke("onboarding_test"),
   finish: () => invoke("onboarding_finish"),
+  deviceStart: () => invoke<DevicePrompt>("github_device_start"),
+  deviceWait: () => invoke<string>("github_device_wait"),
 };

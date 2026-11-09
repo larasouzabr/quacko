@@ -17,6 +17,7 @@ export default function Welcome({ api }: WelcomeProps) {
   const [claudeManual, setClaudeManual] = useState(false);
   const [tested, setTested] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [device, setDevice] = useState<string | null>(null);
   const t = welcomeTexts(lang);
 
   const refresh = useCallback(() => {
@@ -45,7 +46,17 @@ export default function Welcome({ api }: WelcomeProps) {
 
   const claudeOk = status?.claude_connected ?? false;
   const githubOk = status?.github === "on";
-  const github = githubStep(status, t, refresh, act(api.enableGithub), busy);
+  const signIn = act(async () => {
+    try {
+      const prompt = await api.deviceStart();
+      setDevice(`${t.deviceCode.replace("{code}", prompt.user_code)} ${t.deviceWaiting}`);
+      const result = await api.deviceWait();
+      setDevice(result === "ok" ? null : result === "denied" ? t.deviceDenied : t.deviceExpired);
+    } catch (e) {
+      setDevice(`${t.deviceError} ${String(e)}`);
+    }
+  });
+  const github = githubStep(status, t, refresh, act(api.enableGithub), signIn, busy);
 
   return (
     <main className="welcome">
@@ -75,6 +86,7 @@ export default function Welcome({ api }: WelcomeProps) {
 
         <Step n={2} title={t.githubTitle} ok={githubOk} t={t}>
           <p className={githubOk ? "" : "warn"}>{github.text}</p>
+          {device && <p className="device">{device}</p>}
           {github.button}
         </Step>
 
@@ -110,6 +122,7 @@ function githubStep(
   t: WelcomeTexts,
   recheck: () => void,
   enable: () => void,
+  signIn: () => void,
   busy: boolean,
 ): { text: string; button: ReactNode } {
   const again = (
@@ -132,7 +145,18 @@ function githubStep(
     case "gh_logged_out":
       return { text: t.githubLoggedOut, button: again };
     default:
-      return { text: status?.github_device_flow ? t.githubDevice : t.githubNoLogin, button: again };
+      if (status?.github_device_flow) {
+        // Login por código do GitHub App (sem gh).
+        return {
+          text: t.githubDevice,
+          button: (
+            <button onClick={signIn} disabled={busy}>
+              {t.signIn}
+            </button>
+          ),
+        };
+      }
+      return { text: t.githubNoLogin, button: again };
   }
 }
 

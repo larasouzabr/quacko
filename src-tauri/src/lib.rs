@@ -1,5 +1,6 @@
 mod config;
 mod github;
+mod github_auth;
 mod i18n;
 mod integrations;
 #[cfg(target_os = "macos")]
@@ -49,6 +50,8 @@ pub fn run() {
             onboarding::onboarding_enable_github,
             onboarding::onboarding_test,
             onboarding::onboarding_finish,
+            onboarding::github_device_start,
+            onboarding::github_device_wait,
         ])
         .setup(|app| {
             // Só barra de menus, sem ícone no Dock.
@@ -57,6 +60,7 @@ pub fn run() {
 
             app.manage(Settings::load());
             app.manage(IdGen::default());
+            app.manage(onboarding::PendingDevice::default());
             let github_on = app.state::<Settings>().snapshot().github;
             github::spawn(app.handle(), github_on);
             settings::reconcile_autostart(app.handle());

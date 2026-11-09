@@ -445,3 +445,10 @@ body.welcome-page {
   justify-content: space-between;
   gap: 12px;
 }
+
+.step-body .device {
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--info-bg);
+  color: var(--info-fg);
+}

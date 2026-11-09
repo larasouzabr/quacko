@@ -55,6 +55,9 @@ pub struct Config {
     pub media_warned: bool,
     /// Já viu a tela de boas-vindas (ela só abre sozinha na primeira vez).
     pub onboarded: bool,
+    /// Client ID do GitHub App para o login por código (público). Também por
+    /// MIAU_GITHUB_CLIENT_ID. Sem ele, o login por código fica desligado.
+    pub github_client_id: Option<String>,
 }
 
 /// Tamanhos de pixel oferecidos: sempre inteiros, para o pixel art não deformar.
@@ -73,6 +76,7 @@ impl Default for Config {
             github: false,
             media_warned: false,
             onboarded: false,
+            github_client_id: None,
         }
     }
 }
@@ -130,6 +134,15 @@ impl Config {
             {
                 Some(n) => config.pixel_size = n as u8,
                 None => invalid.push("pixel_size"),
+            }
+        }
+        if let Some(v) = map.get("github_client_id") {
+            match v {
+                Value::Null => {}
+                Value::String(s) if crate::github_auth::valid_client_id(s.trim()) => {
+                    config.github_client_id = Some(s.trim().to_string())
+                }
+                _ => invalid.push("github_client_id"),
             }
         }
         if let Some(v) = map.get("onboarded") {
@@ -212,7 +225,7 @@ mod tests {
         let c = Config::default();
         assert_eq!(
             serde_json::to_value(&c).unwrap(),
-            serde_json::json!({"port": 4747, "lang": "auto", "dnd": false, "autostart": false, "max_cards": 3, "pixel_size": 3, "github": false, "media_warned": false, "onboarded": false})
+            serde_json::json!({"port": 4747, "lang": "auto", "dnd": false, "autostart": false, "max_cards": 3, "pixel_size": 3, "github": false, "media_warned": false, "onboarded": false, "github_client_id": null})
         );
     }
 
@@ -233,6 +246,7 @@ mod tests {
                 github: false,
                 media_warned: false,
                 onboarded: false,
+                github_client_id: None,
             }
         );
     }
@@ -249,6 +263,21 @@ mod tests {
                 "{bad}"
             );
         }
+    }
+
+    #[test]
+    fn client_id_do_github_app() {
+        assert_eq!(
+            parse(r#"{"github_client_id":"Iv23liAbc"}"#)
+                .github_client_id
+                .as_deref(),
+            Some("Iv23liAbc")
+        );
+        assert_eq!(parse(r#"{"github_client_id":null}"#).github_client_id, None);
+        let (c, invalid) =
+            Config::from_json_lenient(r#"{"github_client_id":"tem espaço","dnd":true}"#);
+        assert_eq!((c.github_client_id, c.dnd), (None, true));
+        assert_eq!(invalid, vec!["github_client_id"]);
     }
 
     #[test]

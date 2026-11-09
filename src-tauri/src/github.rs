@@ -302,14 +302,20 @@ pub fn notification(id: u64, change: &Change, lang: Lang) -> Notification {
 
 // ---------- login por código (passo 6) ----------
 
-/// Há token do login por código guardado no Keychain? (Passo 6; por enquanto, não.)
+/// Há token do login por código guardado no Keychain?
 pub fn stored_token_present() -> bool {
-    false
+    use crate::github_auth::TokenStore;
+    crate::github_auth::KeychainStore.load().is_some()
 }
 
-/// Client ID do GitHub App, se configurado. (Passo 6; por enquanto, nenhum.)
-pub fn device_flow_client_id(_config: &crate::config::Config) -> Option<String> {
-    None
+/// Client ID do GitHub App: `MIAU_GITHUB_CLIENT_ID` vence a config. Sem ele, o login
+/// por código fica desligado (só o `gh`).
+pub fn device_flow_client_id(config: &crate::config::Config) -> Option<String> {
+    std::env::var("MIAU_GITHUB_CLIENT_ID")
+        .ok()
+        .map(|v| v.trim().to_string())
+        .filter(|v| crate::github_auth::valid_client_id(v))
+        .or_else(|| config.github_client_id.clone())
 }
 
 // ---------- token via gh ----------
@@ -496,9 +502,24 @@ async fn run(app: AppHandle, mut enabled: watch::Receiver<bool>) {
         let mut token: Option<String> = None;
         let mut announced = false;
         let mut retried_auth = false;
+        // O token atual veio do login por código (Keychain)? Se for recusado, apaga.
+        let mut from_store = false;
         let mut backoff = BACKOFF_START;
 
         while *enabled.borrow() {
+            if token.is_none() {
+                // 1º login por código (renovado se estiver vencendo); 2º gh.
+                let config = app.state::<crate::settings::Settings>().snapshot();
+                let auth = device_flow_client_id(&config).and_then(|id| {
+                    crate::github_auth::Client::new(crate::github_auth::GITHUB_WEB, &id).ok()
+                });
+                token = crate::github_auth::usable_token(
+                    auth.as_ref(),
+                    &crate::github_auth::KeychainStore,
+                )
+                .await;
+                from_store = token.is_some();
+            }
             if token.is_none() {
                 token = tauri::async_runtime::spawn_blocking(|| {
                     let home = dirs::home_dir()?;
@@ -544,6 +565,15 @@ async fn run(app: AppHandle, mut enabled: watch::Receiver<bool>) {
                 Err(ApiError::Unauthorized) if !retried_auth => {
                     // Token trocado pelo gh (novo login)? Lê de novo e tenta uma vez.
                     retried_auth = true;
+                    token = None;
+                    Duration::from_secs(1)
+                }
+                Err(ApiError::Unauthorized) if from_store => {
+                    // Login por código recusado de novo (revogado): apaga e tenta o gh.
+                    use crate::github_auth::TokenStore;
+                    crate::github_auth::KeychainStore.clear();
+                    from_store = false;
+                    retried_auth = false;
                     token = None;
                     Duration::from_secs(1)
                 }

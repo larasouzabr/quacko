@@ -27,7 +27,7 @@ Pelo menu do gatinho, em **Conectar**:
 
 - **Claude Code**: instala o script de aviso e liga os hooks em `~/.claude/settings.json`. A marca (✓) mostra que está conectado; clique de novo para desconectar. Vale a partir da próxima sessão do Claude Code.
 - **Cursor**: o mesmo em `~/.cursor/hooks.json` (só aparece ativo se o Cursor estiver instalado).
-- **GitHub (PRs)**: o app acompanha **todos os seus PRs abertos** sozinho e avisa quando a CI de cada um passa ou falha (check runs e status de commit, incluindo Jenkins). Consulta a cada 30 s enquanto algum PR está rodando e a cada 3 min quando tudo terminou; um PR que já tinha terminado quando o app abriu não avisa, e um push novo reinicia o acompanhamento. Por enquanto usa o login do [GitHub CLI](https://cli.github.com) (`gh auth login`), que o app encontra sozinho; o login por código, sem precisar do `gh`, vem com o GitHub App do Miau.
+- **GitHub (PRs)**: o app acompanha **todos os seus PRs abertos** sozinho e avisa quando a CI de cada um passa ou falha (check runs e status de commit, incluindo Jenkins). Consulta a cada 30 s enquanto algum PR está rodando e a cada 3 min quando tudo terminou; um PR que já tinha terminado quando o app abriu não avisa, e um push novo reinicia o acompanhamento. Login, nesta ordem: **login com código** do GitHub App do Miau (botão Entrar na tela de boas-vindas; o token fica no Keychain e é renovado sozinho a cada 8 h por até 6 meses) ou o [GitHub CLI](https://cli.github.com) já logado (`gh auth login`), que o app encontra sozinho. O login com código só aparece quando o app conhece o **Client ID** do GitHub App: `"github_client_id": "Iv23li…"` em `~/.config/miau/config.json` ou a variável `MIAU_GITHUB_CLIENT_ID`. Com GitHub App, o Miau só enxerga os repositórios onde o app foi instalado (em organizações, um dono aprova uma vez).
 - **Instalar comando prwatch (PRs)**: cria o comando `prwatch` em `~/.local/bin`.
 
 O app faz backup do arquivo antes de mexer (`settings.json.miau-backup-<data>`), mantém os outros hooks e configurações como estavam e não duplica nada se você conectar duas vezes. Se o arquivo for gerenciado pelo Nix, somente leitura ou tiver comentários, ele não mexe: copia o trecho para a área de transferência e avisa onde colar. O resultado aparece no próprio cartão do gato.
@@ -67,6 +67,9 @@ Arquivo `~/.config/miau/config.json`, criado no primeiro uso. O menu altera a ma
 | `port` | porta local (a variável `MIAU_PORT` vence) | `4747` |
 | `max_cards` | cartões na tela ao mesmo tempo, 1 a 3 | `3` |
 | `pixel_size` | tamanho do pixel do gato: 3, 4, 5, 6 ou 8 | `3` |
+| `github` | monitor de PRs ligado (menu Conectar → GitHub) | `false` |
+| `github_client_id` | Client ID do GitHub App para o login com código | vazio |
+| `onboarded` | a tela de boas-vindas já foi vista | `false` |
 
 Valores inválidos voltam ao padrão sem travar o app. Mudanças feitas direto no arquivo valem ao reabrir o app.
 

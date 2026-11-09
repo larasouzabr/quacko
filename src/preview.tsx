@@ -28,7 +28,7 @@ const mockStatus: OnboardingStatus = {
   cursor_present: true,
   cursor_connected: false,
   github: (params.get("github") as OnboardingStatus["github"] | null) ?? "gh_logged_out",
-  github_device_flow: false,
+  github_device_flow: params.get("device") === "1",
   nowplaying: false,
 };
 const mockApi: WelcomeApi = {
@@ -38,6 +38,8 @@ const mockApi: WelcomeApi = {
   enableGithub: async () => {},
   test: async () => {},
   finish: async () => {},
+  deviceStart: async () => ({ user_code: "WDJB-MJHT", verification_uri: "https://github.com/login/device" }),
+  deviceWait: () => new Promise<string>(() => {}),
 };
 
 const root = createRoot(document.getElementById("root")!);
