@@ -1,0 +1,37 @@
+[package]
+name = "miau"
+version = "0.1.0"
+description = "Notificador desktop com gatinho"
+edition = "2021"
+
+[lib]
+name = "miau_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["macos-private-api", "tray-icon"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["preserve_order"] }
+axum = { version = "0.8", default-features = false, features = ["http1", "tokio", "json"] }
+tokio = { version = "1", features = ["net", "rt", "sync", "macros", "time"] }
+http-body-util = "0.1"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", default-features = false, features = ["fmt", "ansi"] }
+tauri-plugin-opener = "2"
+tauri-plugin-autostart = "2"
+dirs = "7"
+sys-locale = "0.3"
+reqwest = { version = "0.13", default-features = false, features = ["json", "rustls"] }
+
+[dev-dependencies]
+futures-util = { version = "0.3", default-features = false, features = ["std"] }
+tempfile = "3"
+tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
+tower = { version = "0.5", features = ["util"] }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2 = "0.6"
+objc2-app-kit = { version = "0.3", default-features = false, features = ["std", "NSRunningApplication", "NSWorkspace", "NSWindow", "NSResponder", "NSGraphics", "libc"] }

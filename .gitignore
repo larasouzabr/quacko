@@ -1,0 +1,10 @@
+# Dependências e builds
+node_modules/
+dist/
+target/
+target.noindex/
+src-tauri/gen/
+
+# Sistema e logs
+.DS_Store
+*.log

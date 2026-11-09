@@ -1,0 +1,91 @@
+{
+  "schema": 2,
+  "id": "gato-pixel",
+  "name": "Gato Pixel",
+  "author": "Miau",
+  "license": "CC0-1.0",
+  "preview": "preview.png",
+  "pixel_art": true,
+  "grid": {
+    "width": 28,
+    "height": 28
+  },
+  "bubble": "pixel",
+  "anchor": "bottom-left",
+  "fallback": "info",
+  "states": {
+    "ok": {
+      "type": "sprite",
+      "file": "assets/ok.png",
+      "frames": 2,
+      "columns": 2,
+      "fps": 3,
+      "loop": true
+    },
+    "fail": {
+      "type": "sprite",
+      "file": "assets/fail.png",
+      "frames": 2,
+      "columns": 2,
+      "fps": 3,
+      "loop": true
+    },
+    "attention": {
+      "type": "sprite",
+      "file": "assets/attention.png",
+      "frames": 2,
+      "columns": 2,
+      "fps": 3,
+      "loop": true
+    },
+    "info": {
+      "type": "sprite",
+      "file": "assets/info.png",
+      "frames": 2,
+      "columns": 2,
+      "fps": 3,
+      "loop": true
+    }
+  },
+  "palette": {
+    "fur": "#fffaf5",
+    "fur_shade": "#eadfd6",
+    "patch": "#e8964a",
+    "patch_light": "#f4bd85",
+    "patch_dark": "#c4702f",
+    "blush": "#f7a8b0",
+    "outline": "#2b2024"
+  },
+  "phrases": {
+    "pt-BR": {
+      "ok": [
+        "Seu pedido finalizou!",
+        "Prontinho!"
+      ],
+      "fail": [
+        "Algo deu errado por aqui"
+      ],
+      "attention": [
+        "Preciso de você!"
+      ],
+      "info": [
+        "Aviso do Miau"
+      ]
+    },
+    "en": {
+      "ok": [
+        "Your request finished!",
+        "All done!"
+      ],
+      "fail": [
+        "Something went wrong"
+      ],
+      "attention": [
+        "I need you!"
+      ],
+      "info": [
+        "Miau notice"
+      ]
+    }
+  }
+}

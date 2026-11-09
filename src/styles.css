@@ -1,0 +1,291 @@
+:root {
+  --bubble-bg: #fffdf9;
+  --bubble-fg: #2b2024;
+  --bubble-muted: #6b5a60;
+  --bubble-border: #2b2024;
+  --bubble-shadow: rgba(43, 32, 36, 0.28);
+
+  --ok-fg: #1e6b2a;
+  --ok-bg: #e2f3e4;
+  --fail-fg: #b3261e;
+  --fail-bg: #fbe3e1;
+  --attention-fg: #7a4f00;
+  --attention-bg: #ffefc2;
+  --info-fg: #33449c;
+  --info-bg: #e5e9fa;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bubble-bg: #2a2327;
+    --bubble-fg: #f6eee8;
+    --bubble-muted: #c4b5ba;
+    --bubble-border: #f6eee8;
+    --bubble-shadow: rgba(0, 0, 0, 0.45);
+
+    --ok-fg: #a6e3ae;
+    --ok-bg: #1f3a23;
+    --fail-fg: #ffb4ab;
+    --fail-bg: #4a1f1c;
+    --attention-fg: #ffd77a;
+    --attention-bg: #45360f;
+    --info-fg: #b9c4ff;
+    --info-bg: #262d52;
+  }
+}
+
+/* O overlay precisa de fundo totalmente transparente. */
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: transparent;
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+  -webkit-user-select: none;
+  user-select: none;
+  cursor: default;
+}
+
+/* Pilha ancorada no canto superior direito; o mais novo em cima. */
+.stack {
+  position: fixed;
+  inset: 0;
+  box-sizing: border-box;
+  padding: 8px 8px 6px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.card {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  width: 100%;
+  animation: card-in 380ms cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+}
+
+.card.has-link {
+  cursor: pointer;
+}
+
+.card.is-leaving {
+  animation: card-out 250ms ease-in forwards;
+  pointer-events: none;
+}
+
+/* ---------- personagem (sprite sheet) ---------- */
+.cat-sprite {
+  flex: none;
+  background-repeat: no-repeat;
+  background-position: 0 0;
+}
+
+/* Sem isso o pixel art fica borrado ao ampliar. O tamanho do pixel é sempre um número
+   inteiro de pixels físicos (ver src/character/pixel.ts). */
+.cat-sprite.is-pixel-art {
+  image-rendering: pixelated;
+}
+
+.cat-sprite.is-animated {
+  animation: cat-frames var(--cat-duration) steps(var(--cat-frames)) var(--cat-iterations);
+}
+
+@keyframes cat-frames {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: var(--cat-strip) 0;
+  }
+}
+
+/* ---------- balão ---------- */
+.bubble {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  margin-bottom: 10px;
+  padding: 9px 26px 9px 12px;
+  background: var(--bubble-bg);
+  color: var(--bubble-fg);
+  border: 2px solid var(--bubble-border);
+  border-radius: 12px;
+  box-shadow: 3px 3px 0 var(--bubble-shadow);
+}
+
+/* Rabinho do balão apontando para o gato. */
+.bubble::before,
+.bubble::after {
+  content: "";
+  position: absolute;
+  left: -10px;
+  bottom: 14px;
+  border-style: solid;
+  border-width: 7px 10px 7px 0;
+  border-color: transparent var(--bubble-border) transparent transparent;
+}
+.bubble::after {
+  left: -7px;
+  border-color: transparent var(--bubble-bg) transparent transparent;
+}
+
+/* Alturas de linha em px inteiros: a altura do cartão fica inteira e o gato,
+   alinhado pela base, não cai entre dois pixels físicos. */
+.bubble-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  height: 16px;
+}
+
+.badge {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 6px 1px 3px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.badge-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  font-size: 9px;
+  color: var(--bubble-bg);
+}
+
+.status-ok .badge { color: var(--ok-fg); background: var(--ok-bg); }
+.status-ok .badge-icon { background: var(--ok-fg); }
+.status-fail .badge { color: var(--fail-fg); background: var(--fail-bg); }
+.status-fail .badge-icon { background: var(--fail-fg); }
+.status-attention .badge { color: var(--attention-fg); background: var(--attention-bg); }
+.status-attention .badge-icon { background: var(--attention-fg); }
+.status-info .badge { color: var(--info-fg); background: var(--info-bg); }
+.status-info .badge-icon { background: var(--info-fg); }
+
+.title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 700;
+}
+
+.message {
+  margin: 4px 0 0;
+  font-size: 13px;
+  line-height: 17px;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Barra de progresso (checks de um PR). Altura e margem inteiras, como o resto. */
+.progress {
+  display: flex;
+  height: 6px;
+  margin-top: 5px;
+  border-radius: 3px;
+  overflow: hidden;
+  background: var(--info-bg);
+}
+.progress-ok {
+  background: var(--ok-fg);
+  transition: width 300ms ease-out;
+}
+.progress-failed {
+  background: var(--fail-fg);
+  transition: width 300ms ease-out;
+}
+
+.project {
+  margin: 3px 0 0;
+  font-size: 11px;
+  line-height: 15px;
+  color: var(--bubble-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.close {
+  position: absolute;
+  top: 5px;
+  right: 6px;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--bubble-muted);
+  font-size: 16px;
+  line-height: 18px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 120ms;
+}
+
+/* O hover vem do Rust (classe), não de :hover. */
+.card.is-hovered .close {
+  opacity: 1;
+}
+
+.close:active {
+  background: var(--bubble-shadow);
+}
+
+@keyframes card-in {
+  0% {
+    opacity: 0;
+    transform: translateY(-18px);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(4px);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes card-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes card-out {
+  to {
+    opacity: 0;
+  }
+}
+
+/* Movimento reduzido: sem bounce, só fade; o gato fica no primeiro quadro. */
+@media (prefers-reduced-motion: reduce) {
+  .card {
+    animation: card-fade-in 200ms ease-out both;
+  }
+  .cat-sprite.is-animated {
+    animation: none;
+    background-position: 0 0;
+  }
+}

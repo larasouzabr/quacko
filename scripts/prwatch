@@ -1,0 +1,54 @@
+#!/bin/bash
+# prwatch: espera a CI de um PR terminar e avisa (som, pausa de mídia e gato do Miau).
+#
+# Uso: prwatch [NÚMERO | URL | BRANCH] [--repo DONO/REPO] [outras opções do gh pr checks]
+#
+# O cartão mostra qual PR terminou: "PR #N", o título do PR e o repositório; clicar abre
+# o PR. O código de saída é o do `gh pr checks` (0 = passou). Interrompido com Ctrl+C,
+# não avisa.
+#
+# Variável: MIAU_NOTIFY (caminho do notify.sh; padrão ~/.claude/hooks/notify.sh).
+
+NOTIFY="${MIAU_NOTIFY:-$HOME/.claude/hooks/notify.sh}"
+
+gh pr checks "$@" --watch --interval 15
+rc=$?
+[ "$rc" -ge 128 ] && exit "$rc" # interrompido (Ctrl+C, sinal)
+
+# `gh pr view` só entende o PR e o --repo; as outras opções do `checks` ficam de fora.
+view_args=()
+while [ $# -gt 0 ]; do
+  case "$1" in
+    -R | --repo)
+      view_args+=("$1")
+      [ $# -gt 1 ] && view_args+=("$2") && shift
+      ;;
+    --repo=*) view_args+=("$1") ;;
+    -*) ;;
+    *) view_args+=("$1") ;;
+  esac
+  shift
+done
+
+if [ "$rc" -eq 0 ]; then
+  args=(--source ci --status ok --sound /System/Library/Sounds/Glass.aiff)
+else
+  args=(--source ci --status fail --sound /System/Library/Sounds/Basso.aiff)
+fi
+
+info=$(gh pr view ${view_args[@]+"${view_args[@]}"} --json number,title,url 2>/dev/null)
+if [ -n "$info" ] && command -v jq >/dev/null; then
+  number=$(printf '%s' "$info" | jq -r '.number // empty')
+  title=$(printf '%s' "$info" | jq -r '.title // empty')
+  url=$(printf '%s' "$info" | jq -r '.url // empty')
+  # https://github.com/DONO/REPO/pull/N -> DONO/REPO
+  repo=$(printf '%s' "$url" | sed -nE 's#^https?://[^/]+/([^/]+/[^/]+)/pull/[0-9]+.*#\1#p')
+  [ -n "$number" ] && args+=(--title "PR #$number")
+  [ -n "$title" ] && args+=(--message "$title")
+  # dono/repo#N: igual ao monitor de PRs do app, para os dois não duplicarem o cartão.
+  [ -n "$repo" ] && args+=(--project "$repo${number:+#$number}")
+  [ -n "$url" ] && args+=(--url "$url")
+fi
+
+[ -x "$NOTIFY" ] && "$NOTIFY" "${args[@]}" </dev/null
+exit "$rc"
