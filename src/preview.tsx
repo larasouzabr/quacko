@@ -23,6 +23,8 @@ const samples: Notification[] = [
 ];
 
 const params = new URLSearchParams(location.search);
+const pickedIds = params.get("ids")?.split(",").map(Number);
+const shownSamples = pickedIds ? pickedIds.flatMap((id) => samples.filter((n) => n.id === id)) : samples;
 
 const mockStatus: OnboardingStatus = {
   claude_connected: params.get("claude") !== "no",
@@ -69,7 +71,7 @@ if (params.get("view") === "customize") {
 } else root.render(
   <StrictMode>
     <div className="preview-grid">
-      {samples.map((n) => (
+      {shownSamples.map((n) => (
         <div className="preview-slot" key={n.id}>
           <Card
             notification={n}

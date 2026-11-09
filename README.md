@@ -1,17 +1,42 @@
-# Quacko
+<p align="center">
+  <img src="src-tauri/icons/128x128@2x.png" width="128" height="128" alt="Ícone do Quacko: o Pato Pixel num quadrado azul-claro">
+</p>
 
-Um patinho em pixel art que aparece no canto da tela quando algo termina: o Claude Code ou o Cursor acabou de responder (ou precisa de você), ou a CI de um PR passou ou falhou. Clicar no cartão abre o PR. Fica só na barra de menus, não rouba o foco de onde você está digitando e funciona offline: tudo acontece no seu computador.
+<h1 align="center">Quacko</h1>
 
-| Estado | Quando |
-|---|---|
-| ✓ Concluído | o agente terminou, a CI passou |
-| ✕ Falhou | a CI falhou, o agente parou com erro |
-| ! Atenção | o agente precisa de permissão ou de uma resposta |
-| i Aviso | qualquer outro aviso |
+<p align="center">
+  <b>Um patinho em pixel art que te avisa quando o trabalho termina.</b><br>
+  Claude Code, Cursor e a CI dos seus PRs, num cartãozinho no canto da tela.
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/macOS-11%2B-6b7c93?logo=apple&logoColor=white" alt="macOS 11+">
+  <img src="https://img.shields.io/badge/Apple%20Silicon%20%2B%20Intel-universal-6b7c93" alt="Apple Silicon e Intel">
+  <img src="https://img.shields.io/badge/Tauri-2-24c8db?logo=tauri&logoColor=white" alt="Tauri 2">
+  <img src="https://img.shields.io/badge/funciona-offline-f5c542" alt="Funciona offline">
+</p>
+
+<p align="center">
+  <img src="docs/images/cartoes.png" width="396" alt="Quatro cartões do Quacko, cada um com o pato ao lado: o Claude terminou um pedido, o Claude precisa de permissão, a CI de um PR falhou com 7 de 12 checks e a CI de outro PR passou">
+</p>
+
+O pato aparece no canto da tela quando algo termina: o Claude Code ou o Cursor acabou de responder (ou precisa de você), ou a CI de um PR passou ou falhou. Clicar no cartão abre o PR. Ele fica só na barra de menus, não rouba o foco de onde você está digitando e funciona offline: tudo acontece no seu computador.
+
+| | Estado | Quando |
+|:-:|---|---|
+| <img src="docs/images/pato-ok.gif" width="56" height="56" alt="Pato feliz, com um coração"> | ✓ **Concluído** | o agente terminou, a CI passou |
+| <img src="docs/images/pato-fail.gif" width="56" height="56" alt="Pato chorando"> | ✕ **Falhou** | a CI falhou, o agente parou com erro |
+| <img src="docs/images/pato-attention.gif" width="56" height="56" alt="Pato com um ponto de exclamação"> | ! **Atenção** | o agente precisa de permissão ou de uma resposta |
+| <img src="docs/images/pato-info.gif" width="56" height="56" alt="Pato tranquilo"> | i **Aviso** | qualquer outro aviso |
 
 **Personagens:** o **Pato Pixel** é o padrão em instalações novas; o **Gato Pixel** continua disponível (campo `character` na config: `pato-pixel` ou `gato-pixel`). Sem escolha explícita, vale o pato.
 
-**Acessórios (opcional):** no menu do pato → **Personalizar…** dá para trocar o personagem e ligar o **laço**, com cores prontas (rosa, azul, roxo, vermelho) ou qualquer outra; a sombra e o brilho saem da cor escolhida, com contraste garantido, e a pré-visualização mostra os 4 estados na hora. Um acessório é só dado: um `accessory.json` e um sprite por estado com a mesma grade do personagem. A pasta `~/.config/quacko/accessories/` fica pronta para importar outros no futuro; a importação confere tamanhos, extensões, PNG de verdade, links e caminhos com `..` (zip slip).
+**Acessórios (opcional):** no menu do pato → **Personalizar…** dá para trocar o personagem e ligar o **laço**, com cores prontas (rosa, azul, roxo, vermelho) ou qualquer outra; a sombra e o brilho saem da cor escolhida, com contraste garantido, e a pré-visualização mostra os 4 estados na hora.
+
+<p align="center">
+  <img src="docs/images/personalizar.png" width="420" alt="Tela Personalizar: escolha entre Gato Pixel e Pato Pixel, laço ligado na cor rosa e a pré-visualização do pato de laço nos 4 estados">
+</p>
+ Um acessório é só dado: um `accessory.json` e um sprite por estado com a mesma grade do personagem. A pasta `~/.config/quacko/accessories/` fica pronta para importar outros no futuro; a importação confere tamanhos, extensões, PNG de verdade, links e caminhos com `..` (zip slip).
 
 ## Instalar (macOS 11+, Apple Silicon e Intel)
 
@@ -21,26 +46,26 @@ Baixe o `Quacko_<versão>_universal.dmg` da página de Releases do repositório 
 2. O build não é assinado pela Apple, então o macOS bloqueia a primeira abertura quando o `.dmg` veio de um download. Libere de um destes jeitos:
    - abra o Quacko, vá em **Ajustes do Sistema → Privacidade e Segurança**, encontre o aviso sobre o Quacko no fim da página e clique em **Abrir Mesmo Assim**; ou
    - no Terminal: `xattr -dr com.apple.quarantine /Applications/Quacko.app`
-3. Depois disso ele abre como qualquer app. O gatinho aparece na barra de menus (não no Dock).
+3. Depois disso ele abre como qualquer app. O patinho aparece na barra de menus (não no Dock).
 
-No menu do gatinho: **Testar notificação** mostra os 4 estados. Marque **Iniciar com o login** para ele abrir sozinho.
+No menu do pato: **Testar notificação** mostra os 4 estados. Marque **Iniciar com o login** para ele abrir sozinho.
 
 ## Conectar ao Claude Code, ao Cursor e aos PRs
 
-Pelo menu do gatinho, em **Conectar**:
+Pelo menu do pato, em **Conectar**:
 
 - **Claude Code**: instala o script de aviso e liga os hooks em `~/.claude/settings.json`. A marca (✓) mostra que está conectado; clique de novo para desconectar. Vale a partir da próxima sessão do Claude Code.
 - **Cursor**: o mesmo em `~/.cursor/hooks.json` (só aparece ativo se o Cursor estiver instalado).
 - **GitHub (PRs)**: o app acompanha **todos os seus PRs abertos** sozinho e avisa quando a CI de cada um passa ou falha (check runs e status de commit, incluindo Jenkins). Consulta a cada 30 s enquanto algum PR está rodando e a cada 3 min quando tudo terminou; um PR que já tinha terminado quando o app abriu não avisa, e um push novo reinicia o acompanhamento. Login, nesta ordem: **login com código** do GitHub App do Quacko (botão Entrar na tela de boas-vindas; o token fica no Keychain e é renovado sozinho a cada 8 h por até 6 meses) ou o [GitHub CLI](https://cli.github.com) já logado (`gh auth login`), que o app encontra sozinho. O login com código só aparece quando o app conhece o **Client ID** do GitHub App: `"github_client_id": "Iv23li…"` em `~/.config/quacko/config.json` ou a variável `QUACKO_GITHUB_CLIENT_ID`. Com GitHub App, o Quacko só enxerga os repositórios onde o app foi instalado (em organizações, um dono aprova uma vez).
 - **Instalar comando prwatch (PRs)**: cria o comando `prwatch` em `~/.local/bin`.
 
-O app faz backup do arquivo antes de mexer (`settings.json.quacko-backup-<data>`), mantém os outros hooks e configurações como estavam e não duplica nada se você conectar duas vezes. Se o arquivo for gerenciado pelo Nix, somente leitura ou tiver comentários, ele não mexe: copia o trecho para a área de transferência e avisa onde colar. O resultado aparece no próprio cartão do gato.
+O app faz backup do arquivo antes de mexer (`settings.json.quacko-backup-<data>`), mantém os outros hooks e configurações como estavam e não duplica nada se você conectar duas vezes. Se o arquivo for gerenciado pelo Nix, somente leitura ou tiver comentários, ele não mexe: copia o trecho para a área de transferência e avisa onde colar. O resultado aparece no próprio cartão do pato.
 
 Quem tem o código também pode instalar pelo terminal, com `scripts/install.sh` (copia os scripts e mostra os trechos de configuração, sem editar nada).
 
 O que cada integração faz:
 
-- **Claude Code** (`~/.claude/settings.json`): hooks `UserPromptSubmit`, `Stop` e `Notification` chamando `notify.sh --from claude`. O cartão mostra o pedido que o Claude terminou de responder e o projeto. Hooks antigos no formato `notify.sh <som>` continuam funcionando e já mostram o gato.
+- **Claude Code** (`~/.claude/settings.json`): hooks `UserPromptSubmit`, `Stop` e `Notification` chamando `notify.sh --from claude`. O cartão mostra o pedido que o Claude terminou de responder e o projeto. Hooks antigos no formato `notify.sh <som>` continuam funcionando e já mostram o pato.
 - **Cursor** (`~/.cursor/hooks.json`): `beforeSubmitPrompt` e `stop` chamando `notify.sh --from cursor`.
 - **PRs**: `prwatch 1234` (ou a URL do PR, ou nada para o PR da branch atual) espera a CI terminar e avisa com o número, o título e o repositório do PR. Precisa do [GitHub CLI](https://cli.github.com) logado.
 
@@ -48,7 +73,7 @@ Além do aviso, o `notify.sh` pausa a mídia e toca um som:
 
 - **Spotify**: pausado por AppleScript, sem instalar nada.
 - **YouTube e outros players** (a "mídia em reprodução" do sistema): pelo [`nowplaying-cli`](https://github.com/kirtan-shah/nowplaying-cli), opcional (`brew install nowplaying-cli`). Se ele faltar e algum agente estiver conectado, o app avisa uma vez.
-- Por que não é o próprio app que pausa: desde o macOS 15.4 a Apple bloqueou o framework de "mídia em reprodução" (MediaRemote) para apps que não são dela. Testado no macOS 26.5.2: o mesmo código lê a mídia quando roda num programa da Apple e recebe `nil` num app como o Quacko. O `nowplaying-cli` contorna isso carregando uma biblioteca dentro de um programa da Apple; o Quacko não copia esse contorno. Ele sempre sai com código 0 e em poucos milissegundos: com o app fechado, só não aparece o gato.
+- Por que não é o próprio app que pausa: desde o macOS 15.4 a Apple bloqueou o framework de "mídia em reprodução" (MediaRemote) para apps que não são dela. Testado no macOS 26.5.2: o mesmo código lê a mídia quando roda num programa da Apple e recebe `nil` num app como o Quacko. O `nowplaying-cli` contorna isso carregando uma biblioteca dentro de um programa da Apple; o Quacko não copia esse contorno. Ele sempre sai com código 0 e em poucos milissegundos: com o app fechado, só não aparece o pato.
 
 Qualquer outro script pode avisar o Quacko:
 
@@ -70,7 +95,7 @@ Arquivo `~/.config/quacko/config.json`, criado no primeiro uso. O menu altera a 
 | `autostart` | Iniciar com o login | `false` |
 | `port` | porta local (a variável `QUACKO_PORT` vence) | `4747` |
 | `max_cards` | cartões na tela ao mesmo tempo, 1 a 3 | `3` |
-| `pixel_size` | tamanho do pixel do gato: 3, 4, 5, 6 ou 8 | `3` |
+| `pixel_size` | tamanho do pixel do personagem: 3, 4, 5, 6 ou 8 | `3` |
 | `github` | monitor de PRs ligado (menu Conectar → GitHub) | `false` |
 | `github_client_id` | Client ID do GitHub App para o login com código | vazio |
 | `onboarded` | a tela de boas-vindas já foi vista | `false` |
@@ -99,11 +124,13 @@ npm run build:mac        # .app e .dmg para este Mac, em src-tauri/target.noinde
 npm run build:mac:universal  # .dmg universal (Apple Silicon + Intel), em src-tauri/target.noindex/universal-apple-darwin/release/bundle/dmg/
 ```
 
+As imagens deste README ficam em `docs/images/`. Para refazer as fotos com o `npx vite` rodando: `swift tools/snapshot.swift "http://localhost:1420/preview.html?ids=4,5,2,3" docs/images/cartoes.png 396 492 2.5` (cartões) e `swift tools/snapshot.swift "http://localhost:1420/preview.html?view=customize" docs/images/personalizar.png 600 566 2.5` (Personalizar).
+
 O build universal usa o toolchain da Apple num ambiente limpo (`scripts/build-universal.sh`): dentro de um shell do Nix o compilador C padrão só gera arm64 e a parte Intel falharia. No GitHub Actions isso não acontece.
 
 O `build:mac` roda o `tauri build` com dois ajustes para o macOS: põe as ferramentas do Xcode no **fim** do `PATH` (sem isso o `.dmg` pode falhar com `tool 'SetFile' not found` quando o terminal usa um SDK do Nix; no começo do `PATH` elas trocam o compilador e o link falha) e, no fim, tira a cópia de build do registro de apps do sistema (`scripts/after-build.sh`), para não aparecer um segundo "Quacko" na lista de apps. A pasta de build se chama `target.noindex` pelo mesmo motivo: o Spotlight não indexa pastas com esse sufixo.
 
-Estrutura: `src/` é o overlay (React + TypeScript), `src-tauri/` é o app (Rust: servidor local, janela, menu, config), `scripts/` são as integrações e `tools/` tem os geradores do gato e do ícone (como regenerar: seção 8 do [quacko-spec.md](quacko-spec.md)). As especificações ficam em [quacko-spec.md](quacko-spec.md) (v1), [quacko-spec-v2-produto.md](quacko-spec-v2-produto.md) e [quacko-spec-personalizacao.md](quacko-spec-personalizacao.md).
+Estrutura: `src/` é o overlay (React + TypeScript), `src-tauri/` é o app (Rust: servidor local, janela, menu, config), `scripts/` são as integrações e `tools/` tem os geradores dos personagens e do ícone (como regenerar: seção 8 do [quacko-spec.md](quacko-spec.md)). As especificações ficam em [quacko-spec.md](quacko-spec.md) (v1), [quacko-spec-v2-produto.md](quacko-spec-v2-produto.md) e [quacko-spec-personalizacao.md](quacko-spec-personalizacao.md).
 
 ## Releases
 
@@ -144,4 +171,4 @@ Nada sai do seu computador. O app só escuta em `127.0.0.1`, não tem telemetria
 
 ## Licença
 
-A definir. O personagem Gato Pixel é original e está sob CC0-1.0.
+A definir. Os personagens Pato Pixel e Gato Pixel são originais e estão sob CC0-1.0.
