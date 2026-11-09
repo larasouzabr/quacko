@@ -24,6 +24,7 @@ pub struct FrontendSettings {
     pub lang: Lang,
     pub max_cards: u8,
     pub pixel_size: u8,
+    pub character: String,
 }
 
 impl Settings {
@@ -70,6 +71,7 @@ impl Settings {
             lang: i18n::resolve_from_system(config.lang),
             max_cards: config.max_cards,
             pixel_size: config.pixel_size,
+            character: config.character,
         }
     }
 

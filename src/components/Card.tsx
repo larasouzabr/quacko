@@ -1,6 +1,7 @@
 import type { Lang } from "../i18n";
 import { strings } from "../i18n";
 import type { Notification } from "../types";
+import type { Character } from "../character/types";
 import Cat from "./Cat";
 
 const STATUS_ICON = { ok: "✓", fail: "✕", attention: "!", info: "i" } as const;
@@ -11,12 +12,23 @@ interface CardProps {
   leaving: boolean;
   hovered: boolean;
   pixelSize: number;
+  /** Personagem escolhido; sem ele, o padrão. */
+  character?: Character;
   onActivate: () => void;
   onDismiss: () => void;
 }
 
 /** Todo texto vem de fora: é sempre renderizado como texto (React escapa), nunca como HTML. */
-export default function Card({ notification: n, lang, leaving, hovered, pixelSize, onActivate, onDismiss }: CardProps) {
+export default function Card({
+  notification: n,
+  lang,
+  leaving,
+  hovered,
+  pixelSize,
+  character,
+  onActivate,
+  onDismiss,
+}: CardProps) {
   const t = strings(lang);
   const classes = ["card", `status-${n.status}`];
   if (leaving) classes.push("is-leaving");
@@ -26,7 +38,7 @@ export default function Card({ notification: n, lang, leaving, hovered, pixelSiz
 
   return (
     <div className={classes.join(" ")} data-card-id={n.id} onClick={leaving ? undefined : onActivate}>
-      <Cat mood={n.status} pixelSize={pixelSize} />
+      <Cat mood={n.status} pixelSize={pixelSize} character={character} />
       <div className="bubble">
         <div className="bubble-head">
           <span className="badge">

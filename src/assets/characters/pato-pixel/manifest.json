@@ -1,0 +1,82 @@
+{
+  "schema": 2,
+  "id": "pato-pixel",
+  "name": "Pato Pixel",
+  "author": "Miau",
+  "license": "CC0-1.0",
+  "preview": "preview.png",
+  "anchor": "bottom-left",
+  "fallback": "info",
+  "states": {
+    "ok": {
+      "type": "sprite",
+      "file": "assets/ok.png",
+      "frames": 2,
+      "columns": 2,
+      "fps": 3,
+      "loop": true
+    },
+    "fail": {
+      "type": "sprite",
+      "file": "assets/fail.png",
+      "frames": 2,
+      "columns": 2,
+      "fps": 3,
+      "loop": true
+    },
+    "attention": {
+      "type": "sprite",
+      "file": "assets/attention.png",
+      "frames": 2,
+      "columns": 2,
+      "fps": 3,
+      "loop": true
+    },
+    "info": {
+      "type": "sprite",
+      "file": "assets/info.png",
+      "frames": 2,
+      "columns": 2,
+      "fps": 3,
+      "loop": true
+    }
+  },
+  "phrases": {
+    "pt-BR": {
+      "ok": [
+        "Seu pedido finalizou!",
+        "Quá! Terminou!"
+      ],
+      "fail": [
+        "Eita, algo deu errado"
+      ],
+      "attention": [
+        "Preciso de você!"
+      ],
+      "info": [
+        "Aviso do pato"
+      ]
+    },
+    "en": {
+      "ok": [
+        "Your request finished!",
+        "Quack! All done!"
+      ],
+      "fail": [
+        "Oops, something went wrong"
+      ],
+      "attention": [
+        "I need you!"
+      ],
+      "info": [
+        "Duck notice"
+      ]
+    }
+  },
+  "pixel_art": true,
+  "grid": {
+    "width": 28,
+    "height": 28
+  },
+  "bubble": "pixel"
+}

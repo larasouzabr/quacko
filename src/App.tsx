@@ -1,7 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { useEffect, useReducer, useRef, useState } from "react";
-import { builtinCharacter } from "./character/builtin";
+import { DEFAULT_CHARACTER_ID, getCharacter } from "./character/builtin";
 import { DEFAULT_PIXEL_SIZE } from "./character/pixel";
 import Card from "./components/Card";
 import { characterBox } from "./components/Cat";
@@ -11,7 +11,12 @@ import { initialQueue, isEmpty, queueReducer } from "./state/queue";
 import type { Notification, Settings } from "./types";
 
 // Valores usados até o Rust responder (ou se o app rodar fora do Tauri).
-const DEFAULT_SETTINGS: Settings = { lang: "pt-BR", max_cards: 3, pixel_size: DEFAULT_PIXEL_SIZE };
+const DEFAULT_SETTINGS: Settings = {
+  lang: "pt-BR",
+  max_cards: 3,
+  pixel_size: DEFAULT_PIXEL_SIZE,
+  character: DEFAULT_CHARACTER_ID,
+};
 const TICK_MS = 100;
 
 // Medidas da pilha (px CSS), iguais às de styles.css, para calcular o tamanho da janela.
@@ -60,7 +65,8 @@ export default function App() {
 
   // A janela acompanha o tamanho do personagem (tamanho do pixel) e o limite de cartões.
   const dpr = useDevicePixelRatio();
-  const cat = characterBox(builtinCharacter, settings.pixel_size, 1, dpr);
+  const character = getCharacter(settings.character);
+  const cat = characterBox(character, settings.pixel_size, 1, dpr);
   const size = overlaySize(cat, settings.max_cards);
   useEffect(() => {
     quiet(invoke("set_overlay_size", { width: size.width, height: size.height }));
@@ -124,6 +130,7 @@ export default function App() {
           leaving={card.leavingAt !== null}
           hovered={hoveredId === card.n.id}
           pixelSize={settings.pixel_size}
+          character={character}
           onActivate={() => {
             // Cartão sticky (CI que terminou) só fecha no ×: o clique só abre o link.
             if (!card.n.sticky) dispatch({ type: "dismiss", id: card.n.id, now: Date.now() });

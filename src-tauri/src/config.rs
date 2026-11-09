@@ -58,6 +58,21 @@ pub struct Config {
     /// Client ID do GitHub App para o login por código (público). Também por
     /// MIAU_GITHUB_CLIENT_ID. Sem ele, o login por código fica desligado.
     pub github_client_id: Option<String>,
+    /// Personagem escolhido (id do pacote).
+    pub character: String,
+}
+
+/// Personagem de instalações novas.
+pub const DEFAULT_CHARACTER: &str = "pato-pixel";
+/// Quem já usava o app antes de existir a escolha continua com o gato que via.
+pub const LEGACY_CHARACTER: &str = "gato-pixel";
+
+fn valid_character_id(id: &str) -> bool {
+    (1..=40).contains(&id.len())
+        && id
+            .chars()
+            .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-')
+        && !id.starts_with('-')
 }
 
 /// Tamanhos de pixel oferecidos: sempre inteiros, para o pixel art não deformar.
@@ -77,6 +92,7 @@ impl Default for Config {
             media_warned: false,
             onboarded: false,
             github_client_id: None,
+            character: DEFAULT_CHARACTER.to_string(),
         }
     }
 }
@@ -136,6 +152,18 @@ impl Config {
                 None => invalid.push("pixel_size"),
             }
         }
+        if let Some(v) = map.get("character") {
+            match v
+                .as_str()
+                .map(str::trim)
+                .filter(|id| valid_character_id(id))
+            {
+                // Id desconhecido do app (ex.: pacote que ainda não existe) fica: a escolha
+                // é da pessoa; a tela cai no padrão enquanto ele não existir.
+                Some(id) => config.character = id.to_string(),
+                None => invalid.push("character"),
+            }
+        }
         if let Some(v) = map.get("github_client_id") {
             match v {
                 Value::Null => {}
@@ -175,7 +203,17 @@ pub fn default_path() -> Option<PathBuf> {
 pub fn load_or_create(path: &Path) -> Config {
     match fs::read_to_string(path) {
         Ok(text) => {
-            let (config, invalid) = Config::from_json_lenient(&text);
+            let (mut config, invalid) = Config::from_json_lenient(&text);
+            // Config de antes da escolha de personagem: mantém o gato que a pessoa via.
+            // Só com JSON válido sem o campo; arquivo quebrado não é regravado na leitura.
+            if let Ok(Value::Object(map)) = serde_json::from_str::<Value>(&text) {
+                if !map.contains_key("character") {
+                    config.character = LEGACY_CHARACTER.to_string();
+                    if let Err(e) = save(path, &config) {
+                        tracing::warn!(%e, "não foi possível gravar o personagem na config");
+                    }
+                }
+            }
             if !invalid.is_empty() {
                 tracing::warn!(?invalid, path = %path.display(), "config com valores inválidos; usando o padrão nesses campos");
             }
@@ -225,7 +263,7 @@ mod tests {
         let c = Config::default();
         assert_eq!(
             serde_json::to_value(&c).unwrap(),
-            serde_json::json!({"port": 4747, "lang": "auto", "dnd": false, "autostart": false, "max_cards": 3, "pixel_size": 3, "github": false, "media_warned": false, "onboarded": false, "github_client_id": null})
+            serde_json::json!({"port": 4747, "lang": "auto", "dnd": false, "autostart": false, "max_cards": 3, "pixel_size": 3, "github": false, "media_warned": false, "onboarded": false, "github_client_id": null, "character": "pato-pixel"})
         );
     }
 
@@ -247,6 +285,7 @@ mod tests {
                 media_warned: false,
                 onboarded: false,
                 github_client_id: None,
+                character: DEFAULT_CHARACTER.to_string(),
             }
         );
     }
@@ -278,6 +317,33 @@ mod tests {
             Config::from_json_lenient(r#"{"github_client_id":"tem espaço","dnd":true}"#);
         assert_eq!((c.github_client_id, c.dnd), (None, true));
         assert_eq!(invalid, vec!["github_client_id"]);
+    }
+
+    #[test]
+    fn personagem_novo_e_legado() {
+        // Instalação nova: arquivo criado com o pato.
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("config.json");
+        assert_eq!(load_or_create(&path).character, DEFAULT_CHARACTER);
+        // Config antiga (sem o campo): mantém o gato, e grava a escolha.
+        fs::write(&path, r#"{"port":4747,"dnd":true}"#).unwrap();
+        let c = load_or_create(&path);
+        assert_eq!((c.character.as_str(), c.dnd), (LEGACY_CHARACTER, true));
+        assert!(fs::read_to_string(&path)
+            .unwrap()
+            .contains(LEGACY_CHARACTER));
+        // Quem escolheu outro mantém a escolha (mesmo um que o app ainda não tem).
+        fs::write(&path, r#"{"character":"capivara-pixel"}"#).unwrap();
+        assert_eq!(load_or_create(&path).character, "capivara-pixel");
+    }
+
+    #[test]
+    fn personagem_com_id_invalido_cai_no_padrao() {
+        for bad in ["\"\"", "\"../x\"", "\"Pato\"", "1", "\"-x\""] {
+            let (c, invalid) = Config::from_json_lenient(&format!(r#"{{"character":{bad}}}"#));
+            assert_eq!(c.character, DEFAULT_CHARACTER, "{bad}");
+            assert_eq!(invalid, vec!["character"], "{bad}");
+        }
     }
 
     #[test]

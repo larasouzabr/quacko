@@ -150,7 +150,7 @@ Cartão:
 
 ## 8. Arte do gato (v1)
 
-Não usar personagens ou imagens de terceiros. O gato padrão é o **"Gato Pixel"**, um personagem original em pixel art (licença CC0-1.0), embutido no app em `src/assets/characters/gato-pixel/` no formato de pacote `.miaupack` da spec v2 (seção 11.1): `manifest.json`, `preview.png` e `assets/{ok,fail,attention,info}.png`.
+Não usar personagens ou imagens de terceiros. **Atualização:** o personagem padrão passou a ser o **"Pato Pixel"** (`src/assets/characters/pato-pixel`, mesmo formato; gerador em `tools/make_pixel_duck.py`, convertido para 1x sem perda por `tools/pack_to_1x.py`); o gato abaixo continua disponível como opção. O gato é o **"Gato Pixel"**, um personagem original em pixel art (licença CC0-1.0), embutido no app em `src/assets/characters/gato-pixel/` no formato de pacote `.miaupack` da spec v2 (seção 11.1): `manifest.json`, `preview.png` e `assets/{ok,fail,attention,info}.png`.
 
 - Manifest `schema: 2` com `pixel_art: true`, `grid` 28x28, `bubble: "pixel"` e `palette` (papéis recoloríveis), conforme `miau-spec-personalizacao.md`.
 - Cada estado é um **sprite sheet em 1x**: 2 quadros lado a lado (56x28; cada quadro 28x28, um pixel da imagem por pixel do desenho), a 3 quadros por segundo. Grade, quadros, colunas e fps vêm do `manifest.json`, não do código.

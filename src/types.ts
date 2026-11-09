@@ -8,6 +8,8 @@ export interface Settings {
   max_cards: number;
   /** px por pixel de desenho do personagem pixel art (3, 4, 5, 6 ou 8). */
   pixel_size: number;
+  /** Id do personagem escolhido (padrão: pato-pixel). */
+  character: string;
 }
 
 /** Espelho de `model::Notification` no Rust (evento "notify"). */

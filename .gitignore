@@ -8,3 +8,6 @@ src-tauri/gen/
 # Sistema e logs
 .DS_Store
 *.log
+
+# Arquivos recebidos para importar (brutos, fora do repositório)
+assets-incoming/

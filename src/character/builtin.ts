@@ -1,18 +1,42 @@
-// Personagem padrão embutido: "Gato Pixel" (src/assets/characters/gato-pixel).
-// Para regenerar os sprites, veja a seção 8 do miau-spec.md.
-import manifest from "../assets/characters/gato-pixel/manifest.json";
+// Personagens embutidos: cada pasta em src/assets/characters/<id> (manifest + assets).
+// Padrão: "Pato Pixel". O "Gato Pixel" continua disponível como opção.
+// Para regenerar os sprites, veja a seção 8 do miau-spec.md e tools/.
 import { buildCharacter } from "./load";
-import type { CharacterManifest } from "./types";
+import type { Character, CharacterManifest } from "./types";
 
-const PACK_DIR = "../assets/characters/gato-pixel/";
+export const DEFAULT_CHARACTER_ID = "pato-pixel";
 
-const files = import.meta.glob("../assets/characters/gato-pixel/assets/*.png", {
+const manifests = import.meta.glob("../assets/characters/*/manifest.json", {
+  eager: true,
+  import: "default",
+}) as Record<string, CharacterManifest>;
+
+const files = import.meta.glob("../assets/characters/*/assets/*.png", {
   eager: true,
   query: "?url",
   import: "default",
 }) as Record<string, string>;
 
-export const builtinCharacter = buildCharacter(
-  manifest as CharacterManifest,
-  (file) => files[PACK_DIR + file],
-);
+function load(): Record<string, Character> {
+  const all: Record<string, Character> = {};
+  for (const [path, manifest] of Object.entries(manifests)) {
+    const dir = path.slice(0, path.lastIndexOf("/") + 1);
+    try {
+      const character = buildCharacter(manifest, (file) => files[dir + file]);
+      all[character.id] = character;
+    } catch (e) {
+      console.warn(`personagem embutido inválido em ${dir}:`, e);
+    }
+  }
+  return all;
+}
+
+export const BUILTIN_CHARACTERS: Readonly<Record<string, Character>> = load();
+
+/** Personagem pelo id; id desconhecido (ex.: pacote removido) cai no padrão. */
+export function getCharacter(id?: string | null): Character {
+  return (id && BUILTIN_CHARACTERS[id]) || BUILTIN_CHARACTERS[DEFAULT_CHARACTER_ID];
+}
+
+/** Personagem padrão (o pato). */
+export const builtinCharacter = getCharacter(DEFAULT_CHARACTER_ID);

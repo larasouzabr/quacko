@@ -1,6 +1,6 @@
 # Miau
 
-Um gatinho em pixel art que aparece no canto da tela quando algo termina: o Claude Code ou o Cursor acabou de responder (ou precisa de você), ou a CI de um PR passou ou falhou. Clicar no cartão abre o PR. Fica só na barra de menus, não rouba o foco de onde você está digitando e funciona offline: tudo acontece no seu computador.
+Um patinho em pixel art que aparece no canto da tela quando algo termina: o Claude Code ou o Cursor acabou de responder (ou precisa de você), ou a CI de um PR passou ou falhou. Clicar no cartão abre o PR. Fica só na barra de menus, não rouba o foco de onde você está digitando e funciona offline: tudo acontece no seu computador.
 
 | Estado | Quando |
 |---|---|
@@ -8,6 +8,8 @@ Um gatinho em pixel art que aparece no canto da tela quando algo termina: o Clau
 | ✕ Falhou | a CI falhou, o agente parou com erro |
 | ! Atenção | o agente precisa de permissão ou de uma resposta |
 | i Aviso | qualquer outro aviso |
+
+**Personagens:** o **Pato Pixel** é o padrão em instalações novas; o **Gato Pixel** continua disponível (campo `character` na config: `pato-pixel` ou `gato-pixel`). Quem já usava o app antes da escolha de personagem continua com o gato.
 
 ## Instalar (macOS 11+, Apple Silicon e Intel)
 

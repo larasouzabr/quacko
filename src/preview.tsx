@@ -32,7 +32,7 @@ const mockStatus: OnboardingStatus = {
   nowplaying: false,
 };
 const mockApi: WelcomeApi = {
-  settings: async () => ({ lang, max_cards: 3, pixel_size: 3 }),
+  settings: async () => ({ lang, max_cards: 3, pixel_size: 3, character: "pato-pixel" }),
   status: async () => mockStatus,
   connectClaude: async () => "ok",
   enableGithub: async () => {},

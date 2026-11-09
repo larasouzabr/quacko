@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { builtinCharacter } from "./builtin";
+import { BUILTIN_CHARACTERS, builtinCharacter, DEFAULT_CHARACTER_ID, getCharacter } from "./builtin";
 import { buildCharacter } from "./load";
 import { MOODS, type CharacterManifest } from "./types";
 
@@ -130,20 +130,36 @@ describe("buildCharacter", () => {
   });
 });
 
-describe("personagem embutido (gato-pixel)", () => {
-  it("é pixel art em 1x (grade 28x28) com os 4 estados de 2 quadros a 3 fps", () => {
-    expect(builtinCharacter.id).toBe("gato-pixel");
-    expect(builtinCharacter.pixelArt).toBe(true);
-    expect(builtinCharacter.size).toEqual({ width: 28, height: 28 });
-    expect(builtinCharacter.bubble).toBe("pixel");
-    expect(Object.keys(builtinCharacter.palette).sort()).toEqual(
+describe("personagens embutidos", () => {
+  it("o pato é o padrão; o gato continua disponível", () => {
+    expect(DEFAULT_CHARACTER_ID).toBe("pato-pixel");
+    expect(builtinCharacter.id).toBe("pato-pixel");
+    expect(Object.keys(BUILTIN_CHARACTERS).sort()).toEqual(["gato-pixel", "pato-pixel"]);
+    expect(getCharacter("gato-pixel").id).toBe("gato-pixel");
+  });
+
+  it("id desconhecido ou vazio cai no padrão", () => {
+    expect(getCharacter("capivara-pixel").id).toBe("pato-pixel");
+    expect(getCharacter(undefined).id).toBe("pato-pixel");
+  });
+
+  for (const id of ["pato-pixel", "gato-pixel"]) {
+    it(`${id}: pixel art em 1x (grade 28x28), 4 estados de 2 quadros a 3 fps`, () => {
+      const c = getCharacter(id);
+      expect(c.pixelArt).toBe(true);
+      expect(c.size).toEqual({ width: 28, height: 28 });
+      expect(c.bubble).toBe("pixel");
+      for (const mood of MOODS) {
+        const s = c.states[mood];
+        expect(s.url, mood).toContain(`${id}/assets/${mood}.png`);
+        expect([s.frames, s.columns, s.fps], mood).toEqual([2, 2, 3]);
+      }
+    });
+  }
+
+  it("o gato mantém a paleta recolorível", () => {
+    expect(Object.keys(getCharacter("gato-pixel").palette).sort()).toEqual(
       ["blush", "fur", "fur_shade", "outline", "patch", "patch_dark", "patch_light"],
     );
-    for (const mood of MOODS) {
-      const s = builtinCharacter.states[mood];
-      expect(s.url, mood).toBeTruthy();
-      expect(s.url, mood).toContain(`${mood}.png`);
-      expect([s.frames, s.columns, s.fps], mood).toEqual([2, 2, 3]);
-    }
   });
 });
