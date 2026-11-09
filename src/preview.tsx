@@ -22,9 +22,18 @@ const samples: Notification[] = [
   { ...base, id: 5, source: "agent", status: "attention", title: "Claude Code", message: "Claude needs your permission to use Bash", project: "quacko-watch" },
 ];
 
+const english: Record<number, Partial<Notification>> = {
+  1: { title: "PR #445 · Fix the date parser", message: "3 of 12 checks done" },
+  2: { title: "PR #446 · Update dependencies", message: "7 of 12 checks done · 1 failed" },
+  3: { title: "PR #447 · Tweak the README", message: "12 checks passed" },
+  6: { message: "All 10 checks passed" },
+  4: { message: "“add tests for the date parser”" },
+};
+const localized = lang === "en" ? samples.map((n) => ({ ...n, ...english[n.id] })) : samples;
+
 const params = new URLSearchParams(location.search);
 const pickedIds = params.get("ids")?.split(",").map(Number);
-const shownSamples = pickedIds ? pickedIds.flatMap((id) => samples.filter((n) => n.id === id)) : samples;
+const shownSamples = pickedIds ? pickedIds.flatMap((id) => localized.filter((n) => n.id === id)) : localized;
 
 const mockStatus: OnboardingStatus = {
   claude_connected: params.get("claude") !== "no",
