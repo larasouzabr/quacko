@@ -30,6 +30,7 @@ mod ids {
     pub const PRWATCH: &str = "prwatch";
     pub const CONNECT_GITHUB: &str = "connect-github";
     pub const WELCOME: &str = "welcome";
+    pub const CUSTOMIZE: &str = "customize";
 }
 
 #[derive(Debug, Clone)]
@@ -93,6 +94,7 @@ fn build_menu(app: &AppHandle) -> tauri::Result<(Menu<Wry>, String)> {
     let dnd = CheckMenuItem::with_id(app, ids::DND, t.dnd, true, config.dnd, None::<&str>)?;
     let test = MenuItem::with_id(app, ids::TEST, t.test, true, None::<&str>)?;
     let welcome = MenuItem::with_id(app, ids::WELCOME, t.welcome, true, None::<&str>)?;
+    let customize = MenuItem::with_id(app, ids::CUSTOMIZE, t.customize, true, None::<&str>)?;
     let autostart = CheckMenuItem::with_id(
         app,
         ids::AUTOSTART,
@@ -139,6 +141,7 @@ fn build_menu(app: &AppHandle) -> tauri::Result<(Menu<Wry>, String)> {
             &connect,
             &autostart,
             &language,
+            &customize,
             &welcome,
             &PredefinedMenuItem::separator(app)?,
             &quit,
@@ -174,6 +177,7 @@ fn on_menu_event(app: &AppHandle, event: MenuEvent) {
         }
         ids::TEST => crate::window::run_test_sequence(app),
         ids::WELCOME => crate::onboarding::open(app),
+        ids::CUSTOMIZE => crate::customize::open(app),
         ids::DND => {
             let c = settings.update(|c| c.dnd = !c.dnd);
             tracing::info!(dnd = c.dnd, "não perturbe alterado");

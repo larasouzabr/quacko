@@ -1,4 +1,6 @@
+mod accessories;
 mod config;
+mod customize;
 mod github;
 mod github_auth;
 mod i18n;
@@ -48,6 +50,7 @@ pub fn run() {
             window::tray_alert_cleared,
             window::card_action,
             settings::get_settings,
+            settings::set_appearance,
             onboarding::onboarding_status,
             onboarding::onboarding_connect_claude,
             onboarding::onboarding_enable_github,
@@ -63,6 +66,8 @@ pub fn run() {
 
             app.manage(Settings::load());
             app.manage(IdGen::default());
+            // Pasta dos acessórios do usuário (para importar outros no futuro).
+            accessories::ensure_user_dir();
             app.manage(tray_icon::TrayAlert::default());
             app.manage(onboarding::PendingDevice::default());
             let github_on = app.state::<Settings>().snapshot().github;

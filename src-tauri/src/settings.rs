@@ -25,6 +25,9 @@ pub struct FrontendSettings {
     pub max_cards: u8,
     pub pixel_size: u8,
     pub character: String,
+    pub accessory_enabled: bool,
+    pub accessory_id: String,
+    pub accessory_color: String,
 }
 
 impl Settings {
@@ -72,6 +75,9 @@ impl Settings {
             max_cards: config.max_cards,
             pixel_size: config.pixel_size,
             character: config.character,
+            accessory_enabled: config.accessory_enabled,
+            accessory_id: config.accessory_id,
+            accessory_color: config.accessory_color,
         }
     }
 
@@ -177,6 +183,37 @@ fn login_item_program(app: &AppHandle) -> Option<PathBuf> {
 #[cfg(not(target_os = "macos"))]
 fn login_item_program(_app: &AppHandle) -> Option<PathBuf> {
     None
+}
+
+/// Tela Personalizar: personagem e acessório. Grava na config e avisa o overlay, que
+/// troca na hora (sem reiniciar).
+#[tauri::command]
+pub fn set_appearance(
+    app: AppHandle,
+    character: String,
+    accessory_enabled: bool,
+    accessory_color: String,
+) -> Result<FrontendSettings, String> {
+    let valid_id = |id: &str| {
+        (1..=40).contains(&id.len())
+            && id
+                .chars()
+                .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-')
+    };
+    if !valid_id(&character) {
+        return Err("personagem inválido".into());
+    }
+    if !config::valid_hex_color(&accessory_color) {
+        return Err("cor inválida (use #rrggbb)".into());
+    }
+    let settings = app.state::<Settings>();
+    settings.update(|c| {
+        c.character = character;
+        c.accessory_enabled = accessory_enabled;
+        c.accessory_color = accessory_color.to_ascii_lowercase();
+    });
+    broadcast(&app);
+    Ok(settings.frontend())
 }
 
 #[tauri::command]

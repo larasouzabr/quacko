@@ -2,12 +2,15 @@
 // Uso: npm run dev e abra http://localhost:1420/preview.html (ou tools/snapshot.swift).
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
+import { DEFAULT_SETTINGS } from "./App";
 import Card from "./components/Card";
 import type { Lang } from "./i18n";
 import type { Notification } from "./types";
 import "./styles.css";
 import type { OnboardingStatus, WelcomeApi } from "./welcome/api";
 import Welcome from "./welcome/Welcome";
+import type { CustomizeApi } from "./customize/api";
+import Customize from "./customize/Customize";
 
 const lang = (new URLSearchParams(location.search).get("lang") as Lang) ?? "pt-BR";
 
@@ -32,7 +35,7 @@ const mockStatus: OnboardingStatus = {
   nowplaying: false,
 };
 const mockApi: WelcomeApi = {
-  settings: async () => ({ lang, max_cards: 3, pixel_size: 3, character: "pato-pixel" }),
+  settings: async () => ({ ...DEFAULT_SETTINGS, lang }),
   status: async () => mockStatus,
   connectClaude: async () => "ok",
   enableGithub: async () => {},
@@ -43,7 +46,24 @@ const mockApi: WelcomeApi = {
 };
 
 const root = createRoot(document.getElementById("root")!);
-if (params.get("view") === "welcome") {
+// ?view=customize: Personalizar com o laço ligado (cor por ?color=%23rrggbb).
+const customizeApi: CustomizeApi = {
+  settings: async () => ({
+    ...DEFAULT_SETTINGS,
+    lang,
+    accessory_enabled: params.get("bow") !== "0",
+    accessory_color: params.get("color") ?? "#ff6996",
+  }),
+  save: async () => ({ ...DEFAULT_SETTINGS, lang }),
+};
+
+if (params.get("view") === "customize") {
+  root.render(
+    <StrictMode>
+      <Customize api={customizeApi} />
+    </StrictMode>,
+  );
+} else if (params.get("view") === "welcome") {
   root.render(
     <StrictMode>
       <Welcome api={mockApi} />

@@ -11,6 +11,8 @@ Um patinho em pixel art que aparece no canto da tela quando algo termina: o Clau
 
 **Personagens:** o **Pato Pixel** é o padrão em instalações novas; o **Gato Pixel** continua disponível (campo `character` na config: `pato-pixel` ou `gato-pixel`). Sem escolha explícita, vale o pato.
 
+**Acessórios (opcional):** no menu do pato → **Personalizar…** dá para trocar o personagem e ligar o **laço**, com cores prontas (rosa, azul, roxo, vermelho) ou qualquer outra; a sombra e o brilho saem da cor escolhida, com contraste garantido, e a pré-visualização mostra os 4 estados na hora. Um acessório é só dado: um `accessory.json` e um sprite por estado com a mesma grade do personagem. A pasta `~/.config/miau/accessories/` fica pronta para importar outros no futuro; a importação confere tamanhos, extensões, PNG de verdade, links e caminhos com `..` (zip slip).
+
 ## Instalar (macOS 11+, Apple Silicon e Intel)
 
 Baixe o `Miau_<versão>_universal.dmg` da página de Releases do repositório (quando houver) ou gere a partir do código (veja [Desenvolver](#desenvolver)). O `.dmg` universal funciona em Macs com Apple Silicon e com Intel.
@@ -72,6 +74,9 @@ Arquivo `~/.config/miau/config.json`, criado no primeiro uso. O menu altera a ma
 | `github` | monitor de PRs ligado (menu Conectar → GitHub) | `false` |
 | `github_client_id` | Client ID do GitHub App para o login com código | vazio |
 | `onboarded` | a tela de boas-vindas já foi vista | `false` |
+| `character` | personagem: `pato-pixel` ou `gato-pixel` | `pato-pixel` |
+| `accessory_enabled` | acessório (laço) ligado | `false` |
+| `accessory_color` | cor principal do acessório, `#rrggbb` | `#ff6996` |
 
 Valores inválidos voltam ao padrão sem travar o app. Mudanças feitas direto no arquivo valem ao reabrir o app.
 

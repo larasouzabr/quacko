@@ -454,3 +454,79 @@ body.welcome-page {
   background: var(--info-bg);
   color: var(--info-fg);
 }
+
+/* ---------- janela Personalizar ---------- */
+.customize h1 {
+  margin: 0;
+  font-size: 20px;
+}
+.customize .step h2 {
+  margin: 0 0 10px;
+  font-size: 14px;
+}
+.choices {
+  display: flex;
+  gap: 10px;
+}
+.choice {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 14px !important;
+}
+.choice.is-selected,
+.swatch.is-selected {
+  outline: 3px solid var(--info-fg);
+  outline-offset: 2px;
+}
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+.colors {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+.colors.is-disabled {
+  opacity: 0.45;
+}
+.colors .label {
+  font-size: 13px;
+}
+.swatch {
+  width: 26px;
+  height: 26px;
+  padding: 0 !important;
+  border-radius: 50% !important;
+}
+.custom-color {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+.custom-color input {
+  width: 30px;
+  height: 26px;
+  padding: 0;
+  border: none;
+  background: none;
+}
+.preview-row {
+  display: flex;
+  justify-content: space-between;
+}
+.preview-row figure {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--bubble-muted);
+}

@@ -12,6 +12,9 @@ interface CatProps {
   pixelSize?: number;
   /** Demais personagens: escala sobre o tamanho do manifest (0,5 a 2). */
   scale?: number;
+  /** Camada por cima (acessório): um sprite sheet por estado, mesma grade e mesmos
+   * quadros. Vai como segunda imagem do mesmo fundo, então anda junto, quadro a quadro. */
+  overlay?: Partial<Record<Mood, string>>;
 }
 
 /** Tamanho, em px CSS, de 1 quadro do personagem com as escolhas atuais. */
@@ -44,6 +47,7 @@ export default function Cat({
   character = builtinCharacter,
   pixelSize = DEFAULT_PIXEL_SIZE,
   scale = 1,
+  overlay,
 }: CatProps) {
   const dpr = useDevicePixelRatio();
   const ref = useRef<HTMLDivElement>(null);
@@ -69,7 +73,11 @@ export default function Cat({
   const style = {
     width,
     height,
-    backgroundImage: `url("${state.url}")`,
+    // O acessório (se houver) vem primeiro: fica por cima do personagem.
+    backgroundImage: [overlay?.[mood], state.url]
+      .filter(Boolean)
+      .map((url) => `url("${url}")`)
+      .join(", "),
     backgroundSize: `${state.columns * width}px ${rows * height}px`,
     // Lidas pela animação `cat-frames` em styles.css.
     "--cat-strip": `${-state.frames * width}px`,

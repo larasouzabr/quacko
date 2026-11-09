@@ -10,6 +10,10 @@ export interface Settings {
   pixel_size: number;
   /** Id do personagem escolhido (padrão: pato-pixel). */
   character: string;
+  /** Acessório (desligado por padrão), id e cor principal #rrggbb. */
+  accessory_enabled: boolean;
+  accessory_id: string;
+  accessory_color: string;
 }
 
 /** Espelho de `model::Notification` no Rust (evento "notify"). */

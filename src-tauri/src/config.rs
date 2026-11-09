@@ -60,6 +60,19 @@ pub struct Config {
     pub github_client_id: Option<String>,
     /// Personagem escolhido (id do pacote).
     pub character: String,
+    /// Acessório ligado (desligado por padrão).
+    pub accessory_enabled: bool,
+    pub accessory_id: String,
+    /// Cor principal do acessório, `#rrggbb` (a sombra e a luz são derivadas dela).
+    pub accessory_color: String,
+}
+
+pub const DEFAULT_ACCESSORY: &str = "laco";
+/// Cor original do laço (rosa).
+pub const DEFAULT_ACCESSORY_COLOR: &str = "#ff6996";
+
+pub fn valid_hex_color(s: &str) -> bool {
+    s.len() == 7 && s.starts_with('#') && s[1..].chars().all(|c| c.is_ascii_hexdigit())
 }
 
 /// Personagem de instalações novas.
@@ -91,6 +104,9 @@ impl Default for Config {
             onboarded: false,
             github_client_id: None,
             character: DEFAULT_CHARACTER.to_string(),
+            accessory_enabled: false,
+            accessory_id: DEFAULT_ACCESSORY.to_string(),
+            accessory_color: DEFAULT_ACCESSORY_COLOR.to_string(),
         }
     }
 }
@@ -148,6 +164,28 @@ impl Config {
             {
                 Some(n) => config.pixel_size = n as u8,
                 None => invalid.push("pixel_size"),
+            }
+        }
+        if let Some(v) = map.get("accessory_enabled") {
+            match v.as_bool() {
+                Some(b) => config.accessory_enabled = b,
+                None => invalid.push("accessory_enabled"),
+            }
+        }
+        if let Some(v) = map.get("accessory_id") {
+            match v
+                .as_str()
+                .map(str::trim)
+                .filter(|id| valid_character_id(id))
+            {
+                Some(id) => config.accessory_id = id.to_string(),
+                None => invalid.push("accessory_id"),
+            }
+        }
+        if let Some(v) = map.get("accessory_color") {
+            match v.as_str().map(str::trim).filter(|c| valid_hex_color(c)) {
+                Some(c) => config.accessory_color = c.to_ascii_lowercase(),
+                None => invalid.push("accessory_color"),
             }
         }
         if let Some(v) = map.get("character") {
@@ -251,7 +289,7 @@ mod tests {
         let c = Config::default();
         assert_eq!(
             serde_json::to_value(&c).unwrap(),
-            serde_json::json!({"port": 4747, "lang": "auto", "dnd": false, "autostart": false, "max_cards": 3, "pixel_size": 3, "github": false, "media_warned": false, "onboarded": false, "github_client_id": null, "character": "pato-pixel"})
+            serde_json::json!({"port": 4747, "lang": "auto", "dnd": false, "autostart": false, "max_cards": 3, "pixel_size": 3, "github": false, "media_warned": false, "onboarded": false, "github_client_id": null, "character": "pato-pixel", "accessory_enabled": false, "accessory_id": "laco", "accessory_color": "#ff6996"})
         );
     }
 
@@ -274,6 +312,9 @@ mod tests {
                 onboarded: false,
                 github_client_id: None,
                 character: DEFAULT_CHARACTER.to_string(),
+                accessory_enabled: false,
+                accessory_id: DEFAULT_ACCESSORY.to_string(),
+                accessory_color: DEFAULT_ACCESSORY_COLOR.to_string(),
             }
         );
     }
@@ -329,6 +370,25 @@ mod tests {
             let (c, invalid) = Config::from_json_lenient(&format!(r#"{{"character":{bad}}}"#));
             assert_eq!(c.character, DEFAULT_CHARACTER, "{bad}");
             assert_eq!(invalid, vec!["character"], "{bad}");
+        }
+    }
+
+    #[test]
+    fn acessorio_desligado_por_padrao_e_cor_validada() {
+        let c = Config::default();
+        assert!(!c.accessory_enabled);
+        assert_eq!(
+            (c.accessory_id.as_str(), c.accessory_color.as_str()),
+            ("laco", "#ff6996")
+        );
+        let c = parse(r##"{"accessory_enabled":true,"accessory_color":"#4A90E2"}"##);
+        assert!(c.accessory_enabled);
+        assert_eq!(c.accessory_color, "#4a90e2");
+        for bad in ["\"azul\"", "\"#fff\"", "\"#gggggg\"", "\"url(x)\"", "1"] {
+            let (c, invalid) =
+                Config::from_json_lenient(&format!(r#"{{"accessory_color":{bad}}}"#));
+            assert_eq!(c.accessory_color, DEFAULT_ACCESSORY_COLOR, "{bad}");
+            assert_eq!(invalid, vec!["accessory_color"], "{bad}");
         }
     }
 

@@ -75,6 +75,7 @@ pub struct TrayTexts {
     pub scripts_updated: &'static str,
     pub media_missing: &'static str,
     pub welcome: &'static str,
+    pub customize: &'static str,
     pub github_sign_in: &'static str,
 }
 
@@ -116,6 +117,7 @@ static PT_BR: TrayTexts = TrayTexts {
     github_off: "GitHub desconectado.",
     scripts_updated: "Atualizei os scripts do Miau ({files}). O backup ficou em ~/.claude/hooks.",
     welcome: "Boas-vindas…",
+    customize: "Personalizar…",
     github_sign_in: "Entre no GitHub com um código: abri a tela de boas-vindas.",
     media_missing: "O Spotify já pausa sozinho. Para pausar YouTube e outros players, instale o nowplaying-cli (brew install nowplaying-cli).",
 };
@@ -151,6 +153,7 @@ static EN: TrayTexts = TrayTexts {
     github_off: "GitHub disconnected.",
     scripts_updated: "Updated the Miau scripts ({files}). Backup kept in ~/.claude/hooks.",
     welcome: "Welcome…",
+    customize: "Customize…",
     github_sign_in: "Sign in to GitHub with a code: I opened the welcome screen.",
     media_missing: "Spotify already pauses. To pause YouTube and other players, install nowplaying-cli (brew install nowplaying-cli).",
 };

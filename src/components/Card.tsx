@@ -1,7 +1,7 @@
 import type { Lang } from "../i18n";
 import { strings } from "../i18n";
 import type { Notification } from "../types";
-import type { Character } from "../character/types";
+import type { Character, Mood } from "../character/types";
 import Cat from "./Cat";
 
 const STATUS_ICON = { ok: "✓", fail: "✕", attention: "!", info: "i" } as const;
@@ -14,6 +14,8 @@ interface CardProps {
   pixelSize: number;
   /** Personagem escolhido; sem ele, o padrão. */
   character?: Character;
+  /** Acessório por cima do personagem (opcional). */
+  overlay?: Partial<Record<Mood, string>>;
   onActivate: () => void;
   onDismiss: () => void;
 }
@@ -26,6 +28,7 @@ export default function Card({
   hovered,
   pixelSize,
   character,
+  overlay,
   onActivate,
   onDismiss,
 }: CardProps) {
@@ -38,7 +41,7 @@ export default function Card({
 
   return (
     <div className={classes.join(" ")} data-card-id={n.id} onClick={leaving ? undefined : onActivate}>
-      <Cat mood={n.status} pixelSize={pixelSize} character={character} />
+      <Cat mood={n.status} pixelSize={pixelSize} character={character} overlay={overlay} />
       <div className="bubble">
         <div className="bubble-head">
           <span className="badge">
