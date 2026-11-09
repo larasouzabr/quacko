@@ -2209,6 +2209,7 @@ dependencies = [
  "http-body-util",
  "objc2",
  "objc2-app-kit",
+ "plist",
  "reqwest",
  "serde",
  "serde_json",

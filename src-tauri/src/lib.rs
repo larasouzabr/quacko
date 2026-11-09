@@ -57,6 +57,7 @@ pub fn run() {
             window::create_overlay(app.handle())?;
             let status = start_server(app.handle());
             tray::create(app.handle(), status)?;
+            tray::sync_scripts_on_start(app.handle());
             Ok(())
         })
         .run(tauri::generate_context!())

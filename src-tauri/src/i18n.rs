@@ -72,6 +72,7 @@ pub struct TrayTexts {
     pub github_no_gh: &'static str,
     pub github_expired: &'static str,
     pub github_off: &'static str,
+    pub scripts_updated: &'static str,
 }
 
 pub fn tray_texts(lang: Lang) -> &'static TrayTexts {
@@ -110,6 +111,7 @@ static PT_BR: TrayTexts = TrayTexts {
     github_no_gh: "Não achei o GitHub CLI logado. Instale o gh e rode “gh auth login”.",
     github_expired: "O login do GitHub expirou. Rode “gh auth login” e conecte de novo.",
     github_off: "GitHub desconectado.",
+    scripts_updated: "Atualizei os scripts do Miau ({files}). O backup ficou em ~/.claude/hooks.",
 };
 
 static EN: TrayTexts = TrayTexts {
@@ -141,6 +143,7 @@ static EN: TrayTexts = TrayTexts {
     github_no_gh: "Couldn't find a logged-in GitHub CLI. Install gh and run “gh auth login”.",
     github_expired: "Your GitHub login expired. Run “gh auth login” and connect again.",
     github_off: "GitHub disconnected.",
+    scripts_updated: "Updated the Miau scripts ({files}). Backup kept in ~/.claude/hooks.",
 };
 
 #[cfg(test)]

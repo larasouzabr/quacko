@@ -411,6 +411,36 @@ pub fn set_connected(paths: &Paths, tool: Tool, connect: bool) -> io::Result<Out
     })
 }
 
+/// Marca presente nos scripts do Miau (variáveis MIAU_*): só esses são atualizados.
+const OURS_MARKER: &str = "MIAU_";
+
+/// Ao abrir o app: se o `notify.sh` ou o `prwatch` instalados forem do Miau mas de outra
+/// versão, troca pelos embutidos (com backup). Scripts que não são do Miau, ou que não
+/// existem (a pessoa nunca conectou), ficam como estão. Devolve os nomes atualizados.
+pub fn sync_installed_scripts(paths: &Paths) -> Vec<String> {
+    let mut updated = Vec::new();
+    for (path, embedded) in [(paths.notify_sh(), NOTIFY_SH), (paths.prwatch(), PRWATCH)] {
+        let Ok(current) = fs::read_to_string(&path) else {
+            continue;
+        };
+        if current == embedded || !current.contains(OURS_MARKER) {
+            continue;
+        }
+        match install_script(&path, embedded) {
+            Ok(()) => updated.push(
+                path.file_name()
+                    .and_then(|n| n.to_str())
+                    .unwrap_or("script")
+                    .to_string(),
+            ),
+            Err(e) => {
+                tracing::warn!(%e, path = %path.display(), "não foi possível atualizar o script")
+            }
+        }
+    }
+    updated
+}
+
 pub enum PrwatchOutcome {
     /// Link criado (ou já existia) em ~/.local/bin.
     Linked,
@@ -785,9 +815,52 @@ mod tests {
     }
 
     #[test]
+    fn sincroniza_so_scripts_do_miau_desatualizados() {
+        let (_dir, paths) = temp_home();
+        assert!(
+            sync_installed_scripts(&paths).is_empty(),
+            "nada instalado: nada a fazer"
+        );
+
+        fs::create_dir_all(paths.hooks_dir()).unwrap();
+        fs::write(
+            paths.notify_sh(),
+            "#!/bin/bash\n# versão antiga\nPORT=\"${MIAU_PORT:-4747}\"\n",
+        )
+        .unwrap();
+        fs::write(
+            paths.prwatch(),
+            "#!/bin/bash\necho script de outra pessoa\n",
+        )
+        .unwrap();
+
+        assert_eq!(
+            sync_installed_scripts(&paths),
+            vec!["notify.sh".to_string()]
+        );
+        assert_eq!(fs::read_to_string(paths.notify_sh()).unwrap(), NOTIFY_SH);
+        assert!(fs::read_to_string(paths.hooks_dir().join("notify.sh.bak"))
+            .unwrap()
+            .contains("versão antiga"));
+        assert_eq!(
+            fs::read_to_string(paths.prwatch()).unwrap(),
+            "#!/bin/bash\necho script de outra pessoa\n",
+            "script que não é do Miau fica intocado"
+        );
+        assert!(
+            sync_installed_scripts(&paths).is_empty(),
+            "já atualizado: nada a fazer"
+        );
+    }
+
+    #[test]
     fn scripts_embutidos_sao_os_do_repositorio() {
         assert!(NOTIFY_SH.starts_with("#!/bin/bash"));
         assert!(NOTIFY_SH.contains("--from"));
         assert!(PRWATCH.contains("gh pr checks"));
+        assert!(
+            NOTIFY_SH.contains(OURS_MARKER) && PRWATCH.contains(OURS_MARKER),
+            "a sincronização depende da marca"
+        );
     }
 }

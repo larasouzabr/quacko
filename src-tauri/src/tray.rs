@@ -325,7 +325,7 @@ fn install_prwatch(app: &AppHandle) {
 }
 
 /// Mostra o resultado no cartão do gato (mesmo com "Não perturbar": foi um pedido explícito).
-fn tell(app: &AppHandle, status: Status, message: String) {
+pub fn tell(app: &AppHandle, status: Status, message: String) {
     let message: String = message
         .chars()
         .take(crate::model::MAX_MESSAGE_CHARS)
@@ -410,4 +410,30 @@ pub fn github_report(app: &AppHandle, report: crate::github::Report) {
             refresh(app);
         }
     }
+}
+
+/// Ao abrir o app: atualiza os scripts instalados que estiverem desatualizados e avisa
+/// com um cartão discreto (que respeita o "Não perturbar").
+pub fn sync_scripts_on_start(app: &AppHandle) {
+    let app = app.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let Some(paths) = Paths::from_home() else {
+            return;
+        };
+        let updated = integrations::sync_installed_scripts(&paths);
+        if updated.is_empty() {
+            return;
+        }
+        tracing::info!(?updated, "scripts instalados atualizados");
+        let settings = app.state::<Settings>();
+        if settings.snapshot().dnd {
+            return;
+        }
+        let t = i18n::tray_texts(settings.lang());
+        tell(
+            &app,
+            Status::Info,
+            t.scripts_updated.replace("{files}", &updated.join(", ")),
+        );
+    });
 }

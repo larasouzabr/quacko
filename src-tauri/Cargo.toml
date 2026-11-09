@@ -35,3 +35,4 @@ tower = { version = "0.5", features = ["util"] }
 [target.'cfg(target_os = "macos")'.dependencies]
 objc2 = "0.6"
 objc2-app-kit = { version = "0.3", default-features = false, features = ["std", "NSRunningApplication", "NSWorkspace", "NSWindow", "NSResponder", "NSGraphics", "libc"] }
+plist = "1"
