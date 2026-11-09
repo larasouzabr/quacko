@@ -15,4 +15,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
         ;;
     esac
   done
-echo "instalador: $(ls "$ROOT"/src-tauri/target.noindex/release/bundle/dmg/*.dmg 2>/dev/null)"
+for dmg in "$ROOT"/src-tauri/target.noindex/release/bundle/dmg/*.dmg \
+  "$ROOT"/src-tauri/target.noindex/*-apple-darwin/release/bundle/dmg/*.dmg; do
+  [ -f "$dmg" ] && echo "instalador: $dmg"
+done

@@ -9,9 +9,9 @@ Um gatinho em pixel art que aparece no canto da tela quando algo termina: o Clau
 | ! Atenção | o agente precisa de permissão ou de uma resposta |
 | i Aviso | qualquer outro aviso |
 
-## Instalar (macOS, Apple Silicon)
+## Instalar (macOS 11+, Apple Silicon e Intel)
 
-Por enquanto o app é gerado a partir do código (veja [Desenvolver](#desenvolver)); o instalador fica em `src-tauri/target.noindex/release/bundle/dmg/Miau_<versão>_aarch64.dmg`.
+Baixe o `Miau_<versão>_universal.dmg` da página de Releases do repositório (quando houver) ou gere a partir do código (veja [Desenvolver](#desenvolver)). O `.dmg` universal funciona em Macs com Apple Silicon e com Intel.
 
 1. Abra o `.dmg` e arraste o **Miau.app** para **Aplicativos**.
 2. O build não é assinado pela Apple, então o macOS bloqueia a primeira abertura quando o `.dmg` veio de um download. Libere de um destes jeitos:
@@ -88,12 +88,36 @@ npm run typecheck
 bash scripts/tests/notify.test.sh
 bash scripts/tests/prwatch.test.sh
 
-npm run build:mac        # gera o .app e o .dmg em src-tauri/target.noindex/release/bundle/
+npm run build:mac        # .app e .dmg para este Mac, em src-tauri/target.noindex/release/bundle/
+npm run build:mac:universal  # .dmg universal (Apple Silicon + Intel), em src-tauri/target.noindex/universal-apple-darwin/release/bundle/dmg/
 ```
+
+O build universal usa o toolchain da Apple num ambiente limpo (`scripts/build-universal.sh`): dentro de um shell do Nix o compilador C padrão só gera arm64 e a parte Intel falharia. No GitHub Actions isso não acontece.
 
 O `build:mac` roda o `tauri build` com dois ajustes para o macOS: põe as ferramentas do Xcode no **fim** do `PATH` (sem isso o `.dmg` pode falhar com `tool 'SetFile' not found` quando o terminal usa um SDK do Nix; no começo do `PATH` elas trocam o compilador e o link falha) e, no fim, tira a cópia de build do registro de apps do sistema (`scripts/after-build.sh`), para não aparecer um segundo "Miau" na lista de apps. A pasta de build se chama `target.noindex` pelo mesmo motivo: o Spotlight não indexa pastas com esse sufixo.
 
 Estrutura: `src/` é o overlay (React + TypeScript), `src-tauri/` é o app (Rust: servidor local, janela, menu, config), `scripts/` são as integrações e `tools/` tem os geradores do gato e do ícone (como regenerar: seção 8 do [miau-spec.md](miau-spec.md)). As especificações ficam em [miau-spec.md](miau-spec.md) (v1), [miau-spec-v2-produto.md](miau-spec-v2-produto.md) e [miau-spec-personalizacao.md](miau-spec-personalizacao.md).
+
+## Releases
+
+O workflow [`.github/workflows/release-macos.yml`](.github/workflows/release-macos.yml) roda só quando uma tag `v*` é enviada:
+
+```bash
+git tag v0.1.0 && git push origin v0.1.0
+```
+
+Ele roda os testes, gera o `.dmg` universal e cria um release em **rascunho**; o release só fica público quando alguém clicar em **Publish release** no GitHub.
+
+**Assinatura e notarização** (opcional, desligada por padrão). Sem ela, quem baixar o app vê o aviso do macOS na primeira abertura e libera em **Ajustes do Sistema → Privacidade e Segurança → Abrir Mesmo Assim** (ou com `xattr -dr com.apple.quarantine /Applications/Miau.app`), como descrito em [Instalar](#instalar-macos-11-apple-silicon-e-intel). Para assinar e notarizar, é preciso uma conta Apple Developer (cerca de US$ 99/ano) e:
+
+1. Variável do repositório (Settings → Secrets and variables → Actions → Variables): `MACOS_SIGNING` = `true`.
+2. Segredos do repositório:
+   - `APPLE_CERTIFICATE`: o certificado **Developer ID Application** exportado como `.p12`, em base64 (`base64 -i certificado.p12 | pbcopy`).
+   - `APPLE_CERTIFICATE_PASSWORD`: a senha do `.p12`.
+   - `APPLE_SIGNING_IDENTITY`: o nome do certificado, ex.: `Developer ID Application: Nome (TEAMID)`.
+   - `APPLE_ID`, `APPLE_PASSWORD` (senha de app gerada em appleid.apple.com) e `APPLE_TEAM_ID`: para a notarização.
+
+Nunca coloque certificados, senhas ou tokens no repositório.
 
 ## Decisões e limitações
 

@@ -1,0 +1,80 @@
+# Release do Miau para macOS: gera o .dmg universal (Apple Silicon + Intel) e cria um
+# release em RASCUNHO quando uma tag v* é enviada (ex.: git tag v0.1.0 && git push origin v0.1.0).
+# Não roda em pull request nem em push comum. O rascunho só fica público quando alguém
+# clicar em "Publish release" no GitHub.
+#
+# Assinatura e notarização: desligadas por padrão. Para ligar, crie a variável de
+# repositório MACOS_SIGNING=true e os segredos listados no README (seção "Releases").
+name: Release macOS
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  macos:
+    runs-on: macos-latest
+    env:
+      # No CI não precisa da pasta target.noindex (ela só esconde o build do Spotlight local).
+      CARGO_TARGET_DIR: target
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
+
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: "src-tauri -> target"
+
+      - run: npm ci
+
+      - name: Testes
+        run: |
+          npm test
+          npx tsc --noEmit
+          cargo test --manifest-path src-tauri/Cargo.toml
+          bash scripts/tests/notify.test.sh
+          bash scripts/tests/prwatch.test.sh
+
+      # Padrão: sem certificado da Apple (assinatura ad-hoc do tauri.conf.json). Quem
+      # baixar precisa liberar a primeira abertura ("Abrir Mesmo Assim", ver README).
+      - name: Build e release (sem assinatura)
+        if: vars.MACOS_SIGNING != 'true'
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: Miau ${{ github.ref_name }}
+          releaseBody: "Build sem assinatura da Apple: na primeira abertura, use Ajustes do Sistema → Privacidade e Segurança → Abrir Mesmo Assim (instruções no README)."
+          releaseDraft: true
+          args: --target universal-apple-darwin
+
+      # Com MACOS_SIGNING=true: assina com o Developer ID e notariza na Apple.
+      - name: Build e release (assinado e notarizado)
+        if: vars.MACOS_SIGNING == 'true'
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: Miau ${{ github.ref_name }}
+          releaseBody: "Build assinado e notarizado pela Apple."
+          releaseDraft: true
+          args: --target universal-apple-darwin
