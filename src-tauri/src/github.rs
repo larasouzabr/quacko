@@ -297,6 +297,8 @@ pub fn notification(id: u64, change: &Change, lang: Lang) -> Notification {
             total: pr.checks.total,
             failed: pr.checks.failed.min(pr.checks.total),
         }),
+        // O resultado final fica até a pessoa fechar no ×; o progresso some sozinho.
+        sticky: !matches!(change, Change::Progress(_)),
     }
 }
 
@@ -840,6 +842,7 @@ mod tests {
         assert_eq!(n.title.as_deref(), Some("PR #445 · Título 445"));
         assert_eq!(n.message.as_deref(), Some("3 de 12 checks concluídos"));
         assert_eq!(n.project.as_deref(), Some("o/r#445"));
+        assert!(!n.sticky, "progresso some sozinho");
         assert_eq!(
             n.progress,
             Some(Progress {
@@ -904,6 +907,10 @@ mod tests {
         );
         assert_eq!(en.message.as_deref(), Some("All 5 checks passed"));
         assert_eq!(failed.ttl_ms, 15_000);
+        assert!(
+            passed.sticky && failed.sticky,
+            "resultado final só fecha no ×"
+        );
     }
 
     #[test]

@@ -22,6 +22,8 @@ export interface Notification {
   ttl_ms: number;
   /** Barra de progresso (ex.: checks de um PR). */
   progress?: Progress | null;
+  /** Só fecha no ×: não expira (ex.: CI que terminou). */
+  sticky?: boolean;
 }
 
 export interface Progress {

@@ -346,6 +346,7 @@ pub fn tell(app: &AppHandle, status: Status, message: String) {
             url: None,
             ttl_ms: 12_000,
             progress: None,
+            sticky: false,
         },
     );
 }

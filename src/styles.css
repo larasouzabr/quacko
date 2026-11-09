@@ -244,8 +244,10 @@ body,
   transition: opacity 120ms;
 }
 
-/* O hover vem do Rust (classe), não de :hover. */
-.card.is-hovered .close {
+/* O hover vem do Rust (classe), não de :hover. No cartão sticky (só fecha no ×), o ×
+   fica sempre visível para a pessoa saber como fechar. */
+.card.is-hovered .close,
+.card.is-sticky .close {
   opacity: 1;
 }
 

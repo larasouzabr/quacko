@@ -133,6 +133,32 @@ describe("fila de cartões", () => {
     expect(queueReducer(initialQueue(3), { type: "configure", maxCards: 0 }).maxCards).toBe(1);
   });
 
+  it("sticky não expira: só sai quando dispensado no ×", () => {
+    const a = notif({ ttl_ms: 2000, sticky: true });
+    let s = add(initialQueue(), a, 0);
+    s = queueReducer(s, { type: "tick", now: 1_000_000 });
+    expect(visible(s)).toEqual([a.id]);
+    s = queueReducer(s, { type: "dismiss", id: a.id, now: 1_000_000 });
+    expect(visible(s)).toEqual([]);
+  });
+
+  it("acima do limite, os não-sticky saem antes", () => {
+    const ci1 = notif({ sticky: true });
+    const claude = notif();
+    const ci2 = notif({ sticky: true });
+    const novo = notif();
+    let s = initialQueue(3);
+    for (const n of [ci1, claude, ci2, novo]) s = add(s, n, 0);
+    expect(visible(s)).toEqual([ci1.id, ci2.id, novo.id]);
+  });
+
+  it("todos sticky: o mais antigo cede o lugar para o aviso novo", () => {
+    const ns = [notif({ sticky: true }), notif({ sticky: true }), notif({ sticky: true }), notif()];
+    let s = initialQueue(3);
+    for (const n of ns) s = add(s, n, 0);
+    expect(visible(s)).toEqual([ns[1].id, ns[2].id, ns[3].id]);
+  });
+
   it("tick sem mudanças devolve o mesmo estado (evita re-render)", () => {
     const s = add(initialQueue(), notif(), 0);
     expect(queueReducer(s, { type: "tick", now: 1 })).toBe(s);

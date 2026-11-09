@@ -125,7 +125,8 @@ export default function App() {
           hovered={hoveredId === card.n.id}
           pixelSize={settings.pixel_size}
           onActivate={() => {
-            dispatch({ type: "dismiss", id: card.n.id, now: Date.now() });
+            // Cartão sticky (CI que terminou) só fecha no ×: o clique só abre o link.
+            if (!card.n.sticky) dispatch({ type: "dismiss", id: card.n.id, now: Date.now() });
             quiet(invoke("card_action", { url: card.n.url }));
           }}
           onDismiss={() => {

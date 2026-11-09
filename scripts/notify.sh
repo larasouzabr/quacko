@@ -4,7 +4,7 @@
 # Uso:
 #   notify.sh [--from claude|cursor] [--sound CAMINHO] [--source agent|claude|ci|custom]
 #             [--status ok|fail|attention|info] [--message TEXTO] [--title TEXTO]
-#             [--project TEXTO] [--url URL]
+#             [--project TEXTO] [--url URL] [--sticky]
 #   notify.sh CAMINHO_DO_SOM          (forma antiga: só o som, continua funcionando)
 #
 # --from escolhe o adaptador que lê o JSON que a ferramenta manda no stdin (hooks do
@@ -42,7 +42,7 @@ finish() {
 }
 
 # ---------- argumentos ----------
-from="" sound="" source="" status="" message="" title="" project="" url="" reply=""
+from="" sound="" source="" status="" message="" title="" project="" url="" reply="" sticky=""
 if [ $# -gt 0 ] && [ "${1#-}" = "$1" ]; then
   sound="$1" # forma antiga: o primeiro argumento é o som
   shift
@@ -55,6 +55,10 @@ while [ $# -gt 0 ]; do
     val="$1"
   fi
   case "$opt" in
+    --sticky) # sem valor: o cartão só fecha no × (ex.: CI que terminou)
+      sticky=1
+      continue
+      ;;
     --from) from="$val" ;;
     --sound) sound="$val" ;;
     --source) source="$val" ;;
@@ -297,12 +301,13 @@ fi
 if [ "$JSON_TOOL" = jq ]; then
   payload=$(jq -nc \
     --arg source "$source" --arg status "$status" --arg message "$message" \
-    --arg title "$title" --arg project "$project" --arg url "$url" '
+    --arg title "$title" --arg project "$project" --arg url "$url" --arg sticky "$sticky" '
     {source: $source, status: $status}
     + (if $message != "" then {message: $message} else {} end)
     + (if $title != "" then {title: $title} else {} end)
     + (if $project != "" then {project: $project} else {} end)
-    + (if $url != "" then {url: $url} else {} end)')
+    + (if $url != "" then {url: $url} else {} end)
+    + (if $sticky != "" then {sticky: true} else {} end)')
 else
   # Sem jq: source e status são de lista fechada; os textos passam por json_str.
   payload="{\"source\":\"$source\",\"status\":\"$status\""
@@ -310,6 +315,7 @@ else
   [ -n "$title" ] && payload="$payload,\"title\":$(json_str "$title")"
   [ -n "$project" ] && payload="$payload,\"project\":$(json_str "$project")"
   [ -n "$url" ] && payload="$payload,\"url\":$(json_str "$url")"
+  [ -n "$sticky" ] && payload="$payload,\"sticky\":true"
   payload="$payload}"
 fi
 

@@ -210,6 +210,7 @@ pub fn run_test_sequence(app: &AppHandle) {
                     url: None,
                     ttl_ms: 7000,
                     progress: None,
+                    sticky: false,
                 },
             );
         }

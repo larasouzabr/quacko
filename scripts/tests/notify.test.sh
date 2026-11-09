@@ -138,6 +138,12 @@ expect_payload "flag sem valor no fim não trava" '.status=="info" and .source==
 run "" --desconhecida --status ok
 expect_payload "opção desconhecida é ignorada" '.status=="ok"'
 
+# --- --sticky (sem valor) ---
+run "" --source ci --status fail --sticky --title "PR #1"
+expect_payload "--sticky marca o cartão" '.sticky == true and .title == "PR #1"'
+run "" --source ci --status ok
+expect_payload "sem --sticky não manda o campo" '(has("sticky") | not)'
+
 # --- caminho sem jq: textos com caracteres de controle viram JSON válido ---
 run "" --status info --message "$(printf 'tab\there\nnova linha "aspas" \\ barra')" --title 'título com "aspas"'
 expect_payload "texto com controle e aspas vira JSON válido" '.message == "tab\there\nnova linha \"aspas\" \\ barra" and .title == "título com \"aspas\""'

@@ -22,6 +22,7 @@ export default function Card({ notification: n, lang, leaving, hovered, pixelSiz
   if (leaving) classes.push("is-leaving");
   if (hovered) classes.push("is-hovered");
   if (n.url) classes.push("has-link");
+  if (n.sticky) classes.push("is-sticky");
 
   return (
     <div className={classes.join(" ")} data-card-id={n.id} onClick={leaving ? undefined : onActivate}>

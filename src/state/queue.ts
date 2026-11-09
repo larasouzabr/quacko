@@ -48,10 +48,12 @@ export function queueReducer(state: QueueState, action: QueueAction): QueueState
       let cards = [...kept, card]; // o mais novo vai para o fim da lista
 
       // Acima do limite: os mais antigos começam a sair.
+      // Acima do limite, saem os mais antigos; os "sticky" (só fecham no ×) por último.
+      // Se todos forem sticky, o mais antigo cede o lugar: senão o aviso novo não apareceria.
       let excess = cards.filter((c) => c.leavingAt === null).length - state.maxCards;
-      if (excess > 0) {
+      for (const stickyRound of [false, true]) {
         cards = cards.map((c) => {
-          if (excess > 0 && c.leavingAt === null) {
+          if (excess > 0 && c.leavingAt === null && Boolean(c.n.sticky) === stickyRound && c !== card) {
             excess -= 1;
             return { ...c, leavingAt: now };
           }
@@ -78,7 +80,7 @@ export function queueReducer(state: QueueState, action: QueueAction): QueueState
           changed = true; // terminou de sair
           continue;
         }
-        if (c.leavingAt === null && !state.paused && now >= c.expiresAt) {
+        if (c.leavingAt === null && !c.n.sticky && !state.paused && now >= c.expiresAt) {
           changed = true;
           cards.push({ ...c, leavingAt: now });
           continue;

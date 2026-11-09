@@ -80,6 +80,8 @@ pub struct Notification {
     pub ttl_ms: u32,
     /// Barra de progresso no cartão (hoje só o monitor de PRs usa; não vem pela API HTTP).
     pub progress: Option<Progress>,
+    /// Fica na tela até a pessoa fechar no ×: não expira (ex.: CI que terminou).
+    pub sticky: bool,
 }
 
 pub const MAX_PROGRESS_TOTAL: u32 = 10_000;
@@ -110,6 +112,9 @@ struct RawNotification {
     /// Opcional: barra de progresso. Valores inválidos descartam só a barra.
     #[serde(default)]
     progress: Option<Value>,
+    /// Opcional: só fecha no × (sem expirar).
+    #[serde(default)]
+    sticky: Option<bool>,
 }
 
 /// Aceita `{done, total, failed?}` com inteiros, `total` de 1 a 10000; o resto é ajustado.
@@ -149,6 +154,7 @@ impl Notification {
             url: raw.url.and_then(|s| clean_url(&s)),
             ttl_ms: resolve_ttl(raw.ttl_ms, raw.status),
             progress: raw.progress.as_ref().and_then(clean_progress),
+            sticky: raw.sticky.unwrap_or(false),
         })
     }
 }
@@ -469,6 +475,13 @@ mod tests {
             assert_eq!(n.status, Status::Info, "o resto do aviso continua");
         }
         assert_eq!(ok(r#"{"source":"custom","status":"ok"}"#).progress, None);
+    }
+
+    #[test]
+    fn sticky_pela_api() {
+        assert!(ok(r#"{"source":"ci","status":"fail","sticky":true}"#).sticky);
+        assert!(!ok(r#"{"source":"ci","status":"fail"}"#).sticky);
+        assert!(parse(r#"{"source":"ci","status":"fail","sticky":"sim"}"#).is_err());
     }
 
     #[test]

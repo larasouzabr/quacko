@@ -30,10 +30,11 @@ while [ $# -gt 0 ]; do
   shift
 done
 
+# --sticky: o cartão do resultado fica na tela até a pessoa fechar no ×.
 if [ "$rc" -eq 0 ]; then
-  args=(--source ci --status ok --sound /System/Library/Sounds/Glass.aiff)
+  args=(--source ci --status ok --sticky --sound /System/Library/Sounds/Glass.aiff)
 else
-  args=(--source ci --status fail --sound /System/Library/Sounds/Basso.aiff)
+  args=(--source ci --status fail --sticky --sound /System/Library/Sounds/Basso.aiff)
 fi
 
 info=$(gh pr view ${view_args[@]+"${view_args[@]}"} --json number,title,url 2>/dev/null)

@@ -38,6 +38,7 @@ FAKE_RC=1 FAKE_VIEW="$VIEW" "$PRWATCH" 1234 --repo pondworks/lagoa-api --require
 rc=$?
 check "devolve o código do gh pr checks" '[ $rc = 1 ]'
 check "falha avisa com status fail e som Basso" '[[ "$(args)" == *"--status|fail|"* && "$(args)" == *"Basso.aiff"* ]]'
+check "resultado fica até fechar no × (--sticky)" '[[ "$(args)" == *"--sticky|"* ]]'
 check "título PR #N" '[[ "$(args)" == *"--title|PR #1234|"* ]]'
 check "mensagem = título do PR (qual PR falhou)" '[[ "$(args)" == *"--message|Corrige fuso horário no parser|"* ]]'
 check "projeto = dono/repo#N" '[[ "$(args)" == *"--project|pondworks/lagoa-api#1234|"* ]]'
