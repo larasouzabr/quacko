@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Notification } from "../types";
-import { initialQueue, isEmpty, LEAVE_MS, queueReducer, RESUME_GRACE_MS, type QueueState } from "./queue";
+import { hasVisibleAlert, initialQueue, isAlert, isEmpty, LEAVE_MS, queueReducer, RESUME_GRACE_MS, type QueueState } from "./queue";
 
 let nextId = 1;
 function notif(partial: Partial<Notification> = {}): Notification {
@@ -157,6 +157,18 @@ describe("fila de cartões", () => {
     let s = initialQueue(3);
     for (const n of ns) s = add(s, n, 0);
     expect(visible(s)).toEqual([ns[1].id, ns[2].id, ns[3].id]);
+  });
+
+  it("alerta da bandeja: PR que falhou ou pedido de atenção", () => {
+    expect(isAlert(notif({ source: "ci", status: "fail" }))).toBe(true);
+    expect(isAlert(notif({ source: "agent", status: "attention" }))).toBe(true);
+    expect(isAlert(notif({ source: "ci", status: "info" }))).toBe(false);
+    expect(isAlert(notif({ source: "custom", status: "fail" }))).toBe(false);
+    const a = notif({ source: "ci", status: "fail" });
+    let s = add(initialQueue(), a, 0);
+    expect(hasVisibleAlert(s)).toBe(true);
+    s = queueReducer(s, { type: "dismiss", id: a.id, now: 1 });
+    expect(hasVisibleAlert(s)).toBe(false);
   });
 
   it("tick sem mudanças devolve o mesmo estado (evita re-render)", () => {

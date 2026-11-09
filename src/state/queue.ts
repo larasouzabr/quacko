@@ -117,6 +117,17 @@ export function queueReducer(state: QueueState, action: QueueAction): QueueState
   }
 }
 
+/** Aviso que acende o alerta no ícone da bandeja (espelho de tray_icon::is_alert no Rust):
+ * checagem de PR que falhou ou pedido de atenção. */
+export function isAlert(n: Notification): boolean {
+  return n.status === "attention" || (n.status === "fail" && n.source === "ci");
+}
+
+/** Há algum aviso de alerta ainda visível (não saindo)? */
+export function hasVisibleAlert(state: QueueState): boolean {
+  return state.cards.some((c) => c.leavingAt === null && isAlert(c.n));
+}
+
 /** Cartões que ainda estão na tela (inclui os que estão saindo). */
 export function isEmpty(state: QueueState): boolean {
   return state.cards.length === 0;

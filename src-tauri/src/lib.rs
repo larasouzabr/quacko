@@ -12,6 +12,7 @@ mod server;
 mod settings;
 mod sound;
 mod tray;
+mod tray_icon;
 mod window;
 
 use std::sync::Arc;
@@ -44,6 +45,7 @@ pub fn run() {
             window::overlay_empty,
             window::set_interactive,
             window::set_overlay_size,
+            window::tray_alert_cleared,
             window::card_action,
             settings::get_settings,
             onboarding::onboarding_status,
@@ -61,6 +63,7 @@ pub fn run() {
 
             app.manage(Settings::load());
             app.manage(IdGen::default());
+            app.manage(tray_icon::TrayAlert::default());
             app.manage(onboarding::PendingDevice::default());
             let github_on = app.state::<Settings>().snapshot().github;
             github::spawn(app.handle(), github_on);

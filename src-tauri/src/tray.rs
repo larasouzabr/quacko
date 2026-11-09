@@ -14,7 +14,7 @@ use crate::integrations::{self, ManualReason, Outcome, Paths, PrwatchOutcome, To
 use crate::model::{IdGen, Notification, Source, Status};
 use crate::settings::{self, Settings};
 
-const TRAY_ID: &str = "miau-tray";
+use crate::tray_icon::TRAY_ID;
 
 mod ids {
     pub const STATUS: &str = "status";
@@ -60,13 +60,24 @@ pub fn create(app: &AppHandle, status: ServerStatus) -> tauri::Result<()> {
     app.manage(TrayStatus(status));
     let (menu, tooltip) = build_menu(app)?;
     TrayIconBuilder::with_id(TRAY_ID)
-        .icon(tauri::include_image!("icons/tray.png"))
+        .icon(crate::tray_icon::initial_image())
         .icon_as_template(true)
         .tooltip(tooltip)
         .menu(&menu)
         .show_menu_on_left_click(true)
         .on_menu_event(on_menu_event)
+        .on_tray_icon_event(|tray, event| {
+            // Abrir o menu (clicar no ícone) conta como "vi o aviso": tira o alerta.
+            if let tauri::tray::TrayIconEvent::Click {
+                button_state: tauri::tray::MouseButtonState::Down,
+                ..
+            } = event
+            {
+                crate::tray_icon::set_alert(tray.app_handle(), false);
+            }
+        })
         .build(app)?;
+    crate::tray_icon::apply_current(app);
     Ok(())
 }
 

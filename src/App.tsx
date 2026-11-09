@@ -7,7 +7,7 @@ import Card from "./components/Card";
 import { characterBox } from "./components/Cat";
 import { useDevicePixelRatio } from "./hooks/useDevicePixelRatio";
 import type { Lang } from "./i18n";
-import { initialQueue, isEmpty, queueReducer } from "./state/queue";
+import { hasVisibleAlert, initialQueue, isEmpty, queueReducer } from "./state/queue";
 import type { Notification, Settings } from "./types";
 
 // Valores usados até o Rust responder (ou se o app rodar fora do Tauri).
@@ -106,6 +106,14 @@ export default function App() {
     const timer = setInterval(() => dispatch({ type: "tick", now: Date.now() }), TICK_MS);
     return () => clearInterval(timer);
   }, [hasCards]);
+
+  // Os avisos de alerta sumiram da tela: o ícone da bandeja volta ao normal.
+  const alertVisible = hasVisibleAlert(queue);
+  const hadAlert = useRef(false);
+  useEffect(() => {
+    if (hadAlert.current && !alertVisible) quiet(invoke("tray_alert_cleared"));
+    hadAlert.current = alertVisible;
+  }, [alertVisible]);
 
   // Fila vazia: pede ao Rust para esconder a janela.
   useEffect(() => {

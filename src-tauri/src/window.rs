@@ -91,6 +91,9 @@ pub fn present(app: &AppHandle, notification: Notification) {
     state
         .last_delivered
         .store(notification.id, Ordering::SeqCst);
+    if crate::tray_icon::is_alert(&notification) {
+        crate::tray_icon::set_alert(app, true);
+    }
 
     if !window.is_visible().unwrap_or(false) {
         #[cfg(target_os = "macos")]
@@ -232,6 +235,13 @@ pub fn overlay_empty(app: AppHandle, last_seen_id: u64) {
         let _ = window.hide();
     }
     state.visible.send_replace(false);
+    crate::tray_icon::set_alert(&app, false);
+}
+
+/// Os avisos de alerta sumiram da tela (dispensados ou expirados): o ícone volta ao normal.
+#[tauri::command]
+pub fn tray_alert_cleared(app: AppHandle) {
+    crate::tray_icon::set_alert(&app, false);
 }
 
 /// Mouse sobre um cartão: a janela passa a receber cliques. Fora: cliques atravessam.
