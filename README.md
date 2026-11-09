@@ -9,7 +9,7 @@ Um patinho em pixel art que aparece no canto da tela quando algo termina: o Clau
 | ! Atenção | o agente precisa de permissão ou de uma resposta |
 | i Aviso | qualquer outro aviso |
 
-**Personagens:** o **Pato Pixel** é o padrão em instalações novas; o **Gato Pixel** continua disponível (campo `character` na config: `pato-pixel` ou `gato-pixel`). Quem já usava o app antes da escolha de personagem continua com o gato.
+**Personagens:** o **Pato Pixel** é o padrão em instalações novas; o **Gato Pixel** continua disponível (campo `character` na config: `pato-pixel` ou `gato-pixel`). Sem escolha explícita, vale o pato.
 
 ## Instalar (macOS 11+, Apple Silicon e Intel)
 

@@ -64,8 +64,6 @@ pub struct Config {
 
 /// Personagem de instalações novas.
 pub const DEFAULT_CHARACTER: &str = "pato-pixel";
-/// Quem já usava o app antes de existir a escolha continua com o gato que via.
-pub const LEGACY_CHARACTER: &str = "gato-pixel";
 
 fn valid_character_id(id: &str) -> bool {
     (1..=40).contains(&id.len())
@@ -203,17 +201,7 @@ pub fn default_path() -> Option<PathBuf> {
 pub fn load_or_create(path: &Path) -> Config {
     match fs::read_to_string(path) {
         Ok(text) => {
-            let (mut config, invalid) = Config::from_json_lenient(&text);
-            // Config de antes da escolha de personagem: mantém o gato que a pessoa via.
-            // Só com JSON válido sem o campo; arquivo quebrado não é regravado na leitura.
-            if let Ok(Value::Object(map)) = serde_json::from_str::<Value>(&text) {
-                if !map.contains_key("character") {
-                    config.character = LEGACY_CHARACTER.to_string();
-                    if let Err(e) = save(path, &config) {
-                        tracing::warn!(%e, "não foi possível gravar o personagem na config");
-                    }
-                }
-            }
+            let (config, invalid) = Config::from_json_lenient(&text);
             if !invalid.is_empty() {
                 tracing::warn!(?invalid, path = %path.display(), "config com valores inválidos; usando o padrão nesses campos");
             }
@@ -320,19 +308,17 @@ mod tests {
     }
 
     #[test]
-    fn personagem_novo_e_legado() {
-        // Instalação nova: arquivo criado com o pato.
+    fn personagem_padrao_e_escolha_explicita() {
+        // Instalação nova e config antiga sem o campo: o pato (padrão).
         let dir = tempfile::tempdir().unwrap();
         let path = dir.path().join("config.json");
         assert_eq!(load_or_create(&path).character, DEFAULT_CHARACTER);
-        // Config antiga (sem o campo): mantém o gato, e grava a escolha.
         fs::write(&path, r#"{"port":4747,"dnd":true}"#).unwrap();
         let c = load_or_create(&path);
-        assert_eq!((c.character.as_str(), c.dnd), (LEGACY_CHARACTER, true));
-        assert!(fs::read_to_string(&path)
-            .unwrap()
-            .contains(LEGACY_CHARACTER));
-        // Quem escolheu outro mantém a escolha (mesmo um que o app ainda não tem).
+        assert_eq!((c.character.as_str(), c.dnd), (DEFAULT_CHARACTER, true));
+        // Escolha explícita fica (mesmo um personagem que o app ainda não tem).
+        fs::write(&path, r#"{"character":"gato-pixel"}"#).unwrap();
+        assert_eq!(load_or_create(&path).character, "gato-pixel");
         fs::write(&path, r#"{"character":"capivara-pixel"}"#).unwrap();
         assert_eq!(load_or_create(&path).character, "capivara-pixel");
     }
