@@ -1,8 +1,11 @@
 [package]
 name = "quacko"
 version = "0.1.0"
-description = "Notificador desktop com gatinho"
+description = "Notificador desktop com patinho"
 edition = "2021"
+
+[workspace]
+members = ["hook"]
 
 [lib]
 name = "quacko_lib"

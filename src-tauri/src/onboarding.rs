@@ -52,7 +52,8 @@ fn collect(app: &AppHandle) -> Status {
         cursor_connected: connected(Tool::Cursor),
         github: github_state(config.github, gh.is_some(), has_token),
         github_device_flow: crate::github::device_flow_client_id(&config).is_some(),
-        nowplaying: crate::media::find_nowplaying_cli(&home).is_some(),
+        nowplaying: !cfg!(target_os = "macos")
+            || crate::media::find_nowplaying_cli(&home).is_some(),
     }
 }
 

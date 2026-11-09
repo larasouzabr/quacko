@@ -231,23 +231,16 @@ fn connect_submenu(app: &AppHandle, t: &TrayTexts) -> tauri::Result<Submenu<Wry>
         github_on,
         None::<&str>,
     )?;
-    let prwatch = MenuItem::with_id(
-        app,
-        ids::PRWATCH,
-        t.prwatch_item,
-        paths.is_some(),
-        None::<&str>,
-    )?;
-    Submenu::with_items(
-        app,
-        t.connect,
-        true,
-        &[
-            &claude,
-            &cursor,
-            &github,
-            &PredefinedMenuItem::separator(app)?,
-            &prwatch,
-        ],
-    )
+    let submenu = Submenu::with_items(app, t.connect, true, &[&claude, &cursor, &github])?;
+    if cfg!(target_os = "macos") {
+        let prwatch = MenuItem::with_id(
+            app,
+            ids::PRWATCH,
+            t.prwatch_item,
+            paths.is_some(),
+            None::<&str>,
+        )?;
+        submenu.append_items(&[&PredefinedMenuItem::separator(app)?, &prwatch])?;
+    }
+    Ok(submenu)
 }

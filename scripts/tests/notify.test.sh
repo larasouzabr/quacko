@@ -1,7 +1,7 @@
 #!/bin/bash
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
-NOTIFY="$HERE/../notify.sh"
+NOTIFY="${QUACKO_NOTIFY:-$HERE/../notify.sh}"
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 export QUACKO_DRY_RUN=1 QUACKO_STATE_DIR="$WORK/state" QUACKO_LOG="$WORK/log"

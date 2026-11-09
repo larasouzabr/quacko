@@ -2964,6 +2964,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "quacko-hook"
+version = "0.1.0"
+dependencies = [
+ "serde_json",
+ "tempfile",
+]
+
+[[package]]
 name = "quick-xml"
 version = "0.42.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"

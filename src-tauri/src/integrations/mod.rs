@@ -11,16 +11,28 @@ use std::io::{self};
 use std::path::PathBuf;
 
 use files::{install_script, prepare, timestamp, write_atomic};
-use hooks::{apply, is_connected, snippet};
+use hooks::{apply, commands_in, is_connected, snippet};
 use scripts::NOTIFY_SH;
 use serde_json::Value;
 
+pub use hooks::Hook;
 pub use scripts::{install_prwatch, sync_installed_scripts, PrwatchOutcome};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Tool {
     Claude,
     Cursor,
+}
+
+impl Tool {
+    pub const ALL: [Tool; 2] = [Tool::Claude, Tool::Cursor];
+
+    pub fn flag_name(self) -> &'static str {
+        match self {
+            Tool::Claude => "claude",
+            Tool::Cursor => "cursor",
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -73,6 +85,23 @@ impl Paths {
     }
 }
 
+pub fn hook_exe() -> Option<PathBuf> {
+    let exe = std::env::current_exe().ok()?;
+    Some(exe.with_file_name(format!(
+        "{}{}",
+        hooks::HOOK_EXE_NAME,
+        std::env::consts::EXE_SUFFIX
+    )))
+}
+
+pub fn default_hook(paths: &Paths) -> Option<Hook> {
+    if cfg!(target_os = "macos") {
+        Some(Hook::Script(paths.notify_sh()))
+    } else {
+        hook_exe().map(Hook::Exe)
+    }
+}
+
 pub fn status(paths: &Paths, tool: Tool) -> bool {
     match prepare(&paths.config_file(tool)) {
         Ok((_, doc, _)) => is_connected(tool, &doc),
@@ -84,9 +113,23 @@ pub fn status(paths: &Paths, tool: Tool) -> bool {
 }
 
 pub fn set_connected(paths: &Paths, tool: Tool, connect: bool) -> io::Result<Outcome> {
-    let notify = paths.notify_sh();
+    let hook = default_hook(paths)
+        .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, "executável do app"))?;
+    connect_with(paths, tool, connect, &hook)
+}
+
+pub fn connect_with(paths: &Paths, tool: Tool, connect: bool, hook: &Hook) -> io::Result<Outcome> {
     if connect {
-        install_script(&notify, NOTIFY_SH)?;
+        match hook {
+            Hook::Script(path) => install_script(path, NOTIFY_SH)?,
+            Hook::Exe(path) if !path.is_file() => {
+                return Err(io::Error::new(
+                    io::ErrorKind::NotFound,
+                    format!("{} não encontrado", path.display()),
+                ));
+            }
+            Hook::Exe(_) => {}
+        }
     }
     let file = paths.config_file(tool);
     let (target, mut doc, existed) = match prepare(&file) {
@@ -95,15 +138,15 @@ pub fn set_connected(paths: &Paths, tool: Tool, connect: bool) -> io::Result<Out
             return Ok(Outcome::Manual {
                 reason,
                 file,
-                snippet: snippet(tool, &notify),
+                snippet: snippet(tool, hook),
             });
         }
     };
-    if let Err(reason) = apply(tool, &mut doc, &notify, connect) {
+    if let Err(reason) = apply(tool, &mut doc, hook, connect) {
         return Ok(Outcome::Manual {
             reason,
             file,
-            snippet: snippet(tool, &notify),
+            snippet: snippet(tool, hook),
         });
     }
     if existed {
@@ -124,4 +167,34 @@ pub fn set_connected(paths: &Paths, tool: Tool, connect: bool) -> io::Result<Out
     } else {
         Outcome::Disconnected
     })
+}
+
+pub fn refresh_exe_hooks(paths: &Paths, exe: &std::path::Path) -> Vec<Tool> {
+    let current = exe.to_string_lossy();
+    Tool::ALL
+        .into_iter()
+        .filter(|tool| status(paths, *tool))
+        .filter(|tool| {
+            let commands: Vec<String> = fs::read_to_string(paths.config_file(*tool))
+                .ok()
+                .and_then(|t| serde_json::from_str::<Value>(&t).ok())
+                .and_then(|doc| doc.get("hooks").and_then(Value::as_object).cloned())
+                .map(|hooks| {
+                    hooks
+                        .values()
+                        .filter_map(Value::as_array)
+                        .flat_map(|entries| commands_in(*tool, entries))
+                        .collect()
+                })
+                .unwrap_or_default();
+            let ours: Vec<&String> = commands.iter().filter(|c| hooks::is_quacko(c)).collect();
+            !ours.is_empty() && ours.iter().any(|c| !c.contains(current.as_ref()))
+        })
+        .filter(|tool| {
+            matches!(
+                connect_with(paths, *tool, true, &Hook::Exe(exe.to_path_buf())),
+                Ok(Outcome::Connected)
+            )
+        })
+        .collect()
 }

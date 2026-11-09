@@ -1,0 +1,20 @@
+[package]
+name = "quacko-hook"
+version = "0.1.0"
+description = "Hook do Quacko para Claude Code e Cursor"
+edition = "2021"
+publish = false
+
+[lib]
+name = "quacko_hook"
+path = "src/lib.rs"
+
+[[bin]]
+name = "quacko-hook"
+path = "src/main.rs"
+
+[dependencies]
+serde_json = { version = "1", features = ["preserve_order"] }
+
+[dev-dependencies]
+tempfile = "3"

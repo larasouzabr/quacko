@@ -115,8 +115,9 @@ scripts/demo.sh          # fires 4 sample notifications
 
 npm test                 # frontend tests (Vitest)
 npm run typecheck
-(cd src-tauri && cargo test && cargo clippy --all-targets -- -D warnings)
+(cd src-tauri && cargo test --workspace && cargo clippy --workspace --all-targets -- -D warnings)
 bash scripts/tests/notify.test.sh
+(cd src-tauri && cargo build -p quacko-hook) && QUACKO_NOTIFY=src-tauri/target.noindex/debug/quacko-hook bash scripts/tests/notify.test.sh
 bash scripts/tests/prwatch.test.sh
 
 npm run build:mac        # .app and .dmg for this Mac, in src-tauri/target.noindex/release/bundle/

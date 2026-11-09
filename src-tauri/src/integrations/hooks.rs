@@ -1,29 +1,58 @@
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use super::*;
 use serde_json::{json, Map, Value};
 
-const QUACKO_MARKERS: [&str; 2] = ["/.claude/hooks/notify.sh", "quacko hook"];
+pub const HOOK_EXE_NAME: &str = "quacko-hook";
+const QUACKO_MARKERS: [&str; 3] = ["/.claude/hooks/notify.sh", "quacko hook", HOOK_EXE_NAME];
 
-const CLAUDE_HOOKS: [(&str, &str); 3] = [
-    ("UserPromptSubmit", "--from claude"),
-    (
-        "Stop",
-        "--from claude --sound /System/Library/Sounds/Glass.aiff",
-    ),
-    (
-        "Notification",
-        "--from claude --sound /System/Library/Sounds/Ping.aiff",
-    ),
+const GLASS: &str = "/System/Library/Sounds/Glass.aiff";
+const PING: &str = "/System/Library/Sounds/Ping.aiff";
+
+const CLAUDE_HOOKS: [(&str, Option<&str>); 3] = [
+    ("UserPromptSubmit", None),
+    ("Stop", Some(GLASS)),
+    ("Notification", Some(PING)),
 ];
 
-const CURSOR_HOOKS: [(&str, &str); 2] = [
-    ("beforeSubmitPrompt", "--from cursor"),
-    (
-        "stop",
-        "--from cursor --sound /System/Library/Sounds/Glass.aiff",
-    ),
-];
+const CURSOR_HOOKS: [(&str, Option<&str>); 2] =
+    [("beforeSubmitPrompt", None), ("stop", Some(GLASS))];
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Hook {
+    Script(PathBuf),
+    Exe(PathBuf),
+}
+
+impl Hook {
+    fn args(&self, tool: Tool, sound: Option<&str>) -> Vec<String> {
+        let mut args = vec!["--from".to_string(), tool.flag_name().to_string()];
+        if let (Hook::Script(_), Some(sound)) = (self, sound) {
+            args.extend(["--sound".to_string(), sound.to_string()]);
+        }
+        args
+    }
+
+    fn entry(&self, tool: Tool, args: Vec<String>) -> Value {
+        match (self, tool) {
+            (Hook::Script(path), Tool::Claude) => {
+                json!({ "hooks": [{ "type": "command", "command": command_for(path, &args.join(" ")) }] })
+            }
+            (Hook::Script(path), Tool::Cursor) => {
+                json!({ "command": command_for(path, &args.join(" ")) })
+            }
+            (Hook::Exe(path), Tool::Claude) => {
+                json!({ "hooks": [{ "type": "command", "command": path.to_string_lossy(), "args": args }] })
+            }
+            (Hook::Exe(path), Tool::Cursor) => json!({ "command": powershell_call(path, &args) }),
+        }
+    }
+}
+
+pub fn powershell_call(exe: &Path, args: &[String]) -> String {
+    let quoted = format!("'{}'", exe.to_string_lossy().replace('\'', "''"));
+    format!("& {quoted} {}", args.join(" "))
+}
 
 pub(super) fn is_quacko(command: &str) -> bool {
     QUACKO_MARKERS.iter().any(|m| command.contains(m))
@@ -44,7 +73,7 @@ pub(super) fn command_for(notify: &Path, args: &str) -> String {
     format!("{} {args}", shell_quote(&notify.to_string_lossy()))
 }
 
-fn events(tool: Tool) -> &'static [(&'static str, &'static str)] {
+fn events(tool: Tool) -> &'static [(&'static str, Option<&'static str>)] {
     match tool {
         Tool::Claude => &CLAUDE_HOOKS,
         Tool::Cursor => &CURSOR_HOOKS,
@@ -52,7 +81,19 @@ fn events(tool: Tool) -> &'static [(&'static str, &'static str)] {
 }
 
 pub(super) fn commands_in(tool: Tool, entries: &[Value]) -> Vec<String> {
-    let as_str = |v: &Value| v.get("command").and_then(Value::as_str).map(String::from);
+    let as_str = |v: &Value| {
+        let command = v.get("command").and_then(Value::as_str)?;
+        let args: Vec<&str> = v
+            .get("args")
+            .and_then(Value::as_array)
+            .map(|a| a.iter().filter_map(Value::as_str).collect())
+            .unwrap_or_default();
+        Some(if args.is_empty() {
+            command.to_string()
+        } else {
+            format!("{command} {}", args.join(" "))
+        })
+    };
     match tool {
         Tool::Claude => entries
             .iter()
@@ -65,10 +106,7 @@ pub(super) fn commands_in(tool: Tool, entries: &[Value]) -> Vec<String> {
 }
 
 pub fn is_connected(tool: Tool, doc: &Value) -> bool {
-    let flag = match tool {
-        Tool::Claude => "--from claude",
-        Tool::Cursor => "--from cursor",
-    };
+    let flag = format!("--from {}", tool.flag_name());
     events(tool).iter().all(|(event, _)| {
         doc.get("hooks")
             .and_then(|h| h.get(*event))
@@ -76,7 +114,7 @@ pub fn is_connected(tool: Tool, doc: &Value) -> bool {
             .is_some_and(|entries| {
                 commands_in(tool, entries)
                     .iter()
-                    .any(|c| is_quacko(c) && c.contains(flag))
+                    .any(|c| is_quacko(c) && c.contains(&flag))
             })
     })
 }
@@ -105,21 +143,9 @@ fn strip_quacko(tool: Tool, entries: &mut Vec<Value>) {
     }
 }
 
-fn new_entry(tool: Tool, command: String) -> Value {
-    match tool {
-        Tool::Claude => json!({ "hooks": [{ "type": "command", "command": command }] }),
-        Tool::Cursor => json!({ "command": command }),
-    }
-}
-
-pub fn apply(
-    tool: Tool,
-    doc: &mut Value,
-    notify: &Path,
-    connect: bool,
-) -> Result<(), ManualReason> {
+pub fn apply(tool: Tool, doc: &mut Value, hook: &Hook, connect: bool) -> Result<(), ManualReason> {
     let mut work = doc.clone();
-    apply_in_place(tool, &mut work, notify, connect)?;
+    apply_in_place(tool, &mut work, hook, connect)?;
     *doc = work;
     Ok(())
 }
@@ -127,7 +153,7 @@ pub fn apply(
 fn apply_in_place(
     tool: Tool,
     doc: &mut Value,
-    notify: &Path,
+    hook: &Hook,
     connect: bool,
 ) -> Result<(), ManualReason> {
     let root = doc.as_object_mut().ok_or(ManualReason::Invalid)?;
@@ -145,7 +171,7 @@ fn apply_in_place(
         .and_then(Value::as_object_mut)
         .ok_or(ManualReason::Invalid)?;
 
-    for (event, args) in events(tool) {
+    for (event, sound) in events(tool) {
         if !hooks.contains_key(*event) {
             if !connect {
                 continue;
@@ -158,7 +184,7 @@ fn apply_in_place(
             .ok_or(ManualReason::Invalid)?;
         strip_quacko(tool, entries);
         if connect {
-            entries.push(new_entry(tool, command_for(notify, args)));
+            entries.push(hook.entry(tool, hook.args(tool, *sound)));
         }
     }
     if !connect {
@@ -173,8 +199,8 @@ fn apply_in_place(
     Ok(())
 }
 
-pub fn snippet(tool: Tool, notify: &Path) -> String {
+pub fn snippet(tool: Tool, hook: &Hook) -> String {
     let mut doc = json!({});
-    let _ = apply(tool, &mut doc, notify, true);
+    let _ = apply(tool, &mut doc, hook, true);
     serde_json::to_string_pretty(&doc).unwrap_or_default()
 }

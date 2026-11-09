@@ -34,8 +34,10 @@ jobs:
         run: |
           npm test
           npx tsc --noEmit
-          cargo test --manifest-path src-tauri/Cargo.toml
+          cargo test --workspace --manifest-path src-tauri/Cargo.toml
           bash scripts/tests/notify.test.sh
+          cargo build -p quacko-hook --manifest-path src-tauri/Cargo.toml
+          QUACKO_NOTIFY="$PWD/$CARGO_TARGET_DIR/debug/quacko-hook" bash scripts/tests/notify.test.sh
           bash scripts/tests/prwatch.test.sh
 
       - name: Build e release (sem assinatura)

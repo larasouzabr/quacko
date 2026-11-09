@@ -13,6 +13,14 @@ pub fn sync_scripts_on_start(app: &AppHandle) {
         let Some(paths) = Paths::from_home() else {
             return;
         };
+        if !cfg!(target_os = "macos") {
+            if let Some(exe) = integrations::hook_exe().filter(|p| p.is_file()) {
+                let moved = integrations::refresh_exe_hooks(&paths, &exe);
+                if !moved.is_empty() {
+                    tracing::info!(?moved, "hooks apontam para o novo lugar do app");
+                }
+            }
+        }
         let updated = integrations::sync_installed_scripts(&paths);
         if updated.is_empty() {
             return;
@@ -32,6 +40,9 @@ pub fn sync_scripts_on_start(app: &AppHandle) {
 }
 
 pub fn warn_media_on_start(app: &AppHandle) {
+    if !cfg!(target_os = "macos") {
+        return;
+    }
     let app = app.clone();
     tauri::async_runtime::spawn_blocking(move || {
         let Some(paths) = Paths::from_home() else {

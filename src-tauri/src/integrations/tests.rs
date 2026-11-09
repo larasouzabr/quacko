@@ -14,8 +14,16 @@ fn notify() -> PathBuf {
     PathBuf::from(NOTIFY)
 }
 
+fn script() -> Hook {
+    Hook::Script(notify())
+}
+
+fn set_connected(paths: &Paths, tool: Tool, connect: bool) -> io::Result<Outcome> {
+    connect_with(paths, tool, connect, &Hook::Script(paths.notify_sh()))
+}
+
 fn connect(tool: Tool, doc: &mut Value) {
-    apply(tool, doc, &notify(), true).unwrap();
+    apply(tool, doc, &script(), true).unwrap();
 }
 
 fn all_commands(tool: Tool, doc: &Value) -> Vec<String> {
@@ -99,7 +107,7 @@ fn grupo_misto_perde_so_a_entrada_do_quacko() {
             r#"{{"hooks":{{"Stop":[{{"hooks":[{{"type":"command","command":"/opt/a.sh"}},{{"type":"command","command":"{NOTIFY}"}}]}}]}}}}"#
         ))
         .unwrap();
-    apply(Tool::Claude, &mut doc, &notify(), false).unwrap();
+    apply(Tool::Claude, &mut doc, &script(), false).unwrap();
     assert_eq!(
         doc["hooks"]["Stop"][0]["hooks"].as_array().unwrap().len(),
         1
@@ -115,12 +123,12 @@ fn desconectar_tira_so_o_quacko_e_limpa_o_que_ficou_vazio() {
         .unwrap();
     let original = doc.clone();
     connect(Tool::Claude, &mut doc);
-    apply(Tool::Claude, &mut doc, &notify(), false).unwrap();
+    apply(Tool::Claude, &mut doc, &script(), false).unwrap();
     assert_eq!(doc, original);
 
     let mut only_quacko = json!({});
     connect(Tool::Claude, &mut only_quacko);
-    apply(Tool::Claude, &mut only_quacko, &notify(), false).unwrap();
+    apply(Tool::Claude, &mut only_quacko, &script(), false).unwrap();
     assert_eq!(only_quacko, json!({}));
 }
 
@@ -128,7 +136,7 @@ fn desconectar_tira_so_o_quacko_e_limpa_o_que_ficou_vazio() {
 fn desconectar_nao_apaga_lista_vazia_de_outro_evento() {
     let mut doc = json!({"hooks": {"PreCompact": []}});
     connect(Tool::Claude, &mut doc);
-    apply(Tool::Claude, &mut doc, &notify(), false).unwrap();
+    apply(Tool::Claude, &mut doc, &script(), false).unwrap();
     assert_eq!(doc, json!({"hooks": {"PreCompact": []}}));
 }
 
@@ -141,7 +149,7 @@ fn formato_inesperado_vai_para_o_modo_manual() {
     ] {
         let mut doc = bad.clone();
         assert_eq!(
-            apply(Tool::Claude, &mut doc, &notify(), true),
+            apply(Tool::Claude, &mut doc, &script(), true),
             Err(ManualReason::Invalid),
             "{bad}"
         );
@@ -161,7 +169,7 @@ fn cursor_cria_versao_e_mescla() {
         doc["hooks"]["beforeSubmitPrompt"][0]["command"],
         format!("{NOTIFY} --from cursor")
     );
-    apply(Tool::Cursor, &mut doc, &notify(), false).unwrap();
+    apply(Tool::Cursor, &mut doc, &script(), false).unwrap();
     assert_eq!(all_commands(Tool::Cursor, &doc), vec!["./hooks/audio.sh"]);
 }
 
@@ -412,4 +420,80 @@ fn scripts_embutidos_sao_os_do_repositorio() {
         NOTIFY_SH.contains(OURS_MARKER) && PRWATCH.contains(OURS_MARKER),
         "a sincronização depende da marca"
     );
+}
+
+const EXE: &str = r"C:\Users\Ana Maria\AppData\Local\Quacko\quacko-hook.exe";
+
+fn exe() -> Hook {
+    Hook::Exe(PathBuf::from(EXE))
+}
+
+#[test]
+fn windows_claude_em_forma_exec_sem_shell() {
+    let mut doc = json!({});
+    apply(Tool::Claude, &mut doc, &exe(), true).unwrap();
+    let stop = &doc["hooks"]["Stop"][0]["hooks"][0];
+    assert_eq!(stop["command"], EXE);
+    assert_eq!(
+        stop["args"],
+        json!(["--from", "claude"]),
+        "sem --sound do macOS"
+    );
+    assert!(is_connected(Tool::Claude, &doc));
+    apply(Tool::Claude, &mut doc, &exe(), false).unwrap();
+    assert_eq!(doc, json!({}));
+}
+
+#[test]
+fn windows_cursor_pelo_powershell_com_aspas_simples() {
+    let mut doc = json!({});
+    apply(Tool::Cursor, &mut doc, &exe(), true).unwrap();
+    assert_eq!(
+        doc["hooks"]["stop"][0]["command"],
+        format!("& '{EXE}' --from cursor")
+    );
+    assert!(is_connected(Tool::Cursor, &doc));
+    assert_eq!(
+        hooks::powershell_call(Path::new(r"C:\Users\O'Neil\q.exe"), &["-x".into()]),
+        r"& 'C:\Users\O''Neil\q.exe' -x"
+    );
+}
+
+#[test]
+fn trocar_o_script_pelo_executavel_nao_duplica() {
+    let mut doc = json!({});
+    connect(Tool::Claude, &mut doc);
+    apply(Tool::Claude, &mut doc, &exe(), true).unwrap();
+    let ours: Vec<String> = all_commands(Tool::Claude, &doc);
+    assert_eq!(ours.len(), 3);
+    assert!(ours.iter().all(|c| c.starts_with(EXE)));
+}
+
+#[test]
+fn executavel_que_nao_existe_nao_conecta() {
+    let (_dir, paths) = temp_home();
+    let missing = Hook::Exe(paths.home.join("sumiu").join("quacko-hook.exe"));
+    assert!(connect_with(&paths, Tool::Claude, true, &missing).is_err());
+    assert!(!paths.config_file(Tool::Claude).exists());
+}
+
+#[test]
+fn app_movido_atualiza_o_caminho_dos_hooks() {
+    let (dir, paths) = temp_home();
+    let old = dir.path().join("antigo").join("quacko-hook.exe");
+    let new = dir.path().join("novo").join("quacko-hook.exe");
+    for p in [&old, &new] {
+        fs::create_dir_all(p.parent().unwrap()).unwrap();
+        fs::write(p, "").unwrap();
+    }
+    connect_with(&paths, Tool::Claude, true, &Hook::Exe(old.clone())).unwrap();
+    assert_eq!(
+        refresh_exe_hooks(&paths, &old),
+        Vec::<Tool>::new(),
+        "já aponta para o atual"
+    );
+    assert_eq!(refresh_exe_hooks(&paths, &new), vec![Tool::Claude]);
+    let text = fs::read_to_string(paths.config_file(Tool::Claude)).unwrap();
+    assert!(text.contains("novo") && !text.contains("antigo"));
+    assert_eq!(refresh_exe_hooks(&paths, &new), Vec::<Tool>::new());
 }
