@@ -89,6 +89,20 @@ jobs:
           releaseId: ${{ needs.draft.outputs.id }}
           args: --target universal-apple-darwin
 
+      - name: Cópia com nome fixo (botão de download do README)
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_ID: ${{ needs.draft.outputs.id }}
+        run: |
+          file=$(ls target/universal-apple-darwin/release/bundle/dmg/*.dmg | head -1)
+          curl -fsS -X POST -o /dev/null \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            -H "Content-Type: application/octet-stream" \
+            --data-binary @"$file" \
+            "https://uploads.github.com/repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID/assets?name=Quacko_universal.dmg"
+
       - name: Build (sem release)
         if: github.event_name != 'push'
         run: npx tauri build --target universal-apple-darwin
@@ -145,6 +159,20 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           releaseId: ${{ needs.draft.outputs.id }}
+
+      - name: Cópia com nome fixo (botão de download do README)
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_ID: ${{ needs.draft.outputs.id }}
+        run: |
+          file=$(ls target/release/bundle/nsis/*-setup.exe | head -1)
+          curl -fsS -X POST -o /dev/null \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            -H "Content-Type: application/octet-stream" \
+            --data-binary @"$file" \
+            "https://uploads.github.com/repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID/assets?name=Quacko_x64-setup.exe"
 
       - name: Build (sem release)
         if: github.event_name != 'push'

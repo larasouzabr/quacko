@@ -18,6 +18,13 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/larasouzabr/quacko/releases/latest/download/Quacko_universal.dmg"><img src="https://img.shields.io/badge/Download_for_macOS-Apple_Silicon_%2B_Intel-1f2328?style=for-the-badge&logo=apple&logoColor=white" alt="Download for macOS"></a>
+  <a href="https://github.com/larasouzabr/quacko/releases/latest/download/Quacko_x64-setup.exe"><img src="https://img.shields.io/badge/Download_for_Windows-10_%7C_11-0067b8?style=for-the-badge" alt="Download for Windows"></a>
+  <br>
+  <sub><a href="https://github.com/larasouzabr/quacko/releases">All versions</a></sub>
+</p>
+
+<p align="center">
   <img src="docs/images/cards.png" width="396" alt="Four Quacko cards, each with the duck beside it: Claude finished a request, Claude needs permission, a PR's CI failed at 7 of 12 checks, and another PR's CI passed">
 </p>
 
@@ -42,7 +49,7 @@ The duck pops up in the corner of your screen when something finishes: Claude Co
 
 ### macOS 11+ (Apple Silicon and Intel)
 
-Download `Quacko_<version>_universal.dmg` from the repository's Releases page (when there is one) or build it from source (see [Development](#development)). The universal `.dmg` works on both Apple Silicon and Intel Macs.
+Click **Download for macOS** at the top of this page (it always fetches the latest version) or build it from source (see [Development](#development)). The universal `.dmg` works on both Apple Silicon and Intel Macs.
 
 1. Open the `.dmg` and drag **Quacko.app** into **Applications**.
 2. The build isn't signed by Apple, so macOS blocks the first launch when the `.dmg` was downloaded. Allow it in one of these ways:
@@ -52,7 +59,7 @@ Download `Quacko_<version>_universal.dmg` from the repository's Releases page (w
 
 ### Windows 10 and 11 (x64)
 
-1. Download `Quacko_<version>_x64-setup.exe` from Releases and run it. It installs for your user only, with no admin rights needed.
+1. Click **Download for Windows** at the top of this page and run the installer. It installs for your user only, with no admin rights needed.
 2. The installer isn't signed with a code-signing certificate, so Windows SmartScreen may warn about it: click **More info → Run anyway**.
 3. The duck shows up in the system tray, next to the clock (it may start inside the **^** overflow; drag it onto the taskbar to keep it visible).
 
