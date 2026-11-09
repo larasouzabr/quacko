@@ -1,3 +1,4 @@
+use std::ffi::OsString;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::time::{Duration, Instant};
@@ -7,6 +8,12 @@ pub fn find_gh(home: &Path) -> Option<PathBuf> {
         if custom.is_file() {
             return Some(custom);
         }
+    }
+    if cfg!(windows) {
+        return windows_candidates(home, |key| std::env::var_os(key))
+            .into_iter()
+            .find(|p| p.is_file())
+            .or_else(|| in_path(std::env::var_os("PATH")?, "gh.exe"));
     }
     let user = std::env::var("USER").unwrap_or_default();
     let candidates = [
@@ -21,6 +28,32 @@ pub fn find_gh(home: &Path) -> Option<PathBuf> {
         return Some(found);
     }
     from_login_shell().or_else(newest_in_nix_store)
+}
+
+pub fn windows_candidates(home: &Path, env: impl Fn(&str) -> Option<OsString>) -> Vec<PathBuf> {
+    let dir = |key: &str, parts: &[&str]| {
+        env(key).map(|root| {
+            parts
+                .iter()
+                .fold(PathBuf::from(root), |p, part| p.join(part))
+        })
+    };
+    [
+        dir("ProgramFiles", &["GitHub CLI", "gh.exe"]),
+        dir("ProgramFiles(x86)", &["GitHub CLI", "gh.exe"]),
+        dir("LOCALAPPDATA", &["Programs", "GitHub CLI", "gh.exe"]),
+        Some(home.join("scoop").join("shims").join("gh.exe")),
+        dir("ProgramData", &["chocolatey", "bin", "gh.exe"]),
+    ]
+    .into_iter()
+    .flatten()
+    .collect()
+}
+
+pub fn in_path(path: OsString, name: &str) -> Option<PathBuf> {
+    std::env::split_paths(&path)
+        .map(|dir| dir.join(name))
+        .find(|p| p.is_file())
 }
 
 fn from_login_shell() -> Option<PathBuf> {
@@ -67,6 +100,12 @@ pub fn gh_token(gh: &Path) -> Option<String> {
 }
 
 fn run_with_timeout(cmd: &mut Command, limit: Duration) -> Option<String> {
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+        cmd.creation_flags(CREATE_NO_WINDOW);
+    }
     let mut child = cmd
         .stdin(Stdio::null())
         .stdout(Stdio::piped())

@@ -1,6 +1,8 @@
 use crate::i18n::Lang;
 use crate::model::{Progress, Source, Status};
 use std::collections::HashMap;
+use std::fs;
+use std::path::Path;
 
 use serde_json::{json, Value};
 
@@ -304,4 +306,43 @@ fn cartao_corta_textos_longos_e_descarta_url_estranha() {
         crate::model::MAX_PROJECT_CHARS
     );
     assert_eq!(n.url, None);
+}
+
+#[test]
+fn gh_no_windows_nos_lugares_dos_instaladores() {
+    let home = Path::new(r"C:\Users\Ana");
+    let env = |key: &str| match key {
+        "ProgramFiles" => Some(r"C:\Program Files".into()),
+        "LOCALAPPDATA" => Some(r"C:\Users\Ana\AppData\Local".into()),
+        _ => None,
+    };
+    let found: Vec<String> = super::gh_cli::windows_candidates(home, env)
+        .iter()
+        .map(|p| p.to_string_lossy().replace('\\', "/"))
+        .collect();
+    assert_eq!(
+        found,
+        [
+            "C:/Program Files/GitHub CLI/gh.exe",
+            "C:/Users/Ana/AppData/Local/Programs/GitHub CLI/gh.exe",
+            "C:/Users/Ana/scoop/shims/gh.exe",
+        ]
+    );
+}
+
+#[test]
+fn gh_pelo_path() {
+    let dir = tempfile::tempdir().unwrap();
+    let bin = dir.path().join("bin");
+    fs::create_dir_all(&bin).unwrap();
+    fs::write(bin.join("gh.exe"), "").unwrap();
+    let path = std::env::join_paths([dir.path().join("vazio"), bin.clone()]).unwrap();
+    assert_eq!(
+        super::gh_cli::in_path(path, "gh.exe"),
+        Some(bin.join("gh.exe"))
+    );
+    assert_eq!(
+        super::gh_cli::in_path(std::env::join_paths([dir.path()]).unwrap(), "gh.exe"),
+        None
+    );
 }

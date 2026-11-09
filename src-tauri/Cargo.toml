@@ -28,7 +28,7 @@ tauri-plugin-autostart = "2"
 dirs = "7"
 sys-locale = "0.3"
 reqwest = { version = "0.13", default-features = false, features = ["form", "json", "rustls"] }
-keyring = { version = "3", features = ["apple-native"] }
+keyring = { version = "3", features = ["apple-native", "windows-native"] }
 zip = { version = "9.5.0", default-features = false, features = ["deflate"] }
 quacko-hook = { path = "hook" }
 
