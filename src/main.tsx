@@ -1,6 +1,6 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import App from "./App";
+import Overlay from "./overlay/Overlay";
 import "./styles.css";
 import { tauriCustomizeApi } from "./customize/api";
 import Customize from "./customize/Customize";
@@ -15,7 +15,7 @@ const view =
   ) : location.hash === "#customize" ? (
     <Customize api={tauriCustomizeApi} />
   ) : (
-    <App />
+    <Overlay />
   );
 
 createRoot(document.getElementById("root")!).render(<StrictMode>{view}</StrictMode>);

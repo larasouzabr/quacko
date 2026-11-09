@@ -203,7 +203,7 @@ impl Config {
         if let Some(v) = map.get("github_client_id") {
             match v {
                 Value::Null => {}
-                Value::String(s) if crate::github_auth::valid_client_id(s.trim()) => {
+                Value::String(s) if crate::github::auth::valid_client_id(s.trim()) => {
                     config.github_client_id = Some(s.trim().to_string())
                 }
                 _ => invalid.push("github_client_id"),

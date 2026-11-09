@@ -97,14 +97,14 @@ mod macos {
     const POINTS: f64 = 16.0;
 
     const NORMAL: [&[u8]; 3] = [
-        include_bytes!("../icons/tray/trayTemplate.png"),
-        include_bytes!("../icons/tray/trayTemplate@2x.png"),
-        include_bytes!("../icons/tray/trayTemplate@3x.png"),
+        include_bytes!("../../icons/tray/trayTemplate.png"),
+        include_bytes!("../../icons/tray/trayTemplate@2x.png"),
+        include_bytes!("../../icons/tray/trayTemplate@3x.png"),
     ];
     const ALERT: [&[u8]; 3] = [
-        include_bytes!("../icons/tray/trayAlertTemplate.png"),
-        include_bytes!("../icons/tray/trayAlertTemplate@2x.png"),
-        include_bytes!("../icons/tray/trayAlertTemplate@3x.png"),
+        include_bytes!("../../icons/tray/trayAlertTemplate.png"),
+        include_bytes!("../../icons/tray/trayAlertTemplate@2x.png"),
+        include_bytes!("../../icons/tray/trayAlertTemplate@3x.png"),
     ];
 
     /// NSImage template com as três resoluções: o macOS escolhe a certa para a tela e

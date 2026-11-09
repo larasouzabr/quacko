@@ -2,7 +2,7 @@
 // Uso: npm run dev e abra http://localhost:1420/preview.html (ou tools/snapshot.swift).
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { DEFAULT_SETTINGS } from "./App";
+import { DEFAULT_SETTINGS } from "./settings";
 import Card from "./components/Card";
 import type { Lang } from "./i18n";
 import type { Notification } from "./types";

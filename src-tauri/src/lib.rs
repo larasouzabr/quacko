@@ -1,8 +1,10 @@
 mod accessories;
+mod autostart;
+mod clipboard;
 mod config;
 mod customize;
+mod feedback;
 mod github;
-mod github_auth;
 mod i18n;
 mod integrations;
 #[cfg(target_os = "macos")]
@@ -11,14 +13,14 @@ mod media;
 mod migrate;
 mod model;
 mod onboarding;
+mod overlay;
 mod server;
 mod settings;
 mod sound;
+mod startup;
+mod test_sequence;
 mod tray;
-mod tray_icon;
-mod window;
-
-use std::sync::Arc;
+mod windows;
 
 use tauri::Manager;
 use tauri_plugin_autostart::MacosLauncher;
@@ -45,11 +47,11 @@ pub fn run() {
             None,
         ))
         .invoke_handler(tauri::generate_handler![
-            window::overlay_empty,
-            window::set_interactive,
-            window::set_overlay_size,
-            window::tray_alert_cleared,
-            window::card_action,
+            overlay::commands::overlay_empty,
+            overlay::commands::set_interactive,
+            overlay::commands::set_overlay_size,
+            overlay::commands::tray_alert_cleared,
+            overlay::commands::card_action,
             settings::get_settings,
             settings::set_appearance,
             onboarding::onboarding_status,
@@ -57,8 +59,8 @@ pub fn run() {
             onboarding::onboarding_enable_github,
             onboarding::onboarding_test,
             onboarding::onboarding_finish,
-            onboarding::github_device_start,
-            onboarding::github_device_wait,
+            github::commands::github_device_start,
+            github::commands::github_device_wait,
         ])
         .setup(|app| {
             // Só barra de menus, sem ícone no Dock.
@@ -73,18 +75,18 @@ pub fn run() {
             app.manage(IdGen::default());
             // Pasta dos acessórios do usuário (para importar outros no futuro).
             accessories::ensure_user_dir();
-            app.manage(tray_icon::TrayAlert::default());
-            app.manage(onboarding::PendingDevice::default());
+            app.manage(tray::icon::TrayAlert::default());
+            app.manage(github::commands::PendingDevice::default());
             let github_on = app.state::<Settings>().snapshot().github;
             github::spawn(app.handle(), github_on);
             migrate::migrate_login_item(app.handle());
-            settings::reconcile_autostart(app.handle());
+            autostart::reconcile_autostart(app.handle());
 
-            window::create_overlay(app.handle())?;
-            let status = start_server(app.handle());
+            overlay::create_overlay(app.handle())?;
+            let status = startup::start_server(app.handle());
             tray::create(app.handle(), status)?;
-            tray::sync_scripts_on_start(app.handle());
-            tray::warn_media_on_start(app.handle());
+            startup::sync_scripts_on_start(app.handle());
+            startup::warn_media_on_start(app.handle());
             if !app.state::<Settings>().snapshot().onboarded {
                 onboarding::open(app.handle());
             }
@@ -100,41 +102,4 @@ pub fn run() {
         })
         .run(tauri::generate_context!())
         .expect("erro ao iniciar o Quacko");
-}
-
-fn start_server(app: &tauri::AppHandle) -> tray::ServerStatus {
-    let settings = app.state::<Settings>();
-    let port = server::resolve_port(
-        std::env::var("QUACKO_PORT").ok().as_deref(),
-        settings.snapshot().port,
-    );
-
-    let handle = app.clone();
-    let deliver: server::Deliver =
-        Arc::new(move |notification| window::present(&handle, notification));
-    let state = server::ServerState::new(
-        settings.dnd_flag(),
-        app.state::<IdGen>().inner().clone(),
-        deliver,
-    );
-
-    match server::bind(port) {
-        Ok(listener) => {
-            tracing::info!(port, "ouvindo em 127.0.0.1");
-            tauri::async_runtime::spawn(async move {
-                if let Err(e) = server::serve(listener, state).await {
-                    tracing::error!(%e, "servidor HTTP parou");
-                }
-            });
-            tray::ServerStatus::Listening { port }
-        }
-        Err(e) => {
-            tracing::error!(%e, port, "não foi possível abrir a porta");
-            if e.kind() == std::io::ErrorKind::AddrInUse {
-                tray::ServerStatus::PortBusy { port }
-            } else {
-                tray::ServerStatus::Unavailable { port }
-            }
-        }
-    }
 }
