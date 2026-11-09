@@ -196,6 +196,7 @@ pub fn run_test_sequence(app: &AppHandle) {
                 tokio::time::sleep(Duration::from_millis(2500)).await;
             }
             let id = app.state::<IdGen>().next();
+            crate::sound::play(status);
             present(
                 &app,
                 Notification {

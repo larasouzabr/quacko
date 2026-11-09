@@ -155,6 +155,38 @@ for tool in jq plutil awk; do
   echo "  leitor $tool: $([ "$fail" = "$before" ] && echo ok || echo "$((fail - before)) falha(s)")"
 done
 
+# --- stdin por socket (como o Claude Code, em Node, entrega o JSON do hook) ---
+# Os testes acima usam pipe; foi com socket que o script deixou de ler o hook.
+if command -v node >/dev/null; then
+  run_socket() { # "<json>" args... (stdin vira um socket, como num spawn do Node)
+    local json="$1"
+    shift
+    HOOK_JSON="$json" node -e '
+      const c = require("child_process").spawn(process.argv[1], process.argv.slice(2), { stdio: ["pipe", "pipe", "pipe"] });
+      let out = "", err = "";
+      c.stdout.on("data", d => out += d); c.stderr.on("data", d => err += d);
+      c.on("close", code => { require("fs").writeFileSync(process.env.OUT_FILE, out); require("fs").writeFileSync(process.env.ERR_FILE, err); process.exit(code); });
+      c.stdin.end(process.env.HOOK_JSON);
+    ' "$NOTIFY" "$@"
+    RC=$?
+    OUT=$(cat "$WORK/out")
+    PAYLOAD=$(sed -n 's/^payload: //p' "$WORK/err")
+  }
+  export OUT_FILE="$WORK/out" ERR_FILE="$WORK/err"
+  unset MIAU_JSON
+  rm -rf "$WORK/state"
+  run_socket '{"session_id":"sock","cwd":"/Users/x/app","hook_event_name":"UserPromptSubmit","prompt":"pedido pelo socket"}' --from claude
+  expect_no_payload "socket: UserPromptSubmit só guarda o pedido"
+  expect_stdout "socket: UserPromptSubmit não escreve no stdout" ""
+  run_socket '{"session_id":"sock","cwd":"/Users/x/app","hook_event_name":"Stop"}' --from claude --sound /System/Library/Sounds/Glass.aiff
+  expect_payload "socket: Stop lê o JSON e mostra o pedido" '.status=="ok" and .project=="app" and .message=="“pedido pelo socket”"'
+  run_socket '{"hook_event_name":"stop","status":"completed","conversation_id":"c","workspace_roots":["/x/y"]}'
+  expect_stdout "socket: Cursor stop responde {}" '{}'
+  echo "  stdin por socket: ok"
+else
+  echo "  stdin por socket: pulado (sem node)"
+fi
+
 echo
 echo "$pass ok, $fail falhas"
 [ "$fail" = 0 ]

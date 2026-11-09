@@ -6,7 +6,7 @@
 //! - Progresso: quando mais checks terminam, o cartão do PR é atualizado ("3 de 12").
 //!   Final: quando todos terminaram e o resumo não está mais pendente. Sempre para o
 //!   mesmo commit; PR visto pela primeira vez não avisa; push novo reinicia.
-//! - Os avisos daqui são só o cartão: o app não toca som nem pausa música.
+//! - Progresso é só o cartão; o resultado final toca o som (Glass/Basso). Música não é pausada.
 //! - Consulta a cada 30 s enquanto algum PR está rodando, a cada 3 min quando tudo
 //!   terminou; recua em erro de rede e respeita o limite de taxa.
 //! - O token vem de `gh auth token` (o app procura o `gh` sozinho, porque um app aberto
@@ -613,6 +613,10 @@ fn deliver(app: &AppHandle, changes: &[Change]) {
     let lang = settings.lang();
     for change in changes {
         let n = notification(app.state::<IdGen>().next(), change, lang);
+        // Resultado final toca o som; o progresso é só o cartão.
+        if !matches!(change, Change::Progress(_)) {
+            crate::sound::play(n.status);
+        }
         tracing::info!(id = n.id, status = ?n.status, "PR mudou");
         crate::window::present(app, n);
     }

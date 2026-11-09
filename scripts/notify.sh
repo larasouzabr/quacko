@@ -73,7 +73,9 @@ case "$status" in ok | fail | attention | info | "") ;; *) status="" ;; esac
 
 # ---------- stdin (JSON dos hooks) ----------
 input=""
-if [ -p /dev/stdin ] || [ -f /dev/stdin ]; then
+# Pipe, arquivo ou socket: o Claude Code (Node) entrega o JSON do hook por um socket.
+# Num terminal (tty) não lê nada, para não ficar esperando.
+if [ -p /dev/stdin ] || [ -f /dev/stdin ] || [ -S /dev/stdin ]; then
   input=$(head -c 1048576)
 fi
 
@@ -262,12 +264,23 @@ esac
 echo "--- $(date '+%F %T') from=${from:-none} event=${event:-none} status=${status:-none}"
 
 # ---------- mídia e som (como sempre foi) ----------
+
+# Roda um comando solto do hook, numa sessão própria: o hook volta na hora e o comando
+# sobrevive mesmo se quem chamou o hook encerrar o grupo de processos quando ele termina
+# (sem isso, o som e a pausa podiam ser cortados no meio).
+detach() {
+  if [ -x /usr/bin/perl ]; then
+    /usr/bin/perl -MPOSIX -e 'fork and exit; POSIX::setsid(); exec @ARGV or exit 1' "$@" </dev/null >>"$LOG" 2>&1
+  else
+    ("$@" </dev/null >>"$LOG" 2>&1 &)
+  fi
+}
+
 if [ -z "$DRY_RUN" ]; then
-  # Em segundo plano: o osascript leva quase 1 s e o hook não pode esperar por ele.
-  (
-    osascript -e 'if application "Spotify" is running then tell application "Spotify" to pause'
-    command -v nowplaying-cli >/dev/null && nowplaying-cli pause
-  ) </dev/null >>"$LOG" 2>&1 &
+  # O osascript leva quase 1 s: fica solto para o hook não esperar por ele.
+  detach /bin/bash -c '
+    osascript -e "if application \"Spotify\" is running then tell application \"Spotify\" to pause"
+    command -v nowplaying-cli >/dev/null && nowplaying-cli pause'
   if [ -z "$sound" ]; then
     case "$status" in
       fail) sound=/System/Library/Sounds/Basso.aiff ;;
@@ -275,7 +288,7 @@ if [ -z "$DRY_RUN" ]; then
       *) sound=/System/Library/Sounds/Glass.aiff ;;
     esac
   fi
-  [ -f "$sound" ] && (afplay "$sound" </dev/null >/dev/null 2>&1 &)
+  [ -f "$sound" ] && detach /usr/bin/afplay "$sound"
 fi
 
 # ---------- aviso para o app ----------

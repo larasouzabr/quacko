@@ -10,6 +10,7 @@ mod model;
 mod onboarding;
 mod server;
 mod settings;
+mod sound;
 mod tray;
 mod window;
 
