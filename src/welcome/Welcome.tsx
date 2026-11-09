@@ -10,7 +10,6 @@ interface WelcomeProps {
   api: WelcomeApi;
 }
 
-/** Tela de boas-vindas: 3 passos com status (ok/pendente) e o que falta em cada um. */
 export default function Welcome({ api }: WelcomeProps) {
   const [lang, setLang] = useState<Lang>("pt-BR");
   const [status, setStatus] = useState<OnboardingStatus | null>(null);
@@ -116,7 +115,6 @@ export default function Welcome({ api }: WelcomeProps) {
   );
 }
 
-/** Texto e botão do passo do GitHub para cada situação. */
 function githubStep(
   status: OnboardingStatus | null,
   t: WelcomeTexts,
@@ -146,7 +144,6 @@ function githubStep(
       return { text: t.githubLoggedOut, button: again };
     default:
       if (status?.github_device_flow) {
-        // Login por código do GitHub App (sem gh).
         return {
           text: t.githubDevice,
           button: (

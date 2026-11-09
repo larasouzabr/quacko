@@ -1,12 +1,8 @@
-//! Mescla pura das entradas do Quacko nos hooks do Claude Code e do Cursor (JSON entra, JSON sai).
-
 use std::path::Path;
 
 use super::*;
 use serde_json::{json, Map, Value};
 
-/// Um comando é do Quacko se aponta para o notify.sh instalado por ele (inclui os hooks
-/// da v1 no formato antigo) ou para o CLI da v2.
 const QUACKO_MARKERS: [&str; 2] = ["/.claude/hooks/notify.sh", "quacko hook"];
 
 const CLAUDE_HOOKS: [(&str, &str); 3] = [
@@ -29,13 +25,10 @@ const CURSOR_HOOKS: [(&str, &str); 2] = [
     ),
 ];
 
-// ---------- mescla (funções puras) ----------
-
 pub(super) fn is_quacko(command: &str) -> bool {
     QUACKO_MARKERS.iter().any(|m| command.contains(m))
 }
 
-/// Aspas simples quando o caminho tem caractere que o shell interpretaria.
 fn shell_quote(path: &str) -> String {
     let safe = path
         .chars()
@@ -58,23 +51,19 @@ fn events(tool: Tool) -> &'static [(&'static str, &'static str)] {
     }
 }
 
-/// Comandos de um evento, no formato de cada ferramenta.
 pub(super) fn commands_in(tool: Tool, entries: &[Value]) -> Vec<String> {
     let as_str = |v: &Value| v.get("command").and_then(Value::as_str).map(String::from);
     match tool {
-        // Claude: [{ "matcher"?, "hooks": [{ "type", "command" }] }]
         Tool::Claude => entries
             .iter()
             .filter_map(|g| g.get("hooks").and_then(Value::as_array))
             .flatten()
             .filter_map(as_str)
             .collect(),
-        // Cursor: [{ "command", ... }]
         Tool::Cursor => entries.iter().filter_map(as_str).collect(),
     }
 }
 
-/// Está conectado se todos os eventos têm um comando do Quacko no formato novo.
 pub fn is_connected(tool: Tool, doc: &Value) -> bool {
     let flag = match tool {
         Tool::Claude => "--from claude",
@@ -92,7 +81,6 @@ pub fn is_connected(tool: Tool, doc: &Value) -> bool {
     })
 }
 
-/// Tira as entradas do Quacko de um evento; grupos que ficam vazios somem.
 fn strip_quacko(tool: Tool, entries: &mut Vec<Value>) {
     match tool {
         Tool::Claude => {
@@ -124,8 +112,6 @@ fn new_entry(tool: Tool, command: String) -> Value {
     }
 }
 
-/// Aplica a conexão (ou desconexão) num documento. Erro = formato inesperado: modo
-/// manual, e o documento fica exatamente como estava (a mudança é feita numa cópia).
 pub fn apply(
     tool: Tool,
     doc: &mut Value,
@@ -176,7 +162,6 @@ fn apply_in_place(
         }
     }
     if !connect {
-        // Só limpa os eventos que o Quacko mexe; listas vazias de outros eventos ficam.
         let ours: Vec<&str> = events(tool).iter().map(|(e, _)| *e).collect();
         hooks.retain(|k, v| {
             !(ours.contains(&k.as_str()) && v.as_array().is_some_and(Vec::is_empty))
@@ -188,7 +173,6 @@ fn apply_in_place(
     Ok(())
 }
 
-/// Trecho para colar à mão (modo manual).
 pub fn snippet(tool: Tool, notify: &Path) -> String {
     let mut doc = json!({});
     let _ = apply(tool, &mut doc, notify, true);

@@ -10,7 +10,6 @@ import { useHideWhenEmpty, useHoveredCard, useIncomingNotifications, useQueueClo
 import { overlayIpc } from "./ipc";
 import { useOverlaySize } from "./size";
 
-/** Janela do overlay: a pilha de cartões com o personagem escolhido. */
 export default function Overlay() {
   const settings = useSettings();
   const [queue, dispatch] = useReducer(queueReducer, DEFAULT_SETTINGS.max_cards, initialQueue);
@@ -32,7 +31,6 @@ export default function Overlay() {
 
   return (
     <main className="stack">
-      {/* A fila guarda o mais novo no fim; na tela ele vai para o topo, perto da borda. */}
       {[...queue.cards].reverse().map((card) => (
         <Card
           key={card.n.id}
@@ -44,7 +42,6 @@ export default function Overlay() {
           character={character}
           overlay={overlay}
           onActivate={() => {
-            // Cartão sticky (CI que terminou) só fecha no ×: o clique só abre o link.
             if (!card.n.sticky) dispatch({ type: "dismiss", id: card.n.id, now: Date.now() });
             overlayIpc.cardAction(card.n.url);
           }}

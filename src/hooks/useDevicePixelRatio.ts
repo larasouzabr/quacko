@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 
-/** `devicePixelRatio` atual; muda quando a janela passa para um monitor com outra escala. */
 export function useDevicePixelRatio(): number {
   const [dpr, setDpr] = useState(() => window.devicePixelRatio || 1);
   useEffect(() => {

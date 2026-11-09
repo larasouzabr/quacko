@@ -1,7 +1,3 @@
-// Mostra o ícone da bandeja como o macOS desenha: NSImage "template" com 1x/2x/3x num
-// botão sem borda, nos temas claro (Aqua) e escuro (Dark Aqua), normal e com alerta.
-// Não precisa de permissão de gravação de tela (desenha fora da tela).
-// Uso: swift tools/tray_preview.swift src-tauri/icons/tray saida.png
 import AppKit
 
 let dir = CommandLine.arguments[1]
@@ -20,7 +16,6 @@ func template(_ base: String) -> NSImage {
     return image
 }
 
-// Duas faixas (claro e escuro), cada uma com o ícone normal e o de alerta, em 2x.
 let cell = NSSize(width: 44, height: 24)
 let canvas = NSView(frame: NSRect(x: 0, y: 0, width: cell.width * 2, height: cell.height * 2))
 for (row, appearance) in [NSAppearance.Name.aqua, .darkAqua].enumerated() {

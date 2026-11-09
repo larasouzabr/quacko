@@ -1,6 +1,3 @@
-// Personagens embutidos: cada pasta em src/assets/characters/<id> (manifest + assets).
-// Padrão: "Pato Pixel". O "Gato Pixel" continua disponível como opção.
-// Para regenerar os sprites, veja a seção 8 do quacko-spec.md e tools/.
 import { buildCharacter } from "./load";
 import type { Character, CharacterManifest } from "./types";
 
@@ -33,10 +30,8 @@ function load(): Record<string, Character> {
 
 export const BUILTIN_CHARACTERS: Readonly<Record<string, Character>> = load();
 
-/** Personagem pelo id; id desconhecido (ex.: pacote removido) cai no padrão. */
 export function getCharacter(id?: string | null): Character {
   return (id && BUILTIN_CHARACTERS[id]) || BUILTIN_CHARACTERS[DEFAULT_CHARACTER_ID];
 }
 
-/** Personagem padrão (o pato). */
 export const builtinCharacter = getCharacter(DEFAULT_CHARACTER_ID);

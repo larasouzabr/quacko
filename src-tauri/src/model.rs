@@ -1,12 +1,3 @@
-//! Modelo da notificação recebida em `POST /notify` e sua validação (seção 5 da spec).
-//!
-//! Regras de tolerância (decisão do Marco 2):
-//! - `source`, `status` e JSON malformado: erro 400.
-//! - Textos longos são **cortados** (com "…") em vez de rejeitados, para que um aviso
-//!   real (ex.: título de PR comprido) não se perca.
-//! - `url` com esquema que não seja http(s) é **descartada**; o resto do aviso segue.
-//! - `ttl_ms` fora da faixa é ajustado para o limite mais próximo.
-
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 
@@ -26,9 +17,7 @@ pub const TTL_ATTENTION_MS: u32 = 15_000;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Source {
-    /// Claude Code. Mantido por compatibilidade; equivale a `agent` com título "Claude Code".
     Claude,
-    /// Qualquer agente de IA (Cursor, Codex, Claude…); o nome da ferramenta vai no `title`.
     Agent,
     Ci,
     Custom,
@@ -56,7 +45,6 @@ impl Status {
     }
 }
 
-/// Ids crescentes compartilhados entre o servidor e o "Testar notificação" do menu.
 #[derive(Clone, Default)]
 pub struct IdGen(Arc<AtomicU64>);
 
@@ -66,10 +54,8 @@ impl IdGen {
     }
 }
 
-/// Notificação já validada, pronta para o frontend.
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct Notification {
-    /// Atribuído pelo servidor; 0 até lá.
     pub id: u64,
     pub source: Source,
     pub status: Status,
@@ -78,15 +64,12 @@ pub struct Notification {
     pub project: Option<String>,
     pub url: Option<String>,
     pub ttl_ms: u32,
-    /// Barra de progresso no cartão (hoje só o monitor de PRs usa; não vem pela API HTTP).
     pub progress: Option<Progress>,
-    /// Fica na tela até a pessoa fechar no ×: não expira (ex.: CI que terminou).
     pub sticky: bool,
 }
 
 pub const MAX_PROGRESS_TOTAL: u32 = 10_000;
 
-/// "3 de 12 checks": `done` e `failed` nunca passam de `total`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 pub struct Progress {
     pub done: u32,
@@ -94,7 +77,6 @@ pub struct Progress {
     pub failed: u32,
 }
 
-/// Payload como chega pela rede, antes da limpeza.
 #[derive(Deserialize)]
 struct RawNotification {
     source: Source,
@@ -109,15 +91,12 @@ struct RawNotification {
     url: Option<String>,
     #[serde(default)]
     ttl_ms: Option<i64>,
-    /// Opcional: barra de progresso. Valores inválidos descartam só a barra.
     #[serde(default)]
     progress: Option<Value>,
-    /// Opcional: só fecha no × (sem expirar).
     #[serde(default)]
     sticky: Option<bool>,
 }
 
-/// Aceita `{done, total, failed?}` com inteiros, `total` de 1 a 10000; o resto é ajustado.
 fn clean_progress(raw: &Value) -> Option<Progress> {
     let int = |key: &str| raw.get(key).and_then(Value::as_u64);
     let total = int("total").filter(|t| (1..=MAX_PROGRESS_TOTAL as u64).contains(t))? as u32;
@@ -159,8 +138,6 @@ impl Notification {
     }
 }
 
-/// Troca caracteres de controle por espaço, apara e corta em `max` caracteres
-/// (não bytes), terminando com "…" quando corta. Texto vazio vira `None`.
 fn clean_text(input: &str, max: usize) -> Option<String> {
     let cleaned: String = input
         .chars()
@@ -179,7 +156,6 @@ fn clean_text(input: &str, max: usize) -> Option<String> {
     Some(cut)
 }
 
-/// Aceita apenas `http://` ou `https://` com host, sem espaços nem caracteres de controle.
 pub fn clean_url(input: &str) -> Option<String> {
     let url = input.trim();
     if url.len() > MAX_URL_BYTES || url.chars().any(|c| c.is_whitespace() || c.is_control()) {
@@ -332,7 +308,6 @@ mod tests {
 
     #[test]
     fn corte_conta_caracteres_e_nao_bytes() {
-        // "ã" ocupa 2 bytes; 140 deles cabem exatamente.
         let n = ok(&format!(
             r#"{{"source":"claude","status":"ok","message":"{}"}}"#,
             "ã".repeat(140)

@@ -1,12 +1,7 @@
-//! Token do GitHub CLI (`gh`), achado mesmo sem o PATH do terminal.
-
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::time::{Duration, Instant};
 
-// ---------- token via gh ----------
-
-/// Procura o `gh`: lugares comuns, o shell de login da pessoa e, por último, o Nix.
 pub fn find_gh(home: &Path) -> Option<PathBuf> {
     if let Some(custom) = std::env::var_os("QUACKO_GH").map(PathBuf::from) {
         if custom.is_file() {
@@ -45,7 +40,6 @@ fn from_login_shell() -> Option<PathBuf> {
         .filter(|p| p.is_file())
 }
 
-/// `/nix/store/<hash>-gh-<versão>/bin/gh` com a maior versão.
 fn newest_in_nix_store() -> Option<PathBuf> {
     let entries = std::fs::read_dir("/nix/store").ok()?;
     entries
@@ -72,7 +66,6 @@ pub fn gh_token(gh: &Path) -> Option<String> {
     (!token.is_empty() && !token.contains(char::is_whitespace)).then_some(token)
 }
 
-/// Roda um comando com tempo máximo; devolve o stdout se deu certo.
 fn run_with_timeout(cmd: &mut Command, limit: Duration) -> Option<String> {
     let mut child = cmd
         .stdin(Stdio::null())

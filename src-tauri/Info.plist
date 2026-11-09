@@ -2,7 +2,6 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-  <!-- App só da barra de menus: sem ícone no Dock desde o primeiro instante. -->
   <key>LSUIElement</key>
   <true/>
 </dict>

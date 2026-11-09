@@ -1,7 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import type { Settings } from "../types";
 
-/** Espelho de `onboarding::Status` no Rust. */
 export interface OnboardingStatus {
   claude_connected: boolean;
   cursor_present: boolean;
@@ -11,18 +10,14 @@ export interface OnboardingStatus {
   nowplaying: boolean;
 }
 
-/** De onde a tela de boas-vindas lê e para onde manda as ações (trocável nos testes). */
 export interface WelcomeApi {
   settings(): Promise<Settings>;
   status(): Promise<OnboardingStatus>;
-  /** "ok" ou "manual" (não deu para editar o arquivo; o trecho foi copiado). */
   connectClaude(): Promise<string>;
   enableGithub(): Promise<void>;
   test(): Promise<void>;
   finish(): Promise<void>;
-  /** Login por código: pede o código (já copiado) e abre a página do GitHub. */
   deviceStart(): Promise<DevicePrompt>;
-  /** Espera a autorização: "ok", "denied" ou "expired". */
   deviceWait(): Promise<string>;
 }
 

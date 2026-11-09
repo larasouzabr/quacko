@@ -4,10 +4,6 @@ import type { Accessory, AccessoryManifest, RecolorBase, Rgb } from "./types";
 const ID = /^[a-z0-9][a-z0-9-]{0,39}$/;
 const FILE = /^[a-z0-9][a-z0-9_-]{0,40}\.png$/i;
 
-/**
- * Valida o accessory.json e resolve os arquivos para URLs. Acessório é só dado
- * (PNGs + JSON): nada aqui é interpretado como código, CSS ou caminho fora do pacote.
- */
 export function buildAccessory(
   manifest: AccessoryManifest,
   resolveUrl: (file: string) => string | undefined,
@@ -52,7 +48,6 @@ function parseRecolor(manifest: AccessoryManifest): RecolorBase {
   return { main, shade, light };
 }
 
-/** O sprite do acessório tem a mesma grade do personagem (mesmo tamanho ou múltiplo inteiro)? */
 export function sameGrid(
   accessory: { width: number; height: number },
   character: { width: number; height: number },

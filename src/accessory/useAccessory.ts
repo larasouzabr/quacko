@@ -5,7 +5,6 @@ import { sameGrid } from "./load";
 import { paletteFor, recolorPixels } from "./recolor";
 import type { Accessory } from "./types";
 
-/** Sprites recoloridos já prontos (por acessório + cor), para não refazer a cada cartão. */
 const cache = new Map<string, Promise<Partial<Record<Mood, string>>>>();
 
 function loadImage(url: string): Promise<HTMLImageElement> {
@@ -28,7 +27,6 @@ async function build(accessory: Accessory, color: string, character: Character):
       width: character.size.width * state.columns,
       height: character.size.height * Math.ceil(state.frames / state.columns),
     };
-    // Mesma grade do personagem (mesmo tamanho ou múltiplo inteiro); senão, ignora.
     if (!character.pixelArt || !sameGrid({ width: img.naturalWidth, height: img.naturalHeight }, sheet)) {
       console.warn(`acessório "${accessory.id}": "${mood}" não tem a grade do personagem; ignorado`);
       continue;
@@ -37,7 +35,6 @@ async function build(accessory: Accessory, color: string, character: Character):
       out[mood] = accessory.files[mood];
       continue;
     }
-    // Troca exata de cor num canvas local (sem rede, sem arquivo novo).
     const canvas = document.createElement("canvas");
     canvas.width = img.naturalWidth;
     canvas.height = img.naturalHeight;
@@ -52,7 +49,6 @@ async function build(accessory: Accessory, color: string, character: Character):
   return out;
 }
 
-/** Camada do acessório pronta para o <Cat overlay>, ou undefined se desligado/inválido. */
 export function useAccessoryOverlay(
   accessory: Accessory | undefined,
   color: string,

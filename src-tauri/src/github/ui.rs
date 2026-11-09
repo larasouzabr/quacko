@@ -1,13 +1,9 @@
-//! Ligar/desligar o monitor de PRs pelo menu e mostrar o resultado no cartão.
-
 use crate::feedback::tell;
 use tauri::{AppHandle, Manager};
 
 use crate::i18n::{self};
 use crate::model::Status;
 use crate::settings::Settings;
-
-// ---------- GitHub (monitor de PRs) ----------
 
 pub fn toggle_github(app: &AppHandle) {
     let settings = app.state::<Settings>();
@@ -17,10 +13,8 @@ pub fn toggle_github(app: &AppHandle) {
         let t = i18n::tray_texts(settings.lang());
         tell(app, Status::Info, t.github_off.to_string());
     }
-    // Ao ligar, o próprio monitor conta no cartão se conectou (ou por que não).
 }
 
-/// Resultado do monitor de PRs, mostrado no cartão. Sem login, desliga o monitor.
 pub fn github_report(app: &AppHandle, report: crate::github::Report) {
     use crate::github::Report;
     let t = i18n::tray_texts(app.state::<Settings>().lang());
@@ -43,7 +37,6 @@ pub fn github_report(app: &AppHandle, report: crate::github::Report) {
                 t.github_expired
             };
             if device_flow {
-                // A tela de boas-vindas tem o botão "Entrar com código".
                 crate::onboarding::open(app);
             }
             app.state::<Settings>().update(|c| c.github = false);

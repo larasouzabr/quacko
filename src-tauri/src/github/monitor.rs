@@ -1,5 +1,3 @@
-//! Monitor de PRs: consulta periódica, origem do token e entrega dos avisos.
-
 use std::collections::HashMap;
 use std::time::Duration;
 
@@ -17,9 +15,6 @@ const POLL_IDLE: Duration = Duration::from_secs(180);
 const BACKOFF_START: Duration = Duration::from_secs(30);
 const BACKOFF_MAX: Duration = Duration::from_secs(600);
 
-// ---------- monitor ----------
-
-/// Liga/desliga o monitor (estado vem da config `github`).
 pub struct Monitor {
     enabled: watch::Sender<bool>,
 }
@@ -36,7 +31,6 @@ pub fn spawn(app: &AppHandle, enabled: bool) {
     tauri::async_runtime::spawn(run(app.clone(), rx));
 }
 
-/// Avisos do monitor para a interface (o tray traduz e mostra no cartão).
 pub enum Report {
     Connected { login: String, open_prs: usize },
     NoGh,
@@ -69,13 +63,11 @@ async fn run(app: AppHandle, mut enabled: watch::Receiver<bool>) {
         let mut token: Option<String> = None;
         let mut announced = false;
         let mut retried_auth = false;
-        // O token atual veio do login por código (Keychain)? Se for recusado, apaga.
         let mut from_store = false;
         let mut backoff = BACKOFF_START;
 
         while *enabled.borrow() {
             if token.is_none() {
-                // 1º login por código (renovado se estiver vencendo); 2º gh.
                 let config = app.state::<crate::settings::Settings>().snapshot();
                 let auth = device_flow_client_id(&config).and_then(|id| {
                     crate::github::auth::Client::new(crate::github::auth::GITHUB_WEB, &id).ok()
@@ -130,13 +122,11 @@ async fn run(app: AppHandle, mut enabled: watch::Receiver<bool>) {
                     }
                 }
                 Err(ApiError::Unauthorized) if !retried_auth => {
-                    // Token trocado pelo gh (novo login)? Lê de novo e tenta uma vez.
                     retried_auth = true;
                     token = None;
                     Duration::from_secs(1)
                 }
                 Err(ApiError::Unauthorized) if from_store => {
-                    // Login por código recusado de novo (revogado): apaga e tenta o gh.
                     use crate::github::auth::TokenStore;
                     crate::github::auth::KeychainStore.clear();
                     from_store = false;
@@ -160,7 +150,6 @@ async fn run(app: AppHandle, mut enabled: watch::Receiver<bool>) {
                 }
             };
 
-            // Espera, mas acorda na hora se a pessoa desligar o monitor.
             tokio::select! {
                 _ = tokio::time::sleep(wait) => {}
                 changed = enabled.changed() => if changed.is_err() { return; },
@@ -170,8 +159,6 @@ async fn run(app: AppHandle, mut enabled: watch::Receiver<bool>) {
     }
 }
 
-/// Mostra no cartão o que mudou nos PRs (respeitando o "Não perturbar"). Só o cartão:
-/// sem som e sem pausar música.
 fn deliver(app: &AppHandle, changes: &[Change]) {
     let settings = app.state::<crate::settings::Settings>();
     if changes.is_empty() || settings.snapshot().dnd {
@@ -180,7 +167,6 @@ fn deliver(app: &AppHandle, changes: &[Change]) {
     let lang = settings.lang();
     for change in changes {
         let n = notification(app.state::<IdGen>().next(), change, lang);
-        // Resultado final toca o som; o progresso é só o cartão.
         if !matches!(change, Change::Progress(_)) {
             crate::sound::play(n.status);
         }
@@ -189,16 +175,11 @@ fn deliver(app: &AppHandle, changes: &[Change]) {
     }
 }
 
-// ---------- login por código (passo 6) ----------
-
-/// Há token do login por código guardado no Keychain?
 pub fn stored_token_present() -> bool {
     use crate::github::auth::TokenStore;
     crate::github::auth::KeychainStore.load().is_some()
 }
 
-/// Client ID do GitHub App: `QUACKO_GITHUB_CLIENT_ID` vence a config. Sem ele, o login
-/// por código fica desligado (só o `gh`).
 pub fn device_flow_client_id(config: &crate::config::Config) -> Option<String> {
     std::env::var("QUACKO_GITHUB_CLIENT_ID")
         .ok()

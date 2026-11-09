@@ -9,7 +9,6 @@ import type { Lang } from "../i18n";
 import type { CustomizeApi } from "./api";
 import { customizeTexts } from "./texts";
 
-/** Tela Personalizar: personagem, laço (liga/desliga e cor) e pré-visualização dos 4 estados. */
 export default function Customize({ api }: { api: CustomizeApi }) {
   const [lang, setLang] = useState<Lang>("pt-BR");
   const [character, setCharacter] = useState("pato-pixel");

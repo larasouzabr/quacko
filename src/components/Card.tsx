@@ -12,15 +12,12 @@ interface CardProps {
   leaving: boolean;
   hovered: boolean;
   pixelSize: number;
-  /** Personagem escolhido; sem ele, o padrão. */
   character?: Character;
-  /** Acessório por cima do personagem (opcional). */
   overlay?: Partial<Record<Mood, string>>;
   onActivate: () => void;
   onDismiss: () => void;
 }
 
-/** Todo texto vem de fora: é sempre renderizado como texto (React escapa), nunca como HTML. */
 export default function Card({
   notification: n,
   lang,
@@ -74,7 +71,6 @@ export default function Card({
   );
 }
 
-/** Barra fina: verde = concluídos sem falha, vermelho = falharam, trilho = faltam. */
 function ProgressBar({ done, total, failed }: { done: number; total: number; failed: number }) {
   const pct = (n: number) => `${Math.max(0, Math.min(100, (n / total) * 100))}%`;
   return (

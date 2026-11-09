@@ -1,7 +1,3 @@
-//! Primeira execução: janela de boas-vindas com 3 passos (Conectar Claude Code,
-//! Conectar GitHub, Testar notificação) e o status de cada um. Abre sozinha só na
-//! primeira vez (config `onboarded`) e depois pelo menu.
-
 use serde::Serialize;
 use tauri::{AppHandle, Manager};
 
@@ -10,17 +6,12 @@ use crate::settings::Settings;
 
 pub const WELCOME_LABEL: &str = "welcome";
 
-/// Situação do GitHub, do melhor para o pior caso.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum GithubState {
-    /// Monitor ligado e com login.
     On,
-    /// Há login (gh ou código), mas o monitor está desligado.
     Ready,
-    /// O gh existe, mas não está logado.
     GhLoggedOut,
-    /// Sem gh e sem login por código.
     NoLogin,
 }
 
@@ -30,7 +21,6 @@ pub struct Status {
     pub cursor_present: bool,
     pub cursor_connected: bool,
     pub github: GithubState,
-    /// Login por código (GitHub App) disponível: só com Client ID configurado.
     pub github_device_flow: bool,
     pub nowplaying: bool,
 }
@@ -73,8 +63,6 @@ pub async fn onboarding_status(app: AppHandle) -> Result<Status, String> {
         .map_err(|e| e.to_string())
 }
 
-/// Conecta o Claude Code. Devolve "ok" ou o motivo do modo manual (o trecho já foi
-/// copiado para a área de transferência pelo mesmo caminho do menu).
 #[tauri::command]
 pub async fn onboarding_connect_claude(app: AppHandle) -> Result<String, String> {
     tauri::async_runtime::spawn_blocking(move || {
@@ -121,7 +109,6 @@ pub fn mark_done(app: &AppHandle) {
     }
 }
 
-/// Abre (ou traz para a frente) a janela de boas-vindas.
 pub fn open(app: &AppHandle) {
     let title = match app.state::<Settings>().lang() {
         crate::i18n::Lang::PtBr => "Bem-vindo ao Quacko",

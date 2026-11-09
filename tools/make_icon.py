@@ -1,12 +1,4 @@
 #!/usr/bin/env python3
-"""Gera o ícone do app Quacko a partir do Pato Pixel (sprite 1x do pacote embutido).
-
-Saída: src-tauri/icons/app-icon.png (1024x1024). Depois rode `npx tauri icon
-src-tauri/icons/app-icon.png` para gerar os tamanhos de cada sistema.
-
-Uso (precisa do Pillow; ver seção 8 do quacko-spec.md para o venv):
-  python3 tools/make_icon.py
-"""
 import os
 import sys
 
@@ -17,13 +9,12 @@ SPRITE = os.path.join(ROOT, "src/assets/characters/pato-pixel/assets/info.png")
 OUT = os.path.join(ROOT, "src-tauri/icons/app-icon.png")
 
 SIZE = 1024
-# Área útil de ícones do macOS: ~824 px centrados, com cantos arredondados.
 PLATE = 824
 RADIUS = 186
-BG_TOP = (214, 236, 255)     # azul-água claro
-BG_BOTTOM = (168, 210, 246)  # azul-água um pouco mais forte
-FRAME = 28                    # um quadro do sprite (grade 28x28)
-SCALE = 24                    # inteiro: o pixel art não deforma (28 x 24 = 672 px)
+BG_TOP = (214, 236, 255)
+BG_BOTTOM = (168, 210, 246)
+FRAME = 28
+SCALE = 24
 
 
 def gradient_plate():
@@ -41,16 +32,15 @@ def gradient_plate():
 
 def main():
     sheet = Image.open(SPRITE).convert("RGBA")
-    cat = sheet.crop((0, 0, FRAME, FRAME))  # primeiro quadro do estado "info"
+    cat = sheet.crop((0, 0, FRAME, FRAME))
     cat = cat.resize((FRAME * SCALE, FRAME * SCALE), Image.NEAREST)
 
     icon = Image.new("RGBA", (SIZE, SIZE), (0, 0, 0, 0))
     offset = (SIZE - PLATE) // 2
     icon.alpha_composite(gradient_plate(), (offset, offset))
-    # Centraliza pela caixa do desenho (sem as bordas transparentes do sprite).
     left, top, right, bottom = cat.getbbox()
     x = (SIZE - (right - left)) // 2 - left
-    y = (SIZE - (bottom - top)) // 2 - top + SCALE  # um pixel abaixo: o gato "senta" na placa
+    y = (SIZE - (bottom - top)) // 2 - top + SCALE
     icon.alpha_composite(cat, (x, y))
     icon.save(OUT)
     print("ok ->", OUT)

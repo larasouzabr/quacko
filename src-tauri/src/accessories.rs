@@ -1,13 +1,3 @@
-//! Acessórios do usuário (ex.: laço): pasta própria e validação para importar no futuro.
-//!
-//! Acessório é só dado: um `accessory.json` e um sprite sheet PNG por estado, com a mesma
-//! grade do personagem (mesmo tamanho ou múltiplo inteiro, ex.: 1x ou 6x). Nada é
-//! executado. A importação de `.zip` recusa caminhos com `..` ou absolutos, links
-//! simbólicos, arquivos fora do esperado, PNG falso e tamanhos acima dos limites
-//! (os mesmos dos pacotes de personagem).
-
-// A validação e a importação ficam prontas para a futura tela "Importar acessório";
-// hoje o app só cria a pasta e os testes usam o resto.
 #![allow(dead_code)]
 
 use std::fs;
@@ -27,11 +17,9 @@ const PNG_SIGNATURE: [u8; 8] = [0x89, b'P', b'N', b'G', b'\r', b'\n', 0x1a, b'\n
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AccessoryInfo {
     pub id: String,
-    /// Fator em relação ao sprite do personagem (1 = mesmo tamanho; 6 = ampliado 6x).
     pub scale: u32,
 }
 
-/// Pasta dos acessórios do usuário (criada ao abrir o app).
 pub fn user_dir() -> Option<PathBuf> {
     dirs::home_dir().map(|home| home.join(".config").join("quacko").join("accessories"))
 }
@@ -59,7 +47,6 @@ fn valid_png_name(name: &str) -> bool {
         && name.len() > 4
 }
 
-/// Largura e altura de um PNG de verdade (assinatura + cabeçalho IHDR).
 pub fn png_size(bytes: &[u8]) -> Option<(u32, u32)> {
     if bytes.len() < 24 || bytes[..8] != PNG_SIGNATURE || &bytes[12..16] != b"IHDR" {
         return None;
@@ -69,7 +56,6 @@ pub fn png_size(bytes: &[u8]) -> Option<(u32, u32)> {
     Some((w, h))
 }
 
-/// Confere o accessory.json e devolve o id e os arquivos de cada estado.
 fn parse_manifest(text: &str) -> Result<(String, Vec<String>), String> {
     let v: Value =
         serde_json::from_str(text).map_err(|e| format!("accessory.json inválido: {e}"))?;
@@ -114,8 +100,6 @@ fn parse_manifest(text: &str) -> Result<(String, Vec<String>), String> {
     Ok((id.to_string(), names))
 }
 
-/// Valida uma pasta de acessório contra o sprite do personagem (`sheet` = largura e
-/// altura de um sprite sheet de estado, em pixels do arquivo).
 pub fn validate_dir(dir: &Path, sheet: (u32, u32)) -> Result<AccessoryInfo, String> {
     let manifest_path = dir.join("accessory.json");
     let meta =
@@ -126,7 +110,6 @@ pub fn validate_dir(dir: &Path, sheet: (u32, u32)) -> Result<AccessoryInfo, Stri
     let (id, names) =
         parse_manifest(&fs::read_to_string(&manifest_path).map_err(|e| e.to_string())?)?;
 
-    // Só o accessory.json e os PNGs listados; nada de pastas, links ou arquivos a mais.
     let mut total = meta.len();
     let entries: Vec<_> = fs::read_dir(dir)
         .map_err(|e| e.to_string())?
@@ -183,8 +166,6 @@ pub fn validate_dir(dir: &Path, sheet: (u32, u32)) -> Result<AccessoryInfo, Stri
     })
 }
 
-/// Importa um `.zip` para `dest_root/<id>`. Tudo é conferido antes de ficar no lugar
-/// final; em qualquer erro, nada fica para trás.
 pub fn import_zip(zip_path: &Path, dest_root: &Path, sheet: (u32, u32)) -> Result<PathBuf, String> {
     let file = fs::File::open(zip_path).map_err(|e| e.to_string())?;
     let mut archive = zip::ZipArchive::new(file).map_err(|e| format!("zip inválido: {e}"))?;
@@ -205,11 +186,8 @@ pub fn import_zip(zip_path: &Path, dest_root: &Path, sheet: (u32, u32)) -> Resul
             if entry.is_symlink() {
                 return Err(format!("\"{}\" é um link simbólico", raw));
             }
-            // enclosed_name recusa caminhos absolutos e com "..".
             let path = entry
                 .enclosed_name()
-                // Recusa explícita de ".." e de caminho absoluto (Unix, Windows ou com drive),
-                // sem depender de como cada biblioteca normaliza.
                 .filter(|_| {
                     !raw.contains("..")
                         && !raw.starts_with('/')
@@ -227,7 +205,6 @@ pub fn import_zip(zip_path: &Path, dest_root: &Path, sheet: (u32, u32)) -> Resul
                 }
                 continue;
             }
-            // Arquivos na raiz, ou todos dentro de uma única pasta (ex.: "laco/").
             let name = match parts.as_slice() {
                 [name] => name.clone(),
                 [dir, name] => {
@@ -244,7 +221,6 @@ pub fn import_zip(zip_path: &Path, dest_root: &Path, sheet: (u32, u32)) -> Resul
             if entry.size() > MAX_FILE_BYTES {
                 return Err(format!("\"{name}\" passa de 2 MB"));
             }
-            // Lê com limite (não confia só no tamanho declarado no zip).
             let mut bytes = Vec::new();
             (&mut entry)
                 .take(MAX_FILE_BYTES + 1)
@@ -277,7 +253,6 @@ pub fn import_zip(zip_path: &Path, dest_root: &Path, sheet: (u32, u32)) -> Resul
 mod tests {
     use super::*;
 
-    /// Sprite sheet de um estado do Pato Pixel em 1x: 2 quadros de 28x28.
     pub(crate) const SHEET_1X: (u32, u32) = (56, 28);
 
     pub(crate) fn embedded_bow() -> PathBuf {
@@ -308,8 +283,6 @@ mod tests {
             .contains("fora do esperado"));
     }
 
-    // ---------- testes pedidos: tamanho inválido, zip slip, arquivos fora do esperado ----------
-
     use std::io::Write;
     use zip::write::SimpleFileOptions;
 
@@ -317,7 +290,6 @@ mod tests {
         Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/laco-6x")
     }
 
-    /// Cópia do laço 1x numa pasta temporária, para estragar à vontade.
     fn bow_copy() -> tempfile::TempDir {
         let dir = tempfile::tempdir().unwrap();
         for e in fs::read_dir(embedded_bow()).unwrap() {
@@ -327,7 +299,6 @@ mod tests {
         dir
     }
 
-    /// Só o começo de um PNG (assinatura + IHDR) com o tamanho pedido: basta para a checagem.
     fn png_header(w: u32, h: u32) -> Vec<u8> {
         let mut b = PNG_SIGNATURE.to_vec();
         b.extend_from_slice(&13u32.to_be_bytes());
@@ -409,7 +380,6 @@ mod tests {
         }
     }
 
-    /// Monta um zip com (nome, conteúdo) e, opcionalmente, um link simbólico.
     fn make_zip(dir: &Path, entries: &[(&str, Vec<u8>)], symlink: Option<(&str, &str)>) -> PathBuf {
         let path = dir.join("pacote.zip");
         let mut w = zip::ZipWriter::new(fs::File::create(&path).unwrap());

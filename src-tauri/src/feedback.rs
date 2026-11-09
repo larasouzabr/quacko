@@ -1,10 +1,7 @@
-//! Cartão do próprio app (resultado de uma ação, aviso de atualização).
-
 use tauri::{AppHandle, Manager};
 
 use crate::model::{IdGen, Notification, Source, Status};
 
-/// Mostra o resultado no cartão do gato (mesmo com "Não perturbar": foi um pedido explícito).
 pub fn tell(app: &AppHandle, status: Status, message: String) {
     let message: String = message
         .chars()

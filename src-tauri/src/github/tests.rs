@@ -26,7 +26,6 @@ fn pr(n: u64, head: &str, rollup: Option<Rollup>, done: u32, total: u32, failed:
     }
 }
 
-/// Roda as leituras em sequência e devolve as mudanças de cada uma.
 fn run(reads: &[Vec<Pr>]) -> Vec<Vec<Change>> {
     let mut state = HashMap::new();
     reads
@@ -86,7 +85,6 @@ fn progresso_a_cada_check_e_final_quando_todos_terminam() {
 
 #[test]
 fn falha_no_meio_continua_o_progresso_e_termina_com_falhou() {
-    // O resumo vira FAILURE assim que um check falha, mesmo com outros rodando.
     let out = run(&[
         vec![pr(1, "a", Some(Pending), 0, 4, 0)],
         vec![pr(1, "a", Some(Failure), 1, 4, 1)],
@@ -98,7 +96,6 @@ fn falha_no_meio_continua_o_progresso_e_termina_com_falhou() {
 
 #[test]
 fn todos_terminados_mas_resumo_pendente_ainda_nao_e_final() {
-    // Check obrigatório que ainda não reportou (EXPECTED).
     let out = run(&[
         vec![pr(1, "a", Some(Pending), 2, 3, 0)],
         vec![pr(1, "a", Some(Expected), 3, 3, 0)],

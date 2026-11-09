@@ -1,5 +1,3 @@
-//! Iniciar com o login: ligar/desligar e manter o registro apontando para o app instalado.
-
 use crate::settings::Settings;
 use std::path::PathBuf;
 
@@ -23,8 +21,6 @@ pub fn toggle_autostart(app: &AppHandle) {
     }
 }
 
-/// O sistema é a fonte da verdade do "Iniciar com o login": se a pessoa tirou o Quacko
-/// dos itens de login nos Ajustes do Sistema, a config passa a refletir isso.
 pub fn reconcile_autostart(app: &AppHandle) {
     use tauri_plugin_autostart::ManagerExt;
     let Ok(enabled) = app.autolaunch().is_enabled() else {
@@ -39,10 +35,6 @@ pub fn reconcile_autostart(app: &AppHandle) {
     }
 }
 
-/// O item de login aponta para um executável. Se o app foi movido, reinstalado em outro
-/// lugar ou o registro aponta para um caminho que não existe mais, registra de novo
-/// com o executável atual. Só vale para o app instalado (dentro de um `.app`): o modo
-/// de desenvolvimento nunca toma o lugar do app instalado.
 fn reregister_if_moved(app: &AppHandle) {
     use tauri_plugin_autostart::ManagerExt;
     let Ok(current) = std::env::current_exe().and_then(|p| p.canonicalize()) else {
@@ -69,8 +61,6 @@ fn is_inside_app_bundle(exe: &std::path::Path) -> bool {
     exe.to_string_lossy().contains(".app/Contents/MacOS/")
 }
 
-/// Precisa registrar de novo se não há caminho registrado, se ele não existe mais ou se
-/// é outro executável.
 pub fn needs_reregister(registered: Option<&std::path::Path>, current: &std::path::Path) -> bool {
     match registered {
         None => true,
@@ -78,7 +68,6 @@ pub fn needs_reregister(registered: Option<&std::path::Path>, current: &std::pat
     }
 }
 
-/// Primeiro argumento do LaunchAgent (`~/Library/LaunchAgents/<App>.plist`).
 #[cfg(target_os = "macos")]
 fn login_item_program(app: &AppHandle) -> Option<PathBuf> {
     let name = app

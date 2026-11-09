@@ -1,5 +1,3 @@
-//! Janelas secundárias (boas-vindas, Personalizar): abre uma vez e depois só traz para a frente.
-
 use tauri::{AppHandle, Manager, WebviewUrl, WebviewWindowBuilder};
 
 pub fn open_or_focus(app: &AppHandle, label: &str, route: &str, title: &str, size: (f64, f64)) {

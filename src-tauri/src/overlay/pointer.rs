@@ -1,5 +1,3 @@
-//! Posição do mouse sobre o overlay (o WebKit não entrega hover a uma janela sem foco).
-
 use std::time::Duration;
 
 use tauri::{AppHandle, Emitter, Manager};
@@ -9,7 +7,6 @@ use super::*;
 
 const POINTER_POLL: Duration = Duration::from_millis(80);
 
-/// Enquanto o overlay está visível, manda a posição do mouse (px CSS relativos à janela).
 pub(super) async fn pointer_loop(app: AppHandle, mut visible: watch::Receiver<bool>) {
     loop {
         if visible.wait_for(|v| *v).await.is_err() {

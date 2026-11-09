@@ -1,6 +1,4 @@
 #!/bin/bash
-# Testes do prwatch com um `gh` falso e um notify.sh falso que só registra os argumentos.
-# Uso: bash scripts/tests/prwatch.test.sh
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
 PRWATCH="$HERE/../prwatch"
@@ -8,7 +6,6 @@ WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 mkdir -p "$WORK/bin"
 
-# gh falso: `checks` sai com $FAKE_RC; `view` devolve $FAKE_VIEW (ou falha se vazio).
 cat >"$WORK/bin/gh" <<'GH'
 #!/bin/bash
 echo "$*" >>"$FAKE_GH_LOG"

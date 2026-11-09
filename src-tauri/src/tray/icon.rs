@@ -1,12 +1,3 @@
-//! Ícone da bandeja: o pato de perfil (gerado por tools/make_tray_icon.py).
-//!
-//! - macOS: imagem "template" (só a silhueta; o sistema pinta conforme o tema claro ou
-//!   escuro), montada como um NSImage com as versões 1x, 2x e 3x, no botão da barra.
-//! - Windows e Linux: versão colorida (não suportam template).
-//! - Alerta (bolinha no ícone): quando aparece um aviso que pede atenção, como uma
-//!   checagem de PR que falhou ou um "precisa de você" do Claude. Volta ao normal quando
-//!   a pessoa abre o menu ou quando esses avisos somem da tela.
-
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use tauri::{AppHandle, Manager};
@@ -15,17 +6,13 @@ use crate::model::{Notification, Source, Status};
 
 pub const TRAY_ID: &str = "quacko-tray";
 
-/// Estado de alerta do ícone.
 #[derive(Default)]
 pub struct TrayAlert(AtomicBool);
 
-/// Aviso que liga o alerta: checagem de PR que falhou ou pedido de atenção.
 pub fn is_alert(n: &Notification) -> bool {
     n.status == Status::Attention || (n.status == Status::Fail && n.source == Source::Ci)
 }
 
-/// Ícone usado na criação da bandeja (no macOS ele é trocado em seguida pelo NSImage
-/// com as três resoluções).
 pub fn initial_image() -> tauri::image::Image<'static> {
     #[cfg(target_os = "macos")]
     {
@@ -37,7 +24,6 @@ pub fn initial_image() -> tauri::image::Image<'static> {
     }
 }
 
-/// Liga ou desliga o alerta (só redesenha quando muda).
 pub fn set_alert(app: &AppHandle, on: bool) {
     let Some(state) = app.try_state::<TrayAlert>() else {
         return;
@@ -49,7 +35,6 @@ pub fn set_alert(app: &AppHandle, on: bool) {
     apply(app, on);
 }
 
-/// Desenha o ícone do estado atual (usado logo depois de criar a bandeja).
 pub fn apply_current(app: &AppHandle) {
     let on = app
         .try_state::<TrayAlert>()
@@ -62,7 +47,6 @@ fn apply(app: &AppHandle, alert: bool) {
     let Some(tray) = app.tray_by_id(TRAY_ID) else {
         return;
     };
-    // Tudo dentro do closure: ele roda na thread principal (o NSStatusItem não pode sair dela).
     let _ = tray.with_inner_tray_icon(move |inner| {
         let (Some(item), Some(mtm)) = (inner.ns_status_item(), objc2::MainThreadMarker::new())
         else {
@@ -93,7 +77,6 @@ mod macos {
     use objc2_app_kit::{NSBitmapImageRep, NSImage};
     use objc2_foundation::{NSData, NSSize};
 
-    /// Tamanho do desenho em pontos; as versões 2x e 3x dão nitidez em telas Retina.
     const POINTS: f64 = 16.0;
 
     const NORMAL: [&[u8]; 3] = [
@@ -107,8 +90,6 @@ mod macos {
         include_bytes!("../../icons/tray/trayAlertTemplate@3x.png"),
     ];
 
-    /// NSImage template com as três resoluções: o macOS escolhe a certa para a tela e
-    /// pinta a silhueta com a cor do tema.
     pub fn template_image(alert: bool) -> Option<Retained<NSImage>> {
         let size = NSSize::new(POINTS, POINTS);
         let image = NSImage::initWithSize(NSImage::alloc(), size);
@@ -176,7 +157,6 @@ mod tests {
         ] {
             let bytes =
                 std::fs::read(format!("{}/icons/tray/{name}", env!("CARGO_MANIFEST_DIR"))).unwrap();
-            // Largura e altura ficam nos bytes 16..24 do cabeçalho IHDR do PNG.
             let w = u32::from_be_bytes(bytes[16..20].try_into().unwrap());
             let h = u32::from_be_bytes(bytes[20..24].try_into().unwrap());
             assert_eq!((w, h), (px, px), "{name}");

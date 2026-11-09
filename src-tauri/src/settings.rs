@@ -1,5 +1,3 @@
-//! Config em memória, compartilhada entre menu, servidor e frontend.
-
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
@@ -14,11 +12,9 @@ use crate::overlay::OVERLAY_LABEL;
 pub struct Settings {
     path: Option<PathBuf>,
     config: Mutex<Config>,
-    /// Espelho de `config.dnd` lido pelo servidor a cada aviso, sem trava.
     dnd: Arc<AtomicBool>,
 }
 
-/// O que o frontend precisa saber.
 #[derive(Debug, Clone, Serialize)]
 pub struct FrontendSettings {
     pub lang: Lang,
@@ -81,8 +77,6 @@ impl Settings {
         }
     }
 
-    /// Aplica a mudança, sincroniza o "Não perturbe" e grava no arquivo.
-    /// Se gravar falhar, a mudança vale até o app fechar.
     pub fn update(&self, change: impl FnOnce(&mut Config)) -> Config {
         let mut guard = self.config.lock().unwrap_or_else(|e| e.into_inner());
         change(&mut guard);
@@ -96,7 +90,6 @@ impl Settings {
     }
 }
 
-/// Avisa o overlay que idioma ou limite de cartões mudaram.
 pub fn broadcast(app: &AppHandle) {
     let settings = app.state::<Settings>().frontend();
     if let Err(e) = app.emit_to(OVERLAY_LABEL, "settings-changed", settings) {
@@ -104,8 +97,6 @@ pub fn broadcast(app: &AppHandle) {
     }
 }
 
-/// Tela Personalizar: personagem e acessório. Grava na config e avisa o overlay, que
-/// troca na hora (sem reiniciar).
 #[tauri::command]
 pub fn set_appearance(
     app: AppHandle,

@@ -1,10 +1,7 @@
-//! Idioma efetivo e textos do menu da barra.
-
 use serde::Serialize;
 
 use crate::config::LangPref;
 
-/// Idioma efetivo (o que o frontend e o menu usam).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 pub enum Lang {
     #[serde(rename = "pt-BR")]
@@ -13,7 +10,6 @@ pub enum Lang {
     En,
 }
 
-/// "Automático": primeiro idioma suportado na lista de preferidos do sistema; senão inglês.
 pub fn resolve<I, S>(pref: LangPref, system_locales: I) -> Lang
 where
     I: IntoIterator<Item = S>,
@@ -67,7 +63,6 @@ pub struct TrayTexts {
     pub prwatch_conflict: &'static str,
     pub error: &'static str,
     pub github_label: &'static str,
-    /// Modelo com {login} e {n}.
     pub github_connected: &'static str,
     pub github_no_gh: &'static str,
     pub github_expired: &'static str,
@@ -170,7 +165,6 @@ mod tests {
 
     #[test]
     fn automatico_usa_o_primeiro_idioma_suportado() {
-        // O Mac da Lara: inglês (região Brasil) primeiro, português depois.
         assert_eq!(resolve(LangPref::Auto, ["en-BR", "pt-BR"]), Lang::En);
         assert_eq!(resolve(LangPref::Auto, ["pt-BR", "en-US"]), Lang::PtBr);
         assert_eq!(
@@ -188,7 +182,6 @@ mod tests {
 
     #[test]
     fn nao_confunde_prefixos_parecidos() {
-        // "ptx"/"eng" não são pt/en.
         assert_eq!(resolve(LangPref::Auto, ["ptx", "pt-BR"]), Lang::PtBr);
         assert_eq!(resolve(LangPref::Auto, ["eng", "pt-BR"]), Lang::PtBr);
     }

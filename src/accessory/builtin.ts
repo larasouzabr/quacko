@@ -1,4 +1,3 @@
-// Acessórios embutidos: cada pasta em src/assets/accessories/<id> (accessory.json + PNGs).
 import { buildAccessory } from "./load";
 import type { Accessory, AccessoryManifest } from "./types";
 

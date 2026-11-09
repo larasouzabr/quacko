@@ -29,7 +29,7 @@ describe("tamanho do pixel", () => {
   });
 
   it("125% e 150% arredondam para o pixel físico mais próximo", () => {
-    expect(cssPixel(3, 1.25) * 1.25).toBeCloseTo(4); // 3,75 -> 4
+    expect(cssPixel(3, 1.25) * 1.25).toBeCloseTo(4);
     expect(cssPixel(4, 1.5) * 1.5).toBeCloseTo(6);
   });
 

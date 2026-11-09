@@ -1,7 +1,6 @@
 import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
 
-// Porta fixa para o Tauri achar o servidor de desenvolvimento.
 export default defineConfig({
   plugins: [react()],
   clearScreen: false,

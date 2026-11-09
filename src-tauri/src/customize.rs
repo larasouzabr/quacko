@@ -1,5 +1,3 @@
-//! Janela "Personalizar": personagem e acessórios (laço), com pré-visualização ao vivo.
-
 use tauri::{AppHandle, Manager};
 
 pub const CUSTOMIZE_LABEL: &str = "customize";

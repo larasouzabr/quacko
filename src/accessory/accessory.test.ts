@@ -1,5 +1,3 @@
-// Testes do acessório (laço): sobreposição comparada pixel a pixel com o pacote de
-// referência pato-pixel-laco (6x), recoloração e grade inválida.
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { PNG } from "pngjs";
@@ -18,7 +16,6 @@ const BASE: RecolorBase = PRESETS.rosa;
 const SCALE = 6;
 const FRAME = 28;
 
-/** Como o overlay desenha: o laço por cima do pato (source-over; o laço só tem alfa 0 ou 255). */
 function compose(base: PNG, top: PNG): PNG {
   const out = new PNG({ width: base.width, height: base.height });
   for (let i = 0; i < base.data.length; i += 4) {
@@ -34,13 +31,11 @@ const pixel = (png: PNG, x: number, y: number) => {
   return [png.data[i], png.data[i + 1], png.data[i + 2], png.data[i + 3]];
 };
 
-/** Pixels (em 1x) em que o composto ampliado 6x difere da referência. */
 function diff(composed: PNG, ref: PNG): { x: number; y: number }[] {
   const out: { x: number; y: number }[] = [];
   for (let y = 0; y < composed.height; y++) {
     for (let x = 0; x < composed.width; x++) {
       const want = pixel(composed, x, y);
-      // Cada pixel 1x vira um bloco SCALE x SCALE na referência: confere o bloco todo.
       let same = true;
       for (let dy = 0; dy < SCALE && same; dy++) {
         for (let dx = 0; dx < SCALE && same; dx++) {
@@ -72,10 +67,7 @@ describe("sobreposição do laço x pato-pixel-laco (cor padrão)", () => {
     const composed = compose(duck("ok"), bow("ok"));
     const bowPng = bow("ok");
     const diffs = diff(composed, reference("ok"));
-    // Nenhuma diferença onde o laço tem pixel: a sobreposição em si está certa.
     expect(diffs.filter(({ x, y }) => pixel(bowPng, x, y)[3] > 0)).toEqual([]);
-    // Todas as diferenças ficam no canto do coração (topo direito de cada quadro) e só
-    // envolvem as cores do coração (#ff6b8a) e do contorno (#2b2024) ou transparência.
     const heartColors = new Set(["255,107,138", "43,32,36"]);
     for (const { x, y } of diffs) {
       expect(x % FRAME, `x=${x}`).toBeGreaterThanOrEqual(20);
@@ -84,7 +76,7 @@ describe("sobreposição do laço x pato-pixel-laco (cor padrão)", () => {
         if (px[3] > 0) expect(heartColors.has(px.slice(0, 3).join(","))).toBe(true);
       }
     }
-    expect(diffs.length).toBeGreaterThan(0); // documenta a diferença conhecida
+    expect(diffs.length).toBeGreaterThan(0);
   });
 });
 
@@ -108,7 +100,7 @@ describe("recoloração do laço", () => {
       for (let i = 0; i < png.data.length; i += 4) {
         const before = [...original.data.subarray(i, i + 4)];
         const after = [...png.data.subarray(i, i + 4)];
-        expect(after[3]).toBe(before[3]); // alfa intacto
+        expect(after[3]).toBe(before[3]);
         if (before[3] === 0) continue;
         const idx = (["main", "shade", "light"] as const).findIndex((k) => BASE[k].every((c, j) => c === before[j]));
         if (idx >= 0) {
@@ -116,7 +108,7 @@ describe("recoloração do laço", () => {
           expect(after.slice(0, 3)).toEqual(PRESETS.azul[key]);
           changed++;
         } else {
-          expect(after).toEqual(before); // contorno e outras cores intactos
+          expect(after).toEqual(before);
         }
       }
       expect(changed, m).toBeGreaterThan(0);

@@ -1,19 +1,13 @@
 #!/bin/bash
-# Instala os scripts de integração do Quacko em ~/.claude/hooks/ (com backup) e mostra o
-# que configurar. Não edita ~/.claude/settings.json, ~/.cursor/hooks.json nem ~/.zshrc.
-#
-# Uso: scripts/install.sh
-# Variável: QUACKO_HOOKS_DIR (padrão ~/.claude/hooks)
 set -eu
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
 DEST="${QUACKO_HOOKS_DIR:-$HOME/.claude/hooks}"
 STAMP="$(date +%Y%m%d-%H%M%S)"
 
-install_one() { # origem, nome
+install_one() {
   local src="$HERE/$1" dst="$DEST/$2"
   if [ -f "$dst" ] && ! cmp -s "$src" "$dst"; then
-    # O primeiro backup guarda o original; os seguintes ganham data, sem sobrescrever.
     local bak="$dst.bak"
     [ -e "$bak" ] && bak="$dst.bak-$STAMP"
     cp -p "$dst" "$bak"

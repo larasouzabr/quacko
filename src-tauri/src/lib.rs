@@ -36,7 +36,6 @@ pub fn run() {
 
     let builder = tauri::Builder::default();
 
-    // Não ativar o app ao iniciar: o Quacko não pode roubar o foco do editor.
     #[cfg(target_os = "macos")]
     let builder = builder.activate_ignoring_other_apps(false);
 
@@ -63,17 +62,14 @@ pub fn run() {
             github::commands::github_device_wait,
         ])
         .setup(|app| {
-            // Só barra de menus, sem ícone no Dock.
             #[cfg(target_os = "macos")]
             app.set_activation_policy(tauri::ActivationPolicy::Accessory);
 
-            // Nome antigo (Miau) → Quacko: pastas antes de ler a config.
             if let Some(home) = dirs::home_dir() {
                 migrate::migrate_dirs(&home);
             }
             app.manage(Settings::load());
             app.manage(IdGen::default());
-            // Pasta dos acessórios do usuário (para importar outros no futuro).
             accessories::ensure_user_dir();
             app.manage(tray::icon::TrayAlert::default());
             app.manage(github::commands::PendingDevice::default());
@@ -93,7 +89,6 @@ pub fn run() {
             Ok(())
         })
         .on_window_event(|window, event| {
-            // Fechar as boas-vindas (pelo botão ou pelo X) conta como visto.
             if window.label() == onboarding::WELCOME_LABEL
                 && matches!(event, tauri::WindowEvent::Destroyed)
             {

@@ -9,22 +9,12 @@ import {
   type SpriteState,
 } from "./types";
 
-/** Limites da quacko-spec-personalizacao.md, seção 1. */
 const MAX_DIMENSION = 1024;
 const MAX_GRID = 128;
 const MAX_FPS = 30;
 const COLOR = /^#[0-9a-f]{6}([0-9a-f]{2})?$/i;
 const ROLE = /^[a-z][a-z0-9_]{0,31}$/;
 
-/**
- * Monta um personagem a partir do manifest (schema 1 ou 2). `resolveUrl` traduz o
- * caminho do arquivo dentro do pacote (ex.: "assets/ok.png") para uma URL que o
- * webview consegue carregar.
- *
- * schema 1 (`size` em px) é lido como personagem não pixel art, como manda a spec.
- * Por enquanto só os tipos "sprite" e "image" são suportados; os demais entram junto
- * com a importação de pacotes.
- */
 export function buildCharacter(
   manifest: CharacterManifest,
   resolveUrl: (file: string) => string | undefined,
@@ -87,8 +77,6 @@ function parseState(
   const frames = positiveInt(def.frames, 1);
   const columns = positiveInt(def.columns, frames);
   const fps = Math.min(positiveInt(def.fps, 1), MAX_FPS);
-  // A animação CSS percorre uma única linha do sprite. Se os quadros não couberem
-  // numa linha, mostra só o primeiro em vez de desenhar quadros errados.
   const animatable = frames > 1 && columns >= frames;
   return {
     url,
@@ -99,7 +87,6 @@ function parseState(
   };
 }
 
-/** Só papéis com nome simples e cor `#rrggbb`/`#rrggbbaa`; o resto é ignorado. */
 function parsePalette(raw: unknown): Record<string, string> {
   const palette: Record<string, string> = {};
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return palette;

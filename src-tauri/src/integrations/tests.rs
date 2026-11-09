@@ -79,7 +79,6 @@ fn conectar_duas_vezes_nao_duplica() {
 
 #[test]
 fn hooks_antigos_do_quacko_sao_atualizados() {
-    // Formato da v1: notify.sh só com o som, sem --from.
     let mut doc: Value = serde_json::from_str(&format!(
             r#"{{"hooks":{{"Stop":[{{"hooks":[{{"type":"command","command":"{NOTIFY} /System/Library/Sounds/Glass.aiff"}}]}}]}}}}"#
         ))
@@ -179,8 +178,6 @@ fn caminho_com_espaco_vai_entre_aspas() {
     assert!(is_quacko(&cmd));
     assert_eq!(command_for(&notify(), "-x"), format!("{NOTIFY} -x"));
 }
-
-// ---------- com arquivos de verdade ----------
 
 fn temp_home() -> (tempfile::TempDir, Paths) {
     let dir = tempfile::tempdir().unwrap();

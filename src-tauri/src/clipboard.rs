@@ -1,6 +1,3 @@
-//! Área de transferência (modo manual: o trecho para colar).
-
-/// Modo manual: o trecho vai para a área de transferência.
 pub fn copy_to_clipboard(text: &str) {
     #[cfg(target_os = "macos")]
     {

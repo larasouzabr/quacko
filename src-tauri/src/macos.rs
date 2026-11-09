@@ -1,5 +1,3 @@
-//! Ajustes nativos do macOS que o Tauri não expõe.
-
 use std::sync::atomic::{AtomicI32, Ordering};
 
 use objc2_app_kit::{
@@ -8,8 +6,6 @@ use objc2_app_kit::{
 };
 use tauri::{Runtime, WebviewWindow};
 
-/// Aparece em todos os Spaces e por cima de apps em tela cheia.
-/// Precisa rodar na thread principal (o `setup` do Tauri roda nela).
 pub fn join_all_spaces_and_fullscreen<R: Runtime>(window: &WebviewWindow<R>) {
     let Ok(ptr) = window.ns_window() else {
         return;
@@ -17,7 +13,6 @@ pub fn join_all_spaces_and_fullscreen<R: Runtime>(window: &WebviewWindow<R>) {
     if ptr.is_null() {
         return;
     }
-    // SAFETY: `ns_window()` devolve o NSWindow vivo desta janela; estamos na thread principal.
     let ns_window: &NSWindow = unsafe { &*(ptr as *const NSWindow) };
     let behavior = ns_window.collectionBehavior()
         | NSWindowCollectionBehavior::CanJoinAllSpaces
@@ -27,7 +22,6 @@ pub fn join_all_spaces_and_fullscreen<R: Runtime>(window: &WebviewWindow<R>) {
     ns_window.setCollectionBehavior(behavior);
 }
 
-/// pid do último app em primeiro plano que não é o Quacko.
 static PREVIOUS_APP: AtomicI32 = AtomicI32::new(0);
 
 pub fn remember_frontmost_app() {
@@ -40,7 +34,6 @@ pub fn remember_frontmost_app() {
     }
 }
 
-/// Se um clique no cartão ativou o Quacko, devolve o foco ao app anterior.
 pub fn restore_frontmost_app() {
     if !NSRunningApplication::currentApplication().isActive() {
         return;

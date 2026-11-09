@@ -1,5 +1,3 @@
-//! Leitura e gravação seguras dos arquivos de configuração (link, Nix, somente leitura, backup, gravação atômica).
-
 use std::fs;
 use std::io::{self, Write};
 use std::path::{Path, PathBuf};
@@ -8,8 +6,6 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use super::*;
 use serde_json::{json, Value};
 
-// ---------- arquivos ----------
-
 pub(super) fn timestamp() -> u64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -17,7 +13,6 @@ pub(super) fn timestamp() -> u64 {
         .unwrap_or(0)
 }
 
-/// Caminho real a gravar e o conteúdo atual; `Err` = modo manual.
 pub(super) fn prepare(path: &Path) -> Result<(PathBuf, Value, bool), ManualReason> {
     if !path.exists() && fs::symlink_metadata(path).is_err() {
         return Ok((path.to_path_buf(), json!({}), false));
@@ -40,7 +35,6 @@ pub(super) fn prepare(path: &Path) -> Result<(PathBuf, Value, bool), ManualReaso
     Ok((target, doc, true))
 }
 
-/// Testa se dá para criar arquivo na pasta (o rename atômico precisa disso).
 pub(super) fn tempfile_in(dir: &Path) -> io::Result<()> {
     let probe = dir.join(format!(".quacko-probe-{}", std::process::id()));
     fs::File::create(&probe)?;
@@ -70,13 +64,11 @@ pub(super) fn write_atomic(path: &Path, contents: &str) -> io::Result<()> {
     fs::rename(&tmp, path)
 }
 
-/// Instala um script com permissão de execução; guarda backup se havia outro diferente.
 pub(super) fn install_script(path: &Path, contents: &str) -> io::Result<()> {
     if let Ok(current) = fs::read_to_string(path) {
         if current == contents {
             return Ok(());
         }
-        // O primeiro backup guarda o original; os seguintes ganham data.
         let mut backup = PathBuf::from(format!("{}.bak", path.display()));
         if backup.exists() {
             backup = PathBuf::from(format!("{}.bak-{}", path.display(), timestamp()));

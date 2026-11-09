@@ -1,19 +1,9 @@
 #!/usr/bin/env python3
-"""Gera o icone da bandeja (barra de menu) do Pato Pixel.
-
-macOS: "template image" = preto + transparencia; o sistema pinta de branco/preto conforme o tema.
-  trayTemplate.png (16), trayTemplate@2x.png (32), trayTemplate@3x.png (48)
-  trayAlertTemplate*.png: o mesmo com um pontinho no canto (aviso pendente / falha)
-Windows e Linux (nao aceitam template): tray-color*.png, colorido.
-
-Uso: python3 make_tray_icon.py [pasta_de_saida]
-"""
 import os
 import sys
 
 from PIL import Image, ImageDraw, ImageFont
 
-# Perfil do pato virado para a direita: '#' corpo, 'b' bico, 'e' olho (furo)
 DUCK = [
     "................",
     "................",
@@ -85,7 +75,6 @@ def main(out):
         for scale, suf in ((1, ""), (2, "@2x"), (3, "@3x")):
             up(base, scale).save(os.path.join(out, f"{name}{suf}.png"))
 
-    # previa: barra escura e clara, em tamanho de tela retina (@2x ampliado)
     try:
         font = ImageFont.truetype("DejaVuSans.ttf", 13)
     except Exception:
@@ -114,7 +103,6 @@ def main(out):
         d.text((24, y0 + bar_h + 20), bname, fill=(120, 120, 120), font=font)
     sheet.save(os.path.join(out, "preview-tray.png"))
 
-    # tamanho real (@2x) sobre uma barra, para conferir a leitura
     real = Image.new("RGB", (300, 48), (20, 32, 54))
     x = 16
     for img in (tint(template(False), (255, 255, 255)), tint(template(True), (255, 255, 255)),

@@ -1,5 +1,3 @@
-//! PRs e a comparação entre leituras (o que terminou, o que avançou).
-
 use std::collections::HashMap;
 
 use serde::Deserialize;
@@ -14,7 +12,6 @@ pub enum Rollup {
     Error,
 }
 
-/// Contagem dos checks do último commit.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct Checks {
     pub done: u32,
@@ -29,7 +26,6 @@ pub struct Pr {
     pub url: String,
     pub repo: String,
     pub head: String,
-    /// `None` = PR sem checks.
     pub rollup: Option<Rollup>,
     pub checks: Checks,
 }
@@ -43,7 +39,6 @@ pub struct Tracked {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Change {
-    /// Mais checks terminaram, mas ainda falta algum.
     Progress(Pr),
     Passed(Pr),
     Failed(Pr),
@@ -53,12 +48,10 @@ fn running(r: Option<Rollup>) -> bool {
     matches!(r, Some(Rollup::Pending | Rollup::Expected))
 }
 
-/// Todos os checks terminaram e o resumo já tem resultado.
 fn is_finished(rollup: Option<Rollup>, checks: Checks) -> bool {
     checks.total > 0 && checks.done >= checks.total && rollup.is_some() && !running(rollup)
 }
 
-/// Compara a leitura nova com a anterior. Devolve o novo estado e o que mudou.
 pub fn diff(
     prev: &HashMap<String, Tracked>,
     now: &[Pr],
@@ -93,7 +86,6 @@ pub fn diff(
     (next, changes)
 }
 
-/// Algum PR com checks rodando (consulta mais frequente).
 pub fn any_running(state: &HashMap<String, Tracked>) -> bool {
     state
         .values()

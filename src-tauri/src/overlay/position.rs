@@ -1,10 +1,7 @@
-//! Posição e tamanho do overlay: canto superior direito do monitor certo.
-
 use tauri::{PhysicalPosition, Runtime, WebviewWindow};
 
 use super::*;
 
-/// Canto superior direito da área útil do monitor onde está o cursor.
 pub(super) fn move_to_cursor_monitor<R: Runtime>(
     window: &WebviewWindow<R>,
     logical_width: f64,

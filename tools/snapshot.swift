@@ -1,5 +1,3 @@
-// Fotografa uma página num WebKit fora da tela (sem precisar de permissão de gravação
-// de tela). Uso: swift tools/snapshot.swift URL saida.png [largura] [altura] [espera_s]
 import AppKit
 import WebKit
 

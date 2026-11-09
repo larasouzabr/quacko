@@ -1,5 +1,3 @@
-//! Consulta GraphQL ao GitHub e leitura da resposta.
-
 use std::time::Duration;
 
 use serde_json::{json, Value};
@@ -29,15 +27,11 @@ const QUERY: &str = r#"query($q: String!) {
 
 #[derive(Debug)]
 pub enum ApiError {
-    /// Token inválido ou expirado.
     Unauthorized,
-    /// Limite de taxa: esperar esse tempo.
     RateLimited(Duration),
-    /// Rede, servidor ou resposta inesperada.
     Other(String),
 }
 
-/// Lê a resposta da consulta: login de quem está logado e os PRs abertos.
 pub fn parse(body: &Value) -> Result<(String, Vec<Pr>), ApiError> {
     if let Some(errors) = body.get("errors").and_then(Value::as_array) {
         let msg = errors
@@ -78,7 +72,6 @@ fn parse_pr(node: &Value) -> Option<Pr> {
     })
 }
 
-/// Soma as contagens por estado. Terminado = qualquer estado que não seja de espera.
 pub(super) fn count_checks(contexts: &Value) -> Checks {
     let mut c = Checks::default();
     let mut add = |list: &Value, waiting: &[&str], failed: &[&str]| {
@@ -112,8 +105,6 @@ pub(super) fn count_checks(contexts: &Value) -> Checks {
     );
     c
 }
-
-// ---------- rede ----------
 
 pub(crate) async fn fetch(
     client: &reqwest::Client,

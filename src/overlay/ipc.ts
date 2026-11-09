@@ -4,7 +4,6 @@ function quiet(promise: Promise<unknown>) {
   promise.catch((e) => console.warn(e));
 }
 
-/** Comandos do overlay para o Rust. Falhas só vão para o console (o overlay segue). */
 export const overlayIpc = {
   setSize: (width: number, height: number) => quiet(invoke("set_overlay_size", { width, height })),
   setInteractive: (interactive: boolean) => quiet(invoke("set_interactive", { interactive })),

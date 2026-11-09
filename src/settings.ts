@@ -6,7 +6,6 @@ import { DEFAULT_CHARACTER_ID } from "./character/builtin";
 import { DEFAULT_PIXEL_SIZE } from "./character/pixel";
 import type { Settings } from "./types";
 
-// Valores usados até o Rust responder (ou se o app rodar fora do Tauri).
 export const DEFAULT_SETTINGS: Settings = {
   lang: "pt-BR",
   max_cards: 3,
@@ -17,7 +16,6 @@ export const DEFAULT_SETTINGS: Settings = {
   accessory_color: "#ff6996",
 };
 
-/** Config do app: lida no início e atualizada quando muda no menu ou em Personalizar. */
 export function useSettings(): Settings {
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
   useEffect(() => {

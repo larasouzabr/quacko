@@ -34,7 +34,6 @@
   }
 }
 
-/* O overlay precisa de fundo totalmente transparente. */
 html,
 body,
 #root {
@@ -49,7 +48,6 @@ body,
   cursor: default;
 }
 
-/* Pilha ancorada no canto superior direito; o mais novo em cima. */
 .stack {
   position: fixed;
   inset: 0;
@@ -79,15 +77,12 @@ body,
   pointer-events: none;
 }
 
-/* ---------- personagem (sprite sheet) ---------- */
 .cat-sprite {
   flex: none;
   background-repeat: no-repeat;
   background-position: 0 0;
 }
 
-/* Sem isso o pixel art fica borrado ao ampliar. O tamanho do pixel é sempre um número
-   inteiro de pixels físicos (ver src/character/pixel.ts). */
 .cat-sprite.is-pixel-art {
   image-rendering: pixelated;
 }
@@ -105,7 +100,6 @@ body,
   }
 }
 
-/* ---------- balão ---------- */
 .bubble {
   position: relative;
   flex: 1;
@@ -119,7 +113,6 @@ body,
   box-shadow: 3px 3px 0 var(--bubble-shadow);
 }
 
-/* Rabinho do balão apontando para o gato. */
 .bubble::before,
 .bubble::after {
   content: "";
@@ -135,8 +128,6 @@ body,
   border-color: transparent var(--bubble-bg) transparent transparent;
 }
 
-/* Alturas de linha em px inteiros: a altura do cartão fica inteira e o gato,
-   alinhado pela base, não cai entre dois pixels físicos. */
 .bubble-head {
   display: flex;
   align-items: flex-start;
@@ -177,8 +168,6 @@ body,
 .status-info .badge { color: var(--info-fg); background: var(--info-bg); }
 .status-info .badge-icon { background: var(--info-fg); }
 
-/* Título em até 2 linhas (ex.: "PR #445 · Platform: AI Assistant…"); com o mouse em
-   cima, o cartão mostra o título inteiro. */
 .title {
   min-width: 0;
   overflow: hidden;
@@ -206,7 +195,6 @@ body,
   overflow: hidden;
 }
 
-/* Barra de progresso (checks de um PR). Altura e margem inteiras, como o resto. */
 .progress {
   display: flex;
   height: 6px;
@@ -252,8 +240,6 @@ body,
   transition: opacity 120ms;
 }
 
-/* O hover vem do Rust (classe), não de :hover. No cartão sticky (só fecha no ×), o ×
-   fica sempre visível para a pessoa saber como fechar. */
 .card.is-hovered .close,
 .card.is-sticky .close {
   opacity: 1;
@@ -289,7 +275,6 @@ body,
   }
 }
 
-/* Movimento reduzido: sem bounce, só fade; o gato fica no primeiro quadro. */
 @media (prefers-reduced-motion: reduce) {
   .card {
     animation: card-fade-in 200ms ease-out both;
@@ -300,7 +285,6 @@ body,
   }
 }
 
-/* ---------- só a pré-visualização (preview.html) ---------- */
 .preview-grid {
   position: fixed;
   inset: 0;
@@ -314,12 +298,10 @@ body,
 .preview-slot {
   width: 364px;
 }
-/* Fora da tela o WebKit pausa animações: na pré-visualização o cartão já entra pronto. */
 .preview-grid .card {
   animation: none;
 }
 
-/* ---------- janela de boas-vindas ---------- */
 body.welcome-page {
   --page-bg: #fbf7f3;
   background: var(--page-bg);
@@ -463,7 +445,6 @@ body.welcome-page {
   color: var(--info-fg);
 }
 
-/* ---------- janela Personalizar ---------- */
 .customize h1 {
   margin: 0;
   font-size: 20px;

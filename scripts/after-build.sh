@@ -1,7 +1,4 @@
 #!/bin/bash
-# Depois do `tauri build` no macOS: tira do registro de apps do sistema (LaunchServices)
-# a cópia de build do Quacko.app e o disco temporário que o empacotador do .dmg montou.
-# Sem isso, aparece um segundo "Quacko" na lista de apps. Os arquivos continuam onde estão.
 LSR=/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister
 [ -x "$LSR" ] || exit 0
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"

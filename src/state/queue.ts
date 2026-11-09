@@ -1,18 +1,12 @@
-// Fila de cartões do overlay. Reducer puro: o tempo entra como `now` nas ações.
 import type { Notification } from "../types";
 
-/** Duração da animação de saída (fade); o cartão sai da fila depois disso. */
 export const LEAVE_MS = 250;
-/** Ao tirar o mouse, cada cartão ganha pelo menos esse tempo antes de sumir. */
 export const RESUME_GRACE_MS = 1500;
 
 export interface Card {
   n: Notification;
-  /** Quando expira (só vale enquanto a fila não está pausada). */
   expiresAt: number;
-  /** Tempo restante guardado durante a pausa. */
   remainingMs: number;
-  /** Quando começou a sair; `null` enquanto visível. */
   leavingAt: number | null;
 }
 
@@ -34,7 +28,6 @@ export function initialQueue(maxCards = 3): QueueState {
   return { cards: [], paused: false, maxCards };
 }
 
-/** Mesma origem + mesmo projeto: o novo substitui o anterior. */
 function sameSlot(a: Notification, b: Notification): boolean {
   return a.source === b.source && (a.project ?? "") === (b.project ?? "");
 }
@@ -45,11 +38,8 @@ export function queueReducer(state: QueueState, action: QueueAction): QueueState
       const { notification: n, now } = action;
       const kept = state.cards.filter((c) => c.leavingAt !== null || !sameSlot(c.n, n));
       const card: Card = { n, expiresAt: now + n.ttl_ms, remainingMs: n.ttl_ms, leavingAt: null };
-      let cards = [...kept, card]; // o mais novo vai para o fim da lista
+      let cards = [...kept, card];
 
-      // Acima do limite: os mais antigos começam a sair.
-      // Acima do limite, saem os mais antigos; os "sticky" (só fecham no ×) por último.
-      // Se todos forem sticky, o mais antigo cede o lugar: senão o aviso novo não apareceria.
       let excess = cards.filter((c) => c.leavingAt === null).length - state.maxCards;
       for (const stickyRound of [false, true]) {
         cards = cards.map((c) => {
@@ -77,7 +67,7 @@ export function queueReducer(state: QueueState, action: QueueAction): QueueState
       const cards: Card[] = [];
       for (const c of state.cards) {
         if (c.leavingAt !== null && now - c.leavingAt >= LEAVE_MS) {
-          changed = true; // terminou de sair
+          changed = true;
           continue;
         }
         if (c.leavingAt === null && !c.n.sticky && !state.paused && now >= c.expiresAt) {
@@ -100,7 +90,6 @@ export function queueReducer(state: QueueState, action: QueueAction): QueueState
 
     case "configure": {
       const maxCards = Math.max(1, Math.floor(action.maxCards));
-      // Vale a partir do próximo aviso; não derruba cartões que já estão na tela.
       return maxCards === state.maxCards ? state : { ...state, maxCards };
     }
 
@@ -117,18 +106,14 @@ export function queueReducer(state: QueueState, action: QueueAction): QueueState
   }
 }
 
-/** Aviso que acende o alerta no ícone da bandeja (espelho de tray_icon::is_alert no Rust):
- * checagem de PR que falhou ou pedido de atenção. */
 export function isAlert(n: Notification): boolean {
   return n.status === "attention" || (n.status === "fail" && n.source === "ci");
 }
 
-/** Há algum aviso de alerta ainda visível (não saindo)? */
 export function hasVisibleAlert(state: QueueState): boolean {
   return state.cards.some((c) => c.leavingAt === null && isAlert(c.n));
 }
 
-/** Cartões que ainda estão na tela (inclui os que estão saindo). */
 export function isEmpty(state: QueueState): boolean {
   return state.cards.length === 0;
 }

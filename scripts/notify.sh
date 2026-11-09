@@ -1,27 +1,4 @@
 #!/bin/bash
-# Quacko: avisa que algo terminou. Pausa a mídia, toca um som e manda o aviso ao app Quacko.
-#
-# Uso:
-#   notify.sh [--from claude|cursor] [--sound CAMINHO] [--source agent|claude|ci|custom]
-#             [--status ok|fail|attention|info] [--message TEXTO] [--title TEXTO]
-#             [--project TEXTO] [--url URL] [--sticky]
-#   notify.sh CAMINHO_DO_SOM          (forma antiga: só o som, continua funcionando)
-#
-# --from escolhe o adaptador que lê o JSON que a ferramenta manda no stdin (hooks do
-# Claude Code ou do Cursor). Sem --from, o formato é detectado sozinho pelo
-# `hook_event_name`. Argumentos explícitos sempre vencem o que veio do stdin.
-#
-# Regra de ouro: nunca quebrar nem atrasar quem chamou. Sempre sai com código 0, em
-# poucos milissegundos; com o app fechado, o aviso se perde em silêncio. Nada vai para
-# o stdout, exceto as respostas que o Cursor espera (o stdout do UserPromptSubmit do
-# Claude entraria no contexto do Claude).
-#
-# Leitura do JSON: usa o jq se existir; senão o plutil do macOS (12+); senão um leitor
-# em awk para os campos simples. Nenhum deles precisa ser instalado.
-#
-# Variáveis: QUACKO_PORT (4747), QUACKO_LOG, QUACKO_STATE_DIR, QUACKO_DRY_RUN=1 (testes: não
-# pausa, não toca, não envia; escreve o aviso no stderr), QUACKO_JSON=jq|plutil|awk
-# (força o leitor de JSON; usado nos testes).
 
 PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:$PATH"
 PORT="${QUACKO_PORT:-4747}"
@@ -29,10 +6,8 @@ STATE_DIR="${QUACKO_STATE_DIR:-${XDG_CACHE_HOME:-$HOME/.cache}/quacko}"
 LOG="${QUACKO_LOG:-/tmp/quacko-notify.log}"
 DRY_RUN="${QUACKO_DRY_RUN:-}"
 PROMPT_CHARS=100
-# Cortes de texto contam caracteres (não bytes) mesmo quando quem chama não define locale.
 export LC_ALL=en_US.UTF-8
 
-# stdout e stderr originais ficam nos descritores 3 e 4; o resto vai para o log.
 { : >>"$LOG"; } 2>/dev/null || LOG=/dev/null
 exec 3>&1 4>&2 1>>"$LOG" 2>&1
 
@@ -41,10 +16,9 @@ finish() {
   exit 0
 }
 
-# ---------- argumentos ----------
 from="" sound="" source="" status="" message="" title="" project="" url="" reply="" sticky=""
 if [ $# -gt 0 ] && [ "${1#-}" = "$1" ]; then
-  sound="$1" # forma antiga: o primeiro argumento é o som
+  sound="$1"
   shift
 fi
 while [ $# -gt 0 ]; do
@@ -55,7 +29,7 @@ while [ $# -gt 0 ]; do
     val="$1"
   fi
   case "$opt" in
-    --sticky) # sem valor: o cartão só fecha no × (ex.: CI que terminou)
+    --sticky)
       sticky=1
       continue
       ;;
@@ -67,7 +41,7 @@ while [ $# -gt 0 ]; do
     --title) title="$val" ;;
     --project) project="$val" ;;
     --url) url="$val" ;;
-    *) continue ;; # opção desconhecida: ignora sem consumir valor
+    *) continue ;;
   esac
   [ $# -gt 0 ] && shift
 done
@@ -75,15 +49,11 @@ done
 case "$source" in agent | claude | ci | custom | "") ;; *) source="" ;; esac
 case "$status" in ok | fail | attention | info | "") ;; *) status="" ;; esac
 
-# ---------- stdin (JSON dos hooks) ----------
 input=""
-# Pipe, arquivo ou socket: o Claude Code (Node) entrega o JSON do hook por um socket.
-# Num terminal (tty) não lê nada, para não ficar esperando.
 if [ -p /dev/stdin ] || [ -f /dev/stdin ] || [ -S /dev/stdin ]; then
   input=$(head -c 1048576)
 fi
 
-# Leitor de JSON: jq (preferido) → plutil → awk.
 JSON_TOOL="${QUACKO_JSON:-}"
 if [ -z "$JSON_TOOL" ]; then
   if command -v jq >/dev/null; then
@@ -95,8 +65,6 @@ if [ -z "$JSON_TOOL" ]; then
   fi
 fi
 
-# Campo de texto do JSON do stdin, por caminho com pontos ("cwd", "workspace_roots.0").
-# Campo ausente, nulo ou JSON inválido: nada.
 j() {
   [ -n "$input" ] || return 0
   case "$JSON_TOOL" in
@@ -114,8 +82,6 @@ j() {
   esac
 }
 
-# Leitor mínimo em awk: primeira ocorrência de "chave": "texto" (ou "chave": ["texto"
-# para "chave.0"), com os escapes do JSON resolvidos. \uXXXX fica como está.
 json_awk() {
   local key="${1%%.*}" arr=""
   [ "$key" != "$1" ] && arr=1
@@ -148,7 +114,6 @@ json_awk() {
     }' 2>/dev/null
 }
 
-# Texto como string JSON (para montar o aviso sem jq).
 json_str() {
   local s="$1"
   s="${s//\\/\\\\}"
@@ -160,7 +125,6 @@ json_str() {
   printf '"%s"' "$s"
 }
 
-# Uma linha só, espaços colapsados, até PROMPT_CHARS caracteres (com "…" no corte).
 one_line() {
   local p
   p=$(printf '%s' "$1" | tr '\n\r\t' '   ' | tr -s ' ')
@@ -177,25 +141,24 @@ if [ -z "$from" ]; then
   case "$event" in
     Stop | StopFailure | SubagentStop | Notification | UserPromptSubmit) from=claude ;;
     stop | beforeSubmitPrompt) from=cursor ;;
-    *) [ "$source" = claude ] && from=claude ;; # spec: --source claude com {"cwd": ...}
+    *) [ "$source" = claude ] && from=claude ;;
   esac
 fi
 
-# ---------- pedido do usuário, guardado entre o "enviar" e o "terminou" ----------
-prompt_file() { # $1 = ferramenta, $2 = id da sessão/conversa
+prompt_file() {
   local id
   id=$(printf '%s' "$2" | tr -cd 'A-Za-z0-9_-' | cut -c1-80)
   [ -n "$id" ] && printf '%s/prompt-%s-%s' "$STATE_DIR" "$1" "$id"
 }
 
-save_prompt() { # $1 = arquivo; o texto vem do campo "prompt" do stdin
+save_prompt() {
   [ -n "$1" ] || return 0
   (umask 077 && mkdir -p "$STATE_DIR") || return 0
   find "$STATE_DIR" -name 'prompt-*' -mtime +1 -delete 2>/dev/null
   (umask 077 && one_line "$(j prompt)" >"$1.tmp" && mv "$1.tmp" "$1")
 }
 
-take_prompt() { # imprime e apaga o pedido guardado
+take_prompt() {
   [ -n "$1" ] && [ -f "$1" ] || return 0
   cat "$1"
   rm -f "$1"
@@ -203,7 +166,6 @@ take_prompt() { # imprime e apaga o pedido guardado
 
 quoted() { [ -n "$1" ] && printf '“%s”' "$1"; }
 
-# ---------- adaptadores ----------
 case "$from" in
   claude)
     [ -z "$source" ] && source=agent
@@ -214,7 +176,7 @@ case "$from" in
     case "$event" in
       UserPromptSubmit)
         save_prompt "$pfile"
-        finish # só guarda o pedido; nada de som nem aviso
+        finish
         ;;
       Stop | SubagentStop)
         [ -z "$status" ] && status=ok
@@ -229,7 +191,7 @@ case "$from" in
           case "$(j notification_type)" in
             agent_completed) status=ok ;;
             auth_success | elicitation_complete | elicitation_response | quota_* | plugin_notification) status=info ;;
-            *) status=attention ;; # permissão, ociosidade, pergunta…
+            *) status=attention ;;
           esac
         fi
         [ -z "$message" ] && message=$(one_line "$(j message)")
@@ -245,13 +207,13 @@ case "$from" in
     case "$event" in
       beforeSubmitPrompt)
         save_prompt "$pfile"
-        reply='{"continue":true}' # nunca bloqueia o envio
+        reply='{"continue":true}'
         finish
         ;;
       stop)
-        reply='{}' # nenhuma mensagem de continuação
+        reply='{}'
         case "$(j status)" in
-          aborted) # a pessoa interrompeu: não avisa
+          aborted)
             rm -f "$pfile" 2>/dev/null
             finish
             ;;
@@ -267,11 +229,6 @@ esac
 [ -n "$status" ] && [ -z "$source" ] && source=custom
 echo "--- $(date '+%F %T') from=${from:-none} event=${event:-none} status=${status:-none}"
 
-# ---------- mídia e som (como sempre foi) ----------
-
-# Roda um comando solto do hook, numa sessão própria: o hook volta na hora e o comando
-# sobrevive mesmo se quem chamou o hook encerrar o grupo de processos quando ele termina
-# (sem isso, o som e a pausa podiam ser cortados no meio).
 detach() {
   if [ -x /usr/bin/perl ]; then
     /usr/bin/perl -MPOSIX -e 'fork and exit; POSIX::setsid(); exec @ARGV or exit 1' "$@" </dev/null >>"$LOG" 2>&1
@@ -281,7 +238,6 @@ detach() {
 }
 
 if [ -z "$DRY_RUN" ]; then
-  # O osascript leva quase 1 s: fica solto para o hook não esperar por ele.
   detach /bin/bash -c '
     osascript -e "if application \"Spotify\" is running then tell application \"Spotify\" to pause"
     command -v nowplaying-cli >/dev/null && nowplaying-cli pause'
@@ -295,8 +251,7 @@ if [ -z "$DRY_RUN" ]; then
   [ -f "$sound" ] && detach /usr/bin/afplay "$sound"
 fi
 
-# ---------- aviso para o app ----------
-[ -n "$status" ] || finish # sem status (forma antiga sem hook): só som e pausa
+[ -n "$status" ] || finish
 
 if [ "$JSON_TOOL" = jq ]; then
   payload=$(jq -nc \
@@ -309,7 +264,6 @@ if [ "$JSON_TOOL" = jq ]; then
     + (if $url != "" then {url: $url} else {} end)
     + (if $sticky != "" then {sticky: true} else {} end)')
 else
-  # Sem jq: source e status são de lista fechada; os textos passam por json_str.
   payload="{\"source\":\"$source\",\"status\":\"$status\""
   [ -n "$message" ] && payload="$payload,\"message\":$(json_str "$message")"
   [ -n "$title" ] && payload="$payload,\"title\":$(json_str "$title")"

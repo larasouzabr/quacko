@@ -7,7 +7,6 @@ export interface Appearance {
   accessoryColor: string;
 }
 
-/** De onde a tela Personalizar lê e para onde grava (trocável na pré-visualização). */
 export interface CustomizeApi {
   settings(): Promise<Settings>;
   save(a: Appearance): Promise<Settings>;

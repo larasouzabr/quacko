@@ -1,13 +1,9 @@
-//! "Testar notificação": os 4 estados em sequência.
-
 use std::time::Duration;
 
 use tauri::{AppHandle, Manager};
 
 use crate::model::{IdGen, Notification, Source, Status};
 
-/// "Testar notificação": um aviso de cada estado, 2,5 s um do outro.
-/// Aparece mesmo com "Não perturbar" ligado, porque é um pedido explícito.
 pub fn run_test_sequence(app: &AppHandle) {
     let app = app.clone();
     tauri::async_runtime::spawn(async move {
@@ -25,7 +21,6 @@ pub fn run_test_sequence(app: &AppHandle) {
                     id,
                     source: Source::Custom,
                     status,
-                    // Sem mensagem: mostra o texto padrão do idioma atual.
                     message: None,
                     title: Some(format!("{title} ({})", status.as_str())),
                     project: Some(format!("teste-{}", status.as_str())),

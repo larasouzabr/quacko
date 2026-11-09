@@ -1,19 +1,10 @@
-//! Migração do nome antigo do app ("Miau") para Quacko. Roda ao abrir, antes de ler a
-//! config, e só age uma vez: o que já está com o nome novo nunca é tocado.
-//!
-//! Este é o único lugar (com a marca dos scripts em integrations.rs e o Keychain em
-//! github_auth.rs) onde o nome antigo aparece: é o que permite achar o que a versão
-//! anterior deixou no computador.
-
 use std::fs;
 use std::path::{Path, PathBuf};
 
-/// Nome antigo, como aparece nas pastas e no item de login da versão anterior.
 pub const LEGACY_DIR_NAME: &str = "miau";
 pub const LEGACY_PRODUCT_NAME: &str = "Miau";
 const NEW_DIR_NAME: &str = "quacko";
 
-/// Move `old` para `new` se só a antiga existir. Devolve se moveu.
 pub fn move_dir_once(old: &Path, new: &Path) -> bool {
     if new.exists() || !old.is_dir() {
         return false;
@@ -30,7 +21,6 @@ pub fn move_dir_once(old: &Path, new: &Path) -> bool {
     }
 }
 
-/// ~/.config/miau → ~/.config/quacko (config e acessórios) e ~/.cache/miau → ~/.cache/quacko.
 pub fn migrate_dirs(home: &Path) -> Vec<PathBuf> {
     let mut moved = Vec::new();
     for base in [home.join(".config"), home.join(".cache")] {
@@ -43,14 +33,11 @@ pub fn migrate_dirs(home: &Path) -> Vec<PathBuf> {
     moved
 }
 
-/// Item de login da versão anterior (`~/Library/LaunchAgents/Miau.plist`).
 pub fn legacy_login_item(home: &Path) -> PathBuf {
     home.join("Library/LaunchAgents")
         .join(format!("{LEGACY_PRODUCT_NAME}.plist"))
 }
 
-/// Tira o item de login antigo e, se ele existia, liga o "Iniciar com o login" do Quacko
-/// (a pessoa tinha escolhido abrir com o login).
 pub fn migrate_login_item(app: &tauri::AppHandle) {
     use tauri_plugin_autostart::ManagerExt;
     let Some(home) = dirs::home_dir() else {

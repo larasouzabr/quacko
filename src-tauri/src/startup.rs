@@ -1,5 +1,3 @@
-//! Tarefas ao abrir o app: atualizar scripts instalados e avisar o que falta.
-
 use crate::feedback::tell;
 use std::sync::Arc;
 use tauri::{AppHandle, Manager};
@@ -9,8 +7,6 @@ use crate::integrations::{self, Paths, Tool};
 use crate::model::{IdGen, Status};
 use crate::settings::Settings;
 
-/// Ao abrir o app: atualiza os scripts instalados que estiverem desatualizados e avisa
-/// com um cartão discreto (que respeita o "Não perturbar").
 pub fn sync_scripts_on_start(app: &AppHandle) {
     let app = app.clone();
     tauri::async_runtime::spawn_blocking(move || {
@@ -35,7 +31,6 @@ pub fn sync_scripts_on_start(app: &AppHandle) {
     });
 }
 
-/// Ao abrir o app: se algum agente está conectado e falta o nowplaying-cli, avisa uma vez.
 pub fn warn_media_on_start(app: &AppHandle) {
     let app = app.clone();
     tauri::async_runtime::spawn_blocking(move || {
@@ -56,7 +51,6 @@ pub fn warn_media_on_start(app: &AppHandle) {
     });
 }
 
-/// Abre o servidor HTTP local e devolve o status para o menu.
 pub fn start_server(app: &tauri::AppHandle) -> crate::tray::ServerStatus {
     let settings = app.state::<Settings>();
     let port = crate::server::resolve_port(

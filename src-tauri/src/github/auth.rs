@@ -1,19 +1,3 @@
-//! Login no GitHub sem o `gh`: device flow de um GitHub App (spec v2, seção 6.2).
-//!
-//! Conferido na documentação do GitHub (2026-11-09):
-//! - `POST /login/device/code` com `client_id` → `device_code`, `user_code`,
-//!   `verification_uri`, `expires_in`, `interval`.
-//! - `POST /login/oauth/access_token` com `client_id`, `device_code` e
-//!   `grant_type=urn:ietf:params:oauth:grant-type:device_code`; sem `client_secret`.
-//! - Erros: `authorization_pending` (continua), `slow_down` (usa o intervalo novo ou +5 s),
-//!   `expired_token`/`token_expired` e `access_denied` (recomeça).
-//! - Com expiração ligada (padrão do GitHub App): token de 8 h + refresh de 6 meses. O
-//!   refresh de um token do device flow **não** precisa do `client_secret`, e cada refresh
-//!   troca os dois tokens (o antigo deixa de valer).
-//!
-//! O token fica no Keychain (nunca em arquivo). Só o `client_id`, que é público, fica na
-//! config ou na variável `QUACKO_GITHUB_CLIENT_ID`.
-
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use serde::{Deserialize, Serialize};
@@ -22,10 +6,8 @@ use serde_json::Value;
 pub const GITHUB_WEB: &str = "https://github.com";
 const DEVICE_GRANT: &str = "urn:ietf:params:oauth:grant-type:device_code";
 const KEYCHAIN_SERVICE: &str = "dev.quacko.notifier.github";
-/// Serviço do Keychain na versão com o nome antigo (migrado no primeiro uso).
 const LEGACY_KEYCHAIN_SERVICE: &str = "dev.miau.notifier.github";
 const KEYCHAIN_ACCOUNT: &str = "device-flow";
-/// Renova o token quando faltar menos que isso para expirar.
 const REFRESH_MARGIN_S: u64 = 300;
 
 #[derive(Debug, Clone, PartialEq, Deserialize)]
@@ -37,8 +19,6 @@ pub struct DeviceCode {
     pub interval: u64,
 }
 
-/// Token guardado no Keychain. `expires_at` em segundos Unix; `None` = não expira
-/// (GitHub App com expiração desligada).
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct StoredToken {
     pub access_token: String,
@@ -49,13 +29,9 @@ pub struct StoredToken {
 
 #[derive(Debug, PartialEq)]
 pub enum AuthError {
-    /// A pessoa cancelou no GitHub.
     Denied,
-    /// O código expirou antes de ser usado: pedir outro.
     Expired,
-    /// Refresh inválido ou vencido: fazer login de novo.
     NeedsLogin,
-    /// Erro de configuração do app (client_id errado, device flow desligado no app).
     Config(String),
     Network(String),
 }
@@ -67,7 +43,6 @@ pub fn now() -> u64 {
         .unwrap_or(0)
 }
 
-/// Client ID aceito: só letras, números, ponto, hífen e sublinhado (ex.: `Iv23li…`).
 pub fn valid_client_id(id: &str) -> bool {
     !id.is_empty()
         && id.len() <= 64
@@ -76,7 +51,6 @@ pub fn valid_client_id(id: &str) -> bool {
             .all(|c| c.is_ascii_alphanumeric() || "._-".contains(c))
 }
 
-/// Monta o token a partir da resposta de sucesso.
 fn token_from(body: &Value, now: u64) -> Option<StoredToken> {
     let access_token = body.get("access_token")?.as_str()?.to_string();
     let secs = |k: &str| body.get(k).and_then(Value::as_u64);
@@ -141,7 +115,6 @@ impl Client {
             .map_err(|e| AuthError::Network(e.to_string()))
     }
 
-    /// Passo 1: pede o código que a pessoa vai digitar no GitHub.
     pub async fn start(&self) -> Result<DeviceCode, AuthError> {
         let body = self
             .post("/login/device/code", &[("client_id", &self.client_id)])
@@ -153,7 +126,6 @@ impl Client {
             .map_err(|e| AuthError::Network(format!("resposta inesperada: {e}")))
     }
 
-    /// Passo 2: espera a pessoa autorizar (respeitando o intervalo e o prazo do código).
     pub async fn wait_for_token(&self, code: &DeviceCode) -> Result<StoredToken, AuthError> {
         let deadline = now() + code.expires_in;
         let mut interval = code.interval;
@@ -189,7 +161,6 @@ impl Client {
         }
     }
 
-    /// Troca o refresh por um token novo (e um refresh novo: guardar os dois).
     pub async fn refresh(&self, refresh_token: &str) -> Result<StoredToken, AuthError> {
         let body = self
             .post(
@@ -222,15 +193,12 @@ fn map_error(code: &str) -> AuthError {
     }
 }
 
-// ---------- onde o token fica ----------
-
 pub trait TokenStore: Send + Sync {
     fn load(&self) -> Option<StoredToken>;
     fn save(&self, token: &StoredToken) -> Result<(), String>;
     fn clear(&self);
 }
 
-/// Keychain do macOS (Credential Manager no Windows, Secret Service no Linux).
 pub struct KeychainStore;
 
 impl KeychainStore {
@@ -244,7 +212,6 @@ impl TokenStore for KeychainStore {
         if let Some(token) = Self::entry().and_then(|e| e.get_password().ok()) {
             return serde_json::from_str(&token).ok();
         }
-        // Login guardado pela versão com o nome antigo: passa para o nome novo.
         let legacy = keyring::Entry::new(LEGACY_KEYCHAIN_SERVICE, KEYCHAIN_ACCOUNT).ok()?;
         let token: StoredToken = serde_json::from_str(&legacy.get_password().ok()?).ok()?;
         if self.save(&token).is_ok() {
@@ -266,8 +233,6 @@ impl TokenStore for KeychainStore {
     }
 }
 
-/// Token pronto para usar: renova se estiver para vencer; se não der, apaga e devolve None
-/// (o app volta para o `gh`, se houver).
 pub async fn usable_token(client: Option<&Client>, store: &dyn TokenStore) -> Option<String> {
     let token = store.load()?;
     let now = now();
@@ -286,7 +251,6 @@ pub async fn usable_token(client: Option<&Client>, store: &dyn TokenStore) -> Op
                 return Some(fresh.access_token);
             }
             Err(AuthError::Network(e)) => {
-                // Sem rede: tenta de novo na próxima consulta, sem apagar o login.
                 tracing::warn!(%e, "falha ao renovar o token do GitHub");
                 return None;
             }
@@ -305,7 +269,6 @@ mod tests {
     use std::collections::HashMap;
     use std::sync::{Arc, Mutex};
 
-    /// GitHub de mentira: o comportamento depende do client_id usado no teste.
     #[derive(Clone, Default)]
     struct Fake {
         polls: Arc<Mutex<u32>>,

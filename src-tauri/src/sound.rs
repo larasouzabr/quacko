@@ -1,10 +1,5 @@
-//! Som das notificações que nascem no próprio app: "Testar notificação" e o resultado
-//! final dos PRs. As que chegam pelo notify.sh (Claude, Cursor, prwatch) já tocam som lá,
-//! e o progresso dos checks é silencioso (só o cartão).
-
 use crate::model::Status;
 
-/// Mesmos sons do notify.sh: Glass (ok), Basso (falha), Ping (atenção e aviso).
 pub fn system_sound(status: Status) -> &'static str {
     match status {
         Status::Ok => "/System/Library/Sounds/Glass.aiff",
@@ -13,7 +8,6 @@ pub fn system_sound(status: Status) -> &'static str {
     }
 }
 
-/// Toca sem bloquear; uma thread espera o afplay terminar (sem processo zumbi).
 pub fn play(status: Status) {
     #[cfg(target_os = "macos")]
     {

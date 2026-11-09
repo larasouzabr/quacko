@@ -62,7 +62,7 @@ describe("fila de cartões", () => {
     expect(visible(s)).toHaveLength(1);
     s = queueReducer(s, { type: "tick", now: 2000 });
     expect(visible(s)).toHaveLength(0);
-    expect(isEmpty(s)).toBe(false); // ainda fazendo o fade
+    expect(isEmpty(s)).toBe(false);
     s = queueReducer(s, { type: "tick", now: 2000 + LEAVE_MS });
     expect(isEmpty(s)).toBe(true);
   });

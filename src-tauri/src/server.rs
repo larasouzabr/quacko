@@ -1,12 +1,3 @@
-//! Servidor HTTP local (seção 5 da spec). Escuta só em 127.0.0.1.
-//!
-//! Ordem das proteções em cada requisição:
-//! 1. `Origin` presente ou `Host` estranho → 403 (bloqueia páginas web e DNS rebinding).
-//!    Vem antes do limite de taxa para que uma página não gaste a cota dos scripts.
-//! 2. Mais de 10 requisições no mesmo segundo → 429.
-//! 3. `/notify`: `Content-Type` diferente de JSON → 415; corpo acima de 4 KB → 413;
-//!    payload inválido → 400.
-
 use std::net::{Ipv4Addr, SocketAddr, TcpListener as StdTcpListener};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
@@ -29,7 +20,6 @@ pub const DEFAULT_PORT: u16 = 4747;
 pub const MAX_BODY_BYTES: usize = 4096;
 pub const RATE_LIMIT_PER_SEC: u32 = 10;
 
-/// Quem recebe as notificações aceitas (no app: emite o evento para o overlay).
 pub type Deliver = Arc<dyn Fn(Notification) + Send + Sync>;
 
 #[derive(Clone)]
@@ -51,7 +41,6 @@ impl ServerState {
     }
 }
 
-/// Porta: `QUACKO_PORT` se for um número válido (1–65535); senão a da config.
 pub fn resolve_port(env_value: Option<&str>, configured: u16) -> u16 {
     env_value
         .and_then(|v| v.trim().parse::<u16>().ok())
@@ -59,7 +48,6 @@ pub fn resolve_port(env_value: Option<&str>, configured: u16) -> u16 {
         .unwrap_or(configured)
 }
 
-/// Abre a porta de forma síncrona, para o app saber já no start se ela está ocupada.
 pub fn bind(port: u16) -> std::io::Result<StdTcpListener> {
     let listener = StdTcpListener::bind(SocketAddr::from((Ipv4Addr::LOCALHOST, port)))?;
     listener.set_nonblocking(true)?;
@@ -138,7 +126,6 @@ async fn notify(State(state): State<ServerState>, headers: HeaderMap, body: Body
     }
 
     notification.id = state.ids.next();
-    // Só metadados no log; nunca o texto da mensagem.
     tracing::info!(id = notification.id, source = ?notification.source, status = ?notification.status, "aviso recebido");
     (state.deliver)(notification);
     (StatusCode::ACCEPTED, Json(json!({ "delivered": true }))).into_response()
@@ -160,7 +147,6 @@ fn is_json(headers: &HeaderMap) -> bool {
         .is_some_and(|mime| mime.trim().eq_ignore_ascii_case("application/json"))
 }
 
-/// Aceita `Host` ausente ou apontando para o próprio computador (com qualquer porta).
 fn host_is_local(headers: &HeaderMap) -> bool {
     let Some(host) = headers.get(header::HOST) else {
         return true;
@@ -190,7 +176,6 @@ fn is_length_limit(err: &axum::Error) -> bool {
     false
 }
 
-/// Janela fixa de 1 segundo: no máximo `limit` requisições por janela.
 pub struct RateLimiter {
     limit: u32,
     window_start: Option<Instant>,

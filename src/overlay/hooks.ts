@@ -6,11 +6,8 @@ import { overlayIpc } from "./ipc";
 
 const TICK_MS = 100;
 
-/** Posição do mouse dentro do overlay (px CSS), ou null fora dele. Enviada pelo Rust,
- * porque o WebKit não entrega eventos de hover numa janela que não está em foco. */
 type Pointer = [number, number] | null;
 
-/** Avisos vindos do Rust; devolve o maior id já visto (para esconder a janela sem perder aviso). */
 export function useIncomingNotifications(dispatch: Dispatch<QueueAction>): RefObject<number> {
   const lastSeenId = useRef(0);
   useEffect(() => {
@@ -23,8 +20,6 @@ export function useIncomingNotifications(dispatch: Dispatch<QueueAction>): RefOb
   return lastSeenId;
 }
 
-/** Cartão embaixo do mouse. Sobre um cartão: pausa os timers e a janela recebe cliques;
- * fora deles, os cliques passam para o app de baixo. */
 export function useHoveredCard(dispatch: Dispatch<QueueAction>): [number | null, (id: number | null) => void] {
   const [hoveredId, setHoveredId] = useState<number | null>(null);
   useEffect(() => {
@@ -43,7 +38,6 @@ export function useHoveredCard(dispatch: Dispatch<QueueAction>): [number | null,
   return [hoveredId, setHoveredId];
 }
 
-/** Relógio da fila (expiração e fim do fade), só enquanto há cartões. */
 export function useQueueClock(queue: QueueState, dispatch: Dispatch<QueueAction>) {
   const hasCards = !isEmpty(queue);
   useEffect(() => {
@@ -53,7 +47,6 @@ export function useQueueClock(queue: QueueState, dispatch: Dispatch<QueueAction>
   }, [hasCards, dispatch]);
 }
 
-/** Os avisos de alerta sumiram da tela: o ícone da bandeja volta ao normal. */
 export function useTrayAlert(queue: QueueState) {
   const alertVisible = hasVisibleAlert(queue);
   const hadAlert = useRef(false);
@@ -63,7 +56,6 @@ export function useTrayAlert(queue: QueueState) {
   }, [alertVisible]);
 }
 
-/** Fila vazia: pede ao Rust para esconder a janela. */
 export function useHideWhenEmpty(queue: QueueState, lastSeenId: RefObject<number>, onHidden: () => void) {
   const hasCards = !isEmpty(queue);
   const shownSomething = useRef(false);

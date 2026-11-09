@@ -1,5 +1,3 @@
-//! Ações do menu Conectar (Claude Code, Cursor, prwatch) com o resultado no cartão.
-
 use crate::feedback::tell;
 use tauri::{AppHandle, Manager};
 
@@ -8,7 +6,6 @@ use crate::integrations::{self, ManualReason, Outcome, Paths, PrwatchOutcome, To
 use crate::model::Status;
 use crate::settings::Settings;
 
-/// Liga ou desliga a ferramenta (o contrário do estado atual) e conta o resultado no cartão.
 pub fn toggle_integration(app: &AppHandle, tool: Tool) {
     let app = app.clone();
     tauri::async_runtime::spawn_blocking(move || {

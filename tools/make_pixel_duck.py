@@ -1,15 +1,4 @@
 #!/usr/bin/env python3
-"""Gera o personagem original "Pato Pixel" (pixel art, de frente, 4 estados, 2 quadros cada).
-
-Mesmo molde do gato: grade 28x28, contorno escuro automatico, .quackopack schema 1.
-Desenho simetrico (espelho em x -> 27 - x).
-
-Saidas (em ./quacko-characters):
-  pato-pixel/manifest.json, preview.png, assets/{ok,fail,attention,info}.png
-  preview-pato.png, preview-pato.gif, pato-pixel.quackopack (zip)
-
-Uso: python3 make_pixel_duck.py [pasta_de_saida]
-"""
 import json
 import os
 import sys
@@ -23,17 +12,17 @@ SCALE = 6
 STATES = ["ok", "fail", "attention", "info"]
 
 PAL = {
-    "Y": (255, 214, 74),    # penas
-    "y": (240, 177, 44),    # sombra das penas (asas, queixo)
-    "L": (255, 238, 160),   # barriga e brilho
-    "O": (255, 140, 42),    # bico e patas
-    "o": (214, 98, 26),     # bico de baixo e sola
-    "P": (247, 168, 176),   # bochechas
-    "K": (43, 32, 36),      # contorno e olhos
-    "B": (110, 198, 240),   # lagrima
-    "A": (255, 107, 138),   # coracao
-    "E": (255, 255, 255),   # brilho nos olhos
-    "X": (255, 90, 70),     # exclamacao
+    "Y": (255, 214, 74),
+    "y": (240, 177, 44),
+    "L": (255, 238, 160),
+    "O": (255, 140, 42),
+    "o": (214, 98, 26),
+    "P": (247, 168, 176),
+    "K": (43, 32, 36),
+    "B": (110, 198, 240),
+    "A": (255, 107, 138),
+    "E": (255, 255, 255),
+    "X": (255, 90, 70),
 }
 
 
@@ -76,38 +65,33 @@ def build(state, frame):
         dy = 1
     fx = frame
 
-    # patas
     for a, b in ((8, 12), (15, 19)):
         row(L, 24, a, b, "O")
         row(L, 25, a, b, "o")
 
-    # corpo
     for y, (a, b) in BODY_ROWS.items():
         row(L, y, a, b, "Y")
-    row(L, 13, 7, 20, "y")                            # sombra embaixo do queixo
+    row(L, 13, 7, 20, "y")
     for y in range(17, 23):
-        row(L, y, 9, 18, "L")                         # barriga
-    wdy = -fx if state == "ok" else 0                 # asas batem quando da tudo certo
+        row(L, y, 9, 18, "L")
+    wdy = -fx if state == "ok" else 0
     pts(L, sym(WING), "y", wdy)
 
-    # cabeca
     for y, (a, b) in HEAD_ROWS.items():
         row(L, y + dy, a, b, "Y")
-    pts(L, [(14, 3), (14, 2), (13, 3)], "Y", dy)      # tufo
-    pts(L, [(9, 6), (10, 6), (8, 7)], "L", dy)        # brilho
+    pts(L, [(14, 3), (14, 2), (13, 3)], "Y", dy)
+    pts(L, [(9, 6), (10, 6), (8, 7)], "L", dy)
 
-    # bico
     if state == "attention":
         row(L, 10 + dy, 11, 16, "O")
         row(L, 11 + dy, 10, 17, "O")
-        row(L, 12 + dy, 12, 15, "K")                  # boca aberta
+        row(L, 12 + dy, 12, 15, "K")
         row(L, 13 + dy, 11, 16, "o")
     else:
         row(L, 10 + dy, 11, 16, "O")
         row(L, 11 + dy, 10, 17, "O")
         row(L, 12 + dy, 10, 17, "o")
 
-    # efeitos
     if state == "attention":
         pts(L, EXCL, "X", -fx)
     if state == "fail":
@@ -116,7 +100,6 @@ def build(state, frame):
     if state == "ok":
         pts(L, HEART, "A", -fx)
 
-    # contorno automatico
     outline = {}
     for (x, y) in L:
         for nx, ny in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)):
@@ -124,7 +107,6 @@ def build(state, frame):
                 outline[(nx, ny)] = "K"
     L.update(outline)
 
-    # rosto
     if state != "fail":
         pts(L, sym([(7, 11), (8, 11)]), "P", dy)
     if state == "info":
@@ -137,7 +119,7 @@ def build(state, frame):
     elif state == "fail":
         pts(L, sym([(8, 8), (9, 8), (8, 9), (9, 9)]), "K", dy)
         pts(L, sym([(8, 8)]), "E", dy)
-        pts(L, sym([(7, 7), (8, 6), (9, 6)]), "K", dy)   # sobrancelhas tristes
+        pts(L, sym([(7, 7), (8, 6), (9, 6)]), "K", dy)
     elif state == "attention":
         pts(L, sym([(8, 7), (9, 7), (8, 8), (9, 8), (8, 9), (9, 9)]), "K", dy)
         pts(L, sym([(8, 7)]), "E", dy)

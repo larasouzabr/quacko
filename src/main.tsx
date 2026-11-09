@@ -7,8 +7,6 @@ import Customize from "./customize/Customize";
 import { tauriWelcomeApi } from "./welcome/api";
 import Welcome from "./welcome/Welcome";
 
-// Mesmo bundle para as três janelas: overlay (index.html), boas-vindas (#welcome) e
-// Personalizar (#customize).
 const view =
   location.hash === "#welcome" ? (
     <Welcome api={tauriWelcomeApi} />

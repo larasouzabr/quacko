@@ -1,16 +1,4 @@
 #!/usr/bin/env python3
-"""Converte sprites de pixel art ampliados (ex.: 6x, schema 1) para 1x, sem perda.
-
-Recusa a conversão se algum bloco de SCALE x SCALE não tiver uma cor só: nesse caso a
-imagem não é pixel art ampliada por inteiro e converter perderia informação.
-
-Uso:
-  python3 tools/pack_to_1x.py personagem PASTA_DO_PACOTE_6X PASTA_SAIDA [escala]
-      -> manifest schema 2 (pixel_art, grid) + assets/*.png em 1x
-  python3 tools/pack_to_1x.py acessorio PASTA_DO_ACESSORIO_6X PASTA_SAIDA [escala]
-      -> accessory.json igual + PNGs em 1x
-(precisa do Pillow; ver seção 8 do quacko-spec.md para o venv)
-"""
 import json
 import os
 import shutil
@@ -25,7 +13,6 @@ def to_1x(src, dst, scale):
     if w % scale or h % scale:
         sys.exit(f"{src}: {w}x{h} não é múltiplo de {scale}")
     small = img.resize((w // scale, h // scale), Image.NEAREST)
-    # Sem perda: ampliar de volta tem que dar exatamente a original.
     if small.resize((w, h), Image.NEAREST).tobytes() != img.tobytes():
         sys.exit(f"{src}: não é pixel art {scale}x por inteiro (blocos com mais de uma cor)")
     small.save(dst)

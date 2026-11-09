@@ -1,14 +1,9 @@
-//! Comandos chamados pelo frontend do overlay.
-
 use std::sync::atomic::Ordering;
 
 use tauri::{AppHandle, Manager};
 
 use super::*;
 
-// ---------- comandos chamados pelo frontend ----------
-
-/// A fila esvaziou. `last_seen_id` evita esconder a janela se um aviso novo já chegou.
 #[tauri::command]
 pub fn overlay_empty(app: AppHandle, last_seen_id: u64) {
     let state = app.state::<OverlayState>();
@@ -24,15 +19,11 @@ pub fn overlay_empty(app: AppHandle, last_seen_id: u64) {
     crate::tray::icon::set_alert(&app, false);
 }
 
-/// Os avisos de alerta sumiram da tela (dispensados ou expirados): o ícone volta ao normal.
 #[tauri::command]
 pub fn tray_alert_cleared(app: AppHandle) {
     crate::tray::icon::set_alert(&app, false);
 }
 
-/// Mouse sobre um cartão: a janela passa a receber cliques. Fora: cliques atravessam.
-/// O frontend pede o tamanho exato para o personagem e o limite de cartões atuais.
-/// Com a janela visível, ela continua presa ao canto superior direito do monitor atual.
 #[tauri::command]
 pub fn set_overlay_size(app: AppHandle, width: f64, height: f64) {
     if !width.is_finite() || !height.is_finite() {
@@ -65,8 +56,6 @@ pub fn set_interactive(app: AppHandle, interactive: bool) {
     }
 }
 
-/// Clique num cartão. Com `url` http(s) válida, abre no navegador; senão devolve o foco
-/// ao app que estava em uso (o clique pode ter ativado o Quacko).
 #[tauri::command]
 pub fn card_action(app: AppHandle, url: Option<String>) {
     if let Some(url) = url.as_deref().and_then(crate::model::clean_url) {

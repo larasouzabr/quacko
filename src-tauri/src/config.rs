@@ -1,9 +1,3 @@
-//! Config em `~/.config/quacko/config.json` (seção 10 da spec).
-//!
-//! Leitura tolerante: cada campo é validado sozinho; um valor inválido cai no padrão
-//! sem descartar os outros. Arquivo ausente é criado com os padrões. JSON quebrado não
-//! trava o app: vale o padrão, e o arquivo é regravado na próxima mudança pelo menu.
-
 use std::fs;
 use std::io::{self, Write};
 use std::path::{Path, PathBuf};
@@ -13,7 +7,6 @@ use serde_json::Value;
 
 use crate::server::DEFAULT_PORT;
 
-/// A janela comporta até 3 cartões; acima disso eles seriam cortados.
 pub const MAX_CARDS_LIMIT: u8 = 3;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
@@ -46,36 +39,24 @@ pub struct Config {
     pub dnd: bool,
     pub autostart: bool,
     pub max_cards: u8,
-    /// Personagem pixel art: px por pixel de desenho (quacko-spec-personalizacao.md, seção 4).
-    /// Fica no arquivo até a janela de Configurações existir.
     pub pixel_size: u8,
-    /// Monitor de PRs do GitHub ligado (menu Conectar → GitHub).
     pub github: bool,
-    /// Já avisou que falta o nowplaying-cli (para não repetir a cada abertura).
     pub media_warned: bool,
-    /// Já viu a tela de boas-vindas (ela só abre sozinha na primeira vez).
     pub onboarded: bool,
-    /// Client ID do GitHub App para o login por código (público). Também por
-    /// QUACKO_GITHUB_CLIENT_ID. Sem ele, o login por código fica desligado.
     pub github_client_id: Option<String>,
-    /// Personagem escolhido (id do pacote).
     pub character: String,
-    /// Acessório ligado (desligado por padrão).
     pub accessory_enabled: bool,
     pub accessory_id: String,
-    /// Cor principal do acessório, `#rrggbb` (a sombra e a luz são derivadas dela).
     pub accessory_color: String,
 }
 
 pub const DEFAULT_ACCESSORY: &str = "laco";
-/// Cor original do laço (rosa).
 pub const DEFAULT_ACCESSORY_COLOR: &str = "#ff6996";
 
 pub fn valid_hex_color(s: &str) -> bool {
     s.len() == 7 && s.starts_with('#') && s[1..].chars().all(|c| c.is_ascii_hexdigit())
 }
 
-/// Personagem de instalações novas.
 pub const DEFAULT_CHARACTER: &str = "pato-pixel";
 
 fn valid_character_id(id: &str) -> bool {
@@ -86,7 +67,6 @@ fn valid_character_id(id: &str) -> bool {
         && !id.starts_with('-')
 }
 
-/// Tamanhos de pixel oferecidos: sempre inteiros, para o pixel art não deformar.
 pub const PIXEL_SIZES: [u8; 5] = [3, 4, 5, 6, 8];
 pub const DEFAULT_PIXEL_SIZE: u8 = 3;
 
@@ -112,7 +92,6 @@ impl Default for Config {
 }
 
 impl Config {
-    /// Interpreta o JSON campo a campo. Devolve também os nomes dos campos ignorados.
     pub fn from_json_lenient(text: &str) -> (Self, Vec<&'static str>) {
         let mut config = Self::default();
         let mut invalid = Vec::new();
@@ -194,8 +173,6 @@ impl Config {
                 .map(str::trim)
                 .filter(|id| valid_character_id(id))
             {
-                // Id desconhecido do app (ex.: pacote que ainda não existe) fica: a escolha
-                // é da pessoa; a tela cai no padrão enquanto ele não existir.
                 Some(id) => config.character = id.to_string(),
                 None => invalid.push("character"),
             }
@@ -235,7 +212,6 @@ pub fn default_path() -> Option<PathBuf> {
     dirs::home_dir().map(|home| home.join(".config").join("quacko").join("config.json"))
 }
 
-/// Lê a config; se o arquivo não existe, cria com os padrões.
 pub fn load_or_create(path: &Path) -> Config {
     match fs::read_to_string(path) {
         Ok(text) => {
@@ -259,7 +235,6 @@ pub fn load_or_create(path: &Path) -> Config {
     }
 }
 
-/// Grava de forma atômica: escreve num arquivo temporário e renomeia.
 pub fn save(path: &Path, config: &Config) -> io::Result<()> {
     let dir = path
         .parent()
@@ -350,14 +325,12 @@ mod tests {
 
     #[test]
     fn personagem_padrao_e_escolha_explicita() {
-        // Instalação nova e config antiga sem o campo: o pato (padrão).
         let dir = tempfile::tempdir().unwrap();
         let path = dir.path().join("config.json");
         assert_eq!(load_or_create(&path).character, DEFAULT_CHARACTER);
         fs::write(&path, r#"{"port":4747,"dnd":true}"#).unwrap();
         let c = load_or_create(&path);
         assert_eq!((c.character.as_str(), c.dnd), (DEFAULT_CHARACTER, true));
-        // Escolha explícita fica (mesmo um personagem que o app ainda não tem).
         fs::write(&path, r#"{"character":"gato-pixel"}"#).unwrap();
         assert_eq!(load_or_create(&path).character, "gato-pixel");
         fs::write(&path, r#"{"character":"capivara-pixel"}"#).unwrap();

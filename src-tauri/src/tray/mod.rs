@@ -1,7 +1,3 @@
-//! Ícone e menu da barra (seção 9 da spec).
-//!
-//! O menu é reconstruído a cada mudança: mantém as marcas (✓) e o idioma sempre certos.
-
 pub mod icon;
 
 use tauri::{
@@ -41,7 +37,6 @@ pub enum ServerStatus {
     Unavailable { port: u16 },
 }
 
-/// Status do servidor guardado para remontar o menu.
 struct TrayStatus(ServerStatus);
 
 impl ServerStatus {
@@ -69,7 +64,6 @@ pub fn create(app: &AppHandle, status: ServerStatus) -> tauri::Result<()> {
         .show_menu_on_left_click(true)
         .on_menu_event(on_menu_event)
         .on_tray_icon_event(|tray, event| {
-            // Abrir o menu (clicar no ícone) conta como "vi o aviso": tira o alerta.
             if let tauri::tray::TrayIconEvent::Click {
                 button_state: tauri::tray::MouseButtonState::Down,
                 ..
@@ -89,7 +83,6 @@ fn build_menu(app: &AppHandle) -> tauri::Result<(Menu<Wry>, String)> {
     let t = i18n::tray_texts(settings.lang());
     let status = &app.state::<TrayStatus>().0;
 
-    // Item desabilitado: só informa. Com a porta ocupada o app continua aberto para mostrar o erro.
     let status_item =
         MenuItem::with_id(app, ids::STATUS, status.menu_text(t), false, None::<&str>)?;
     let dnd = CheckMenuItem::with_id(app, ids::DND, t.dnd, true, config.dnd, None::<&str>)?;
@@ -151,8 +144,6 @@ fn build_menu(app: &AppHandle) -> tauri::Result<(Menu<Wry>, String)> {
     Ok((menu, status.tooltip(t)))
 }
 
-/// Remonta menu e tooltip. Feito no próximo ciclo da thread principal, depois que o
-/// menu que gerou o clique já fechou.
 pub fn refresh(app: &AppHandle) {
     let handle = app.clone();
     let _ = app.run_on_main_thread(move || {
@@ -193,7 +184,6 @@ fn on_menu_event(app: &AppHandle, event: MenuEvent) {
         ids::CONNECT_GITHUB => crate::github::ui::toggle_github(app),
         _ => return,
     }
-    // Também desfaz a marca que o macOS põe sozinho num item de seleção clicado.
     refresh(app);
 }
 
@@ -202,9 +192,6 @@ fn set_lang(app: &AppHandle, lang: LangPref) {
     settings::broadcast(app);
 }
 
-// ---------- Conectar (Claude Code, Cursor, prwatch) ----------
-
-/// Submenu "Conectar": a marca (✓) diz se a ferramenta já está ligada ao Quacko.
 fn connect_submenu(app: &AppHandle, t: &TrayTexts) -> tauri::Result<Submenu<Wry>> {
     let paths = Paths::from_home();
     let connected = |tool| {

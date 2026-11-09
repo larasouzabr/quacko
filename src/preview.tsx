@@ -1,5 +1,3 @@
-// Pré-visualização dos cartões com dados de exemplo, fora do Tauri.
-// Uso: npm run dev e abra http://localhost:1420/preview.html (ou tools/snapshot.swift).
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { DEFAULT_SETTINGS } from "./settings";
@@ -26,7 +24,6 @@ const samples: Notification[] = [
 
 const params = new URLSearchParams(location.search);
 
-// ?view=welcome: boas-vindas com um estado de exemplo (padrão: Claude ok, gh deslogado).
 const mockStatus: OnboardingStatus = {
   claude_connected: params.get("claude") !== "no",
   cursor_present: true,
@@ -47,7 +44,6 @@ const mockApi: WelcomeApi = {
 };
 
 const root = createRoot(document.getElementById("root")!);
-// ?view=customize: Personalizar com o laço ligado (cor por ?color=%23rrggbb).
 const customizeApi: CustomizeApi = {
   settings: async () => ({
     ...DEFAULT_SETTINGS,

@@ -6,18 +6,12 @@ import { useDevicePixelRatio } from "../hooks/useDevicePixelRatio";
 
 interface CatProps {
   mood: Mood;
-  /** Personagem a desenhar; o padrão é o embutido. Trocável no futuro (pacotes .quackopack). */
   character?: Character;
-  /** Pixel art: px por pixel de desenho (inteiro: 3, 4, 5, 6 ou 8). */
   pixelSize?: number;
-  /** Demais personagens: escala sobre o tamanho do manifest (0,5 a 2). */
   scale?: number;
-  /** Camada por cima (acessório): um sprite sheet por estado, mesma grade e mesmos
-   * quadros. Vai como segunda imagem do mesmo fundo, então anda junto, quadro a quadro. */
   overlay?: Partial<Record<Mood, string>>;
 }
 
-/** Tamanho, em px CSS, de 1 quadro do personagem com as escolhas atuais. */
 export function characterBox(
   character: Character,
   pixelSize: number,
@@ -34,14 +28,6 @@ export function characterBox(
   };
 }
 
-/**
- * Personagem animado por sprite sheet: um <div> com background-image, percorrendo os
- * quadros com `steps()`. Tamanho, número de quadros e fps vêm do manifest.
- * Não conhece nada do cartão: recebe só o humor.
- *
- * Pixel art: cada pixel do desenho vira um número inteiro de pixels físicos, e o
- * elemento é alinhado à grade de pixels físicos, para nenhum pixel sair maior que outro.
- */
 export default function Cat({
   mood,
   character = builtinCharacter,
@@ -55,7 +41,6 @@ export default function Cat({
   const { width, height } = characterBox(character, pixelSize, scale, dpr);
   const rows = Math.ceil(state.frames / state.columns);
 
-  // Alinha ao pixel físico depois de cada layout e ao fim das animações do cartão.
   useLayoutEffect(() => {
     if (character.pixelArt) snapToDevicePixels(ref.current, dpr);
   });
@@ -73,13 +58,11 @@ export default function Cat({
   const style = {
     width,
     height,
-    // O acessório (se houver) vem primeiro: fica por cima do personagem.
     backgroundImage: [overlay?.[mood], state.url]
       .filter(Boolean)
       .map((url) => `url("${url}")`)
       .join(", "),
     backgroundSize: `${state.columns * width}px ${rows * height}px`,
-    // Lidas pela animação `cat-frames` em styles.css.
     "--cat-strip": `${-state.frames * width}px`,
     "--cat-frames": state.frames,
     "--cat-duration": `${state.frames / state.fps}s`,
