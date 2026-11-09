@@ -30,6 +30,7 @@ sys-locale = "0.3"
 reqwest = { version = "0.13", default-features = false, features = ["form", "json", "rustls"] }
 keyring = { version = "3", features = ["apple-native"] }
 zip = { version = "9.5.0", default-features = false, features = ["deflate"] }
+quacko-hook = { path = "hook" }
 
 [dev-dependencies]
 futures-util = { version = "0.3", default-features = false, features = ["std"] }
@@ -42,3 +43,6 @@ objc2 = "0.6"
 objc2-app-kit = { version = "0.3", default-features = false, features = ["std", "NSRunningApplication", "NSWorkspace", "NSWindow", "NSResponder", "NSGraphics", "libc", "NSImage", "NSImageRep", "NSBitmapImageRep", "NSStatusItem", "NSStatusBarButton", "NSButton", "NSControl", "NSView"] }
 objc2-foundation = { version = "0.3", default-features = false, features = ["std", "NSData", "NSGeometry"] }
 plist = "1"
+
+[target.'cfg(windows)'.dependencies]
+windows = { version = "0.62", features = ["Win32_Foundation", "Win32_System_DataExchange", "Win32_System_Memory"] }

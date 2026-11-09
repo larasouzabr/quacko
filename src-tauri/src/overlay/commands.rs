@@ -58,15 +58,13 @@ pub fn set_interactive(app: AppHandle, interactive: bool) {
 
 #[tauri::command]
 pub fn card_action(app: AppHandle, url: Option<String>) {
-    if let Some(url) = url.as_deref().and_then(crate::model::clean_url) {
-        use tauri_plugin_opener::OpenerExt;
-        if let Err(e) = app.opener().open_url(url, None::<&str>) {
-            tracing::warn!(%e, "não foi possível abrir o link");
-        }
-        return;
-    }
-    #[cfg(target_os = "macos")]
-    {
+    let Some(url) = url.as_deref().and_then(crate::model::clean_url) else {
+        #[cfg(target_os = "macos")]
         let _ = app.run_on_main_thread(crate::macos::restore_frontmost_app);
+        return;
+    };
+    use tauri_plugin_opener::OpenerExt;
+    if let Err(e) = app.opener().open_url(url, None::<&str>) {
+        tracing::warn!(%e, "não foi possível abrir o link");
     }
 }

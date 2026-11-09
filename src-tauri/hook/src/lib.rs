@@ -11,7 +11,12 @@ use std::path::PathBuf;
 const MAX_INPUT: u64 = 1024 * 1024;
 
 pub fn main() -> i32 {
-    let args = args::parse(std::env::args().skip(1));
+    let raw: Vec<String> = std::env::args().skip(1).collect();
+    if raw.first().map(String::as_str) == Some(effects::EFFECTS_FLAG) {
+        effects::run_detached_effects(raw.get(1).map(String::as_str).unwrap_or_default());
+        return 0;
+    }
+    let args = args::parse(raw);
     let input = read_input();
     let store = prompts::Store::new(state_dir());
     let plan = plan::plan(args, input.as_ref(), &store);

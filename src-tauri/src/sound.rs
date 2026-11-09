@@ -1,10 +1,11 @@
 use crate::model::Status;
 
-pub fn system_sound(status: Status) -> &'static str {
+fn status_name(status: Status) -> &'static str {
     match status {
-        Status::Ok => "/System/Library/Sounds/Glass.aiff",
-        Status::Fail => "/System/Library/Sounds/Basso.aiff",
-        Status::Attention | Status::Info => "/System/Library/Sounds/Ping.aiff",
+        Status::Ok => "ok",
+        Status::Fail => "fail",
+        Status::Attention => "attention",
+        Status::Info => "info",
     }
 }
 
@@ -12,7 +13,7 @@ pub fn play(status: Status) {
     #[cfg(target_os = "macos")]
     {
         use std::process::{Command, Stdio};
-        let path = system_sound(status);
+        let path = quacko_hook::effects::default_sound(status_name(status));
         if !std::path::Path::new(path).exists() {
             return;
         }
@@ -32,7 +33,7 @@ pub fn play(status: Status) {
         }
     }
     #[cfg(not(target_os = "macos"))]
-    let _ = status;
+    quacko_hook::effects::play_async(status_name(status));
 }
 
 #[cfg(test)]
@@ -40,14 +41,15 @@ mod tests {
     use super::*;
 
     #[test]
-    fn mesmos_sons_do_notify_sh() {
-        assert!(system_sound(Status::Ok).ends_with("Glass.aiff"));
-        assert!(system_sound(Status::Fail).ends_with("Basso.aiff"));
-        assert!(system_sound(Status::Attention).ends_with("Ping.aiff"));
-        assert!(system_sound(Status::Info).ends_with("Ping.aiff"));
-        let script = include_str!("../../scripts/notify.sh");
-        for s in ["Glass.aiff", "Basso.aiff", "Ping.aiff"] {
-            assert!(script.contains(s), "o notify.sh usa {s}");
+    fn um_som_por_estado() {
+        let names: Vec<&str> = [Status::Ok, Status::Fail, Status::Attention, Status::Info]
+            .into_iter()
+            .map(status_name)
+            .collect();
+        assert_eq!(names, ["ok", "fail", "attention", "info"]);
+        if cfg!(target_os = "macos") {
+            assert!(quacko_hook::effects::default_sound("ok").ends_with("Glass.aiff"));
+            assert!(quacko_hook::effects::default_sound("fail").ends_with("Basso.aiff"));
         }
     }
 }

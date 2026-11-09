@@ -2947,6 +2947,7 @@ dependencies = [
  "objc2-app-kit",
  "objc2-foundation",
  "plist",
+ "quacko-hook",
  "reqwest",
  "serde",
  "serde_json",
@@ -2960,6 +2961,7 @@ dependencies = [
  "tower",
  "tracing",
  "tracing-subscriber",
+ "windows",
  "zip",
 ]
 
@@ -2969,6 +2971,7 @@ version = "0.1.0"
 dependencies = [
  "serde_json",
  "tempfile",
+ "windows",
 ]
 
 [[package]]
