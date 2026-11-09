@@ -11,6 +11,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/macOS-11%2B-6b7c93?logo=apple&logoColor=white" alt="macOS 11+">
+  <img src="https://img.shields.io/badge/Windows-10%20%7C%2011-6b7c93" alt="Windows 10 and 11">
   <img src="https://img.shields.io/badge/Apple%20Silicon%20%2B%20Intel-universal-6b7c93" alt="Apple Silicon and Intel">
   <img src="https://img.shields.io/badge/Tauri-2-24c8db?logo=tauri&logoColor=white" alt="Tauri 2">
   <img src="https://img.shields.io/badge/works-offline-f5c542" alt="Works offline">
@@ -20,7 +21,7 @@
   <img src="docs/images/cards.png" width="396" alt="Four Quacko cards, each with the duck beside it: Claude finished a request, Claude needs permission, a PR's CI failed at 7 of 12 checks, and another PR's CI passed">
 </p>
 
-The duck pops up in the corner of your screen when something finishes: Claude Code or Cursor just answered (or needs you), or a PR's CI passed or failed. Clicking the card opens the PR. It lives only in the menu bar, never steals focus from wherever you're typing, and works offline: everything happens on your computer.
+The duck pops up in the corner of your screen when something finishes: Claude Code or Cursor just answered (or needs you), or a PR's CI passed or failed. Clicking the card opens the PR. It lives only in the menu bar (macOS) or the system tray (Windows), never steals focus from wherever you're typing, and works offline: everything happens on your computer.
 
 | | State | When |
 |:-:|---|---|
@@ -37,7 +38,9 @@ The duck pops up in the corner of your screen when something finishes: Claude Co
   <img src="docs/images/customize.png" width="420" alt="Customize screen: choice between Gato Pixel and Pato Pixel, bow turned on in pink, and a preview of the duck with the bow in all 4 states">
 </p>
 
-## Install (macOS 11+, Apple Silicon and Intel)
+## Install
+
+### macOS 11+ (Apple Silicon and Intel)
 
 Download `Quacko_<version>_universal.dmg` from the repository's Releases page (when there is one) or build it from source (see [Development](#development)). The universal `.dmg` works on both Apple Silicon and Intel Macs.
 
@@ -46,6 +49,12 @@ Download `Quacko_<version>_universal.dmg` from the repository's Releases page (w
    - open Quacko, go to **System Settings → Privacy & Security**, find the notice about Quacko at the bottom of the page and click **Open Anyway**; or
    - in Terminal: `xattr -dr com.apple.quarantine /Applications/Quacko.app`
 3. From then on it opens like any other app. The duck shows up in the menu bar (not in the Dock).
+
+### Windows 10 and 11 (x64)
+
+1. Download `Quacko_<version>_x64-setup.exe` from Releases and run it. It installs for your user only, with no admin rights needed.
+2. The installer isn't signed with a code-signing certificate, so Windows SmartScreen may warn about it: click **More info → Run anyway**.
+3. The duck shows up in the system tray, next to the clock (it may start inside the **^** overflow; drag it onto the taskbar to keep it visible).
 
 In the duck's menu, **Test notification** shows all 4 states. Check **Open at Login** to have it start on its own.
 
@@ -56,7 +65,7 @@ From the duck's menu, under **Connect**:
 - **Claude Code**: installs the notification script and turns on the hooks in `~/.claude/settings.json`. The checkmark (✓) shows it's connected; click again to disconnect. Takes effect from the next Claude Code session.
 - **Cursor**: the same, in `~/.cursor/hooks.json` (only enabled when Cursor is installed).
 - **GitHub (PRs)**: the app follows **all your open PRs** on its own and tells you when each one's CI passes or fails (check runs and commit statuses, Jenkins included). It polls every 30 s while any PR is running and every 3 min once everything has finished; a PR that had already finished when the app opened doesn't notify, and a new push restarts the tracking. Sign-in, in this order: **sign in with a code** through Quacko's GitHub App (the Sign in button on the welcome screen; the token is stored in the Keychain and renewed automatically every 8 h for up to 6 months) or an already logged-in [GitHub CLI](https://cli.github.com) (`gh auth login`), which the app finds on its own. Sign-in with a code only appears when the app knows the GitHub App's **Client ID**: `"github_client_id": "Iv23li…"` in `~/.config/quacko/config.json` or the `QUACKO_GITHUB_CLIENT_ID` variable. With the GitHub App, Quacko only sees the repositories where the app is installed (in organizations, an owner approves it once).
-- **Install prwatch command (PRs)**: creates the `prwatch` command in `~/.local/bin`.
+- **Install prwatch command (PRs)** (macOS only): creates the `prwatch` command in `~/.local/bin`.
 
 The app backs up the file before touching it (`settings.json.quacko-backup-<date>`), keeps your other hooks and settings as they were, and doesn't duplicate anything if you connect twice. If the file is managed by Nix, read-only, or has comments, it leaves it alone: it copies the snippet to the clipboard and tells you where to paste it. The result shows up on the duck's own card.
 
@@ -64,11 +73,15 @@ If you have the source, you can also install from the terminal with `scripts/ins
 
 What each integration does:
 
-- **Claude Code** (`~/.claude/settings.json`): `UserPromptSubmit`, `Stop` and `Notification` hooks calling `notify.sh --from claude`. The card shows the request Claude just finished answering, and the project. Older hooks in the `notify.sh <sound>` format keep working and already show the duck.
-- **Cursor** (`~/.cursor/hooks.json`): `beforeSubmitPrompt` and `stop` calling `notify.sh --from cursor`.
+- **Claude Code** (`~/.claude/settings.json`): `UserPromptSubmit`, `Stop` and `Notification` hooks calling `notify.sh --from claude` on macOS, or `quacko-hook.exe --from claude` on Windows (in exec form, with `args`, so no shell is involved). The card shows the request Claude just finished answering, and the project. Older hooks in the `notify.sh <sound>` format keep working and already show the duck.
+- **Cursor** (`~/.cursor/hooks.json`): `beforeSubmitPrompt` and `stop` calling `notify.sh --from cursor` (on Windows, `quacko-hook.exe` through PowerShell, which is how Cursor runs hooks there).
 - **PRs**: `prwatch 1234` (or the PR's URL, or nothing for the current branch's PR) waits for CI to finish and notifies you with the PR's number, title and repository. Needs a logged-in [GitHub CLI](https://cli.github.com).
 
-Besides the notification, `notify.sh` pauses your media and plays a sound:
+Besides the notification, the hook pauses your media and plays a sound.
+
+On **Windows**, `quacko-hook.exe` pauses whatever is playing through the system media controls (Spotify, YouTube in the browser and any other player that shows up in the volume flyout), with nothing to install, and plays the sounds from your Windows sound scheme.
+
+On **macOS**, `notify.sh` does it:
 
 - **Spotify**: paused via AppleScript, nothing to install.
 - **YouTube and other players** (the system's "Now Playing" media): via [`nowplaying-cli`](https://github.com/kirtan-shah/nowplaying-cli), optional (`brew install nowplaying-cli`). If it's missing and an agent is connected, the app tells you once.
@@ -106,7 +119,7 @@ Invalid values fall back to the default without breaking the app. Changes made d
 
 ## Development
 
-Requirements: macOS 11+, [Rust](https://rustup.rs) (stable), Node.js 20+ and the Xcode command line tools (`xcode-select --install`).
+Requirements: [Rust](https://rustup.rs) (stable) and Node.js 20+; on macOS 11+, the Xcode command line tools (`xcode-select --install`); on Windows, the [Tauri prerequisites](https://tauri.app/start/prerequisites/) (Visual Studio C++ build tools and WebView2).
 
 ```bash
 npm install
@@ -126,23 +139,32 @@ npm run build:mac:universal  # universal .dmg (Apple Silicon + Intel), in src-ta
 
 The images in this README live in `docs/images/`. To retake the screenshots with `npx vite` running: `swift tools/snapshot.swift "http://localhost:1420/preview.html?lang=en&ids=4,5,2,3" docs/images/cards.png 396 476 2.5` (cards) and `swift tools/snapshot.swift "http://localhost:1420/preview.html?lang=en&view=customize" docs/images/customize.png 600 584 2.5` (Customize).
 
+On Windows, build the hook first, since the installer ships it next to the app (`src-tauri/binaries/` is in `.gitignore`):
+
+```bash
+cargo build --release -p quacko-hook --manifest-path src-tauri/Cargo.toml
+mkdir -p src-tauri/binaries
+cp src-tauri/target.noindex/release/quacko-hook.exe src-tauri/binaries/quacko-hook-x86_64-pc-windows-msvc.exe
+npm run tauri build      # installer in src-tauri/target.noindex/release/bundle/nsis/
+```
+
 The universal build uses Apple's toolchain in a clean environment (`scripts/build-universal.sh`): inside a Nix shell the default C compiler only targets arm64 and the Intel half would fail. This doesn't happen on GitHub Actions.
 
 `build:mac` runs `tauri build` with two macOS tweaks: it puts the Xcode tools at the **end** of `PATH` (without that, the `.dmg` step can fail with `tool 'SetFile' not found` when the terminal uses a Nix SDK; at the start of `PATH` they swap the compiler and linking fails) and, at the end, removes the build copy from the system's app registry (`scripts/after-build.sh`), so a second "Quacko" doesn't show up in the app list. The build folder is called `target.noindex` for the same reason: Spotlight doesn't index folders with that suffix.
 
-Layout: `src/` is the overlay (React + TypeScript), `src-tauri/` is the app (Rust: local server, window, menu, config), `scripts/` holds the integrations and `tools/` has the character and icon generators.
+Layout: `src/` is the overlay (React + TypeScript), `src-tauri/` is the app (Rust: local server, window, menu, config), `src-tauri/hook/` is `quacko-hook` (the Rust version of `notify.sh`, used on Windows and tested against the same `scripts/tests/notify.test.sh` suite), `scripts/` holds the macOS integrations and `tools/` has the character and icon generators.
 
 ## Releases
 
-The workflow [`.github/workflows/release-macos.yml`](.github/workflows/release-macos.yml) only runs when a `v*` tag is pushed:
+The workflow [`.github/workflows/release.yml`](.github/workflows/release.yml) builds the universal macOS `.dmg` and the Windows installer when a `v*` tag is pushed:
 
 ```bash
 git tag v0.1.0 && git push origin v0.1.0
 ```
 
-It runs the tests, builds the universal `.dmg` and creates a **draft** release; the release only goes public when someone clicks **Publish release** on GitHub.
+It creates a **draft** release, runs the tests on both systems and uploads both installers to it; the release only goes public when someone clicks **Publish release** on GitHub. To try the builds without a release, open **Actions → Release → Run workflow**: the `.dmg` and the `.exe` come out as downloadable artifacts of the run.
 
-**Signing and notarization** (optional, off by default). Without it, people who download the app see the macOS warning on first launch and allow it in **System Settings → Privacy & Security → Open Anyway** (or with `xattr -dr com.apple.quarantine /Applications/Quacko.app`), as described in [Install](#install-macos-11-apple-silicon-and-intel). To sign and notarize, you need an Apple Developer account (about US$ 99/year) and:
+**Signing and notarization** (optional, off by default). Without it, people who download the app see the macOS warning on first launch and allow it in **System Settings → Privacy & Security → Open Anyway** (or with `xattr -dr com.apple.quarantine /Applications/Quacko.app`), as described in [Install](#macos-11-apple-silicon-and-intel). To sign and notarize, you need an Apple Developer account (about US$ 99/year) and:
 
 1. Repository variable (Settings → Secrets and variables → Actions → Variables): `MACOS_SIGNING` = `true`.
 2. Repository secrets:
@@ -163,7 +185,8 @@ Never put certificates, passwords or tokens in the repository.
 - **Build not signed by Apple** (ad-hoc signature, free): hence the warning on first launch. Signing and notarizing require an Apple Developer account.
 - **`macOSPrivateApi`** (needed for the transparent window) rules out the Mac App Store; distribution is direct.
 - **"Open at Login" in development mode** registers the development binary, which doesn't start on its own without `npm run tauri dev`. Turn it on from the installed app.
-- **Windows and Linux**: not yet. The code is portable, but the unfocused window, the tray icon and the scripts need their own versions (planned).
+- **Windows**: new and not yet tested on a real Windows machine (the code is compiled and linted for Windows, and CI runs the tests there). The card appears at the top right of the screen; `prwatch` is macOS-only, since the app already watches your PRs by itself. The installer isn't code-signed, hence the SmartScreen warning.
+- **Linux**: not yet.
 
 ## Privacy
 

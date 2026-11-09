@@ -4,6 +4,7 @@ dist/
 target/
 target.noindex/
 src-tauri/gen/
+src-tauri/binaries/
 
 # Sistema e logs
 .DS_Store

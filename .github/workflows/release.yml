@@ -1,0 +1,158 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  draft:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    outputs:
+      id: ${{ steps.create.outputs.id }}
+    steps:
+      - id: create
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SIGNED: ${{ vars.MACOS_SIGNING }}
+        run: |
+          if [ "$SIGNED" = true ]; then
+            mac="macOS: build assinado e notarizado pela Apple."
+          else
+            mac="macOS: build sem assinatura da Apple. Na primeira abertura, use Ajustes do Sistema → Privacidade e Segurança → Abrir Mesmo Assim (instruções no README)."
+          fi
+          win="Windows: instalador sem certificado. Se o SmartScreen avisar, clique em Mais informações → Executar assim mesmo."
+          gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --draft \
+            --title "Quacko $GITHUB_REF_NAME" --notes "$mac"$'\n\n'"$win"
+          id=$(gh api "repos/$GITHUB_REPOSITORY/releases" --jq "map(select(.tag_name == \"$GITHUB_REF_NAME\" and .draft)) | first | .id")
+          echo "id=$id" >> "$GITHUB_OUTPUT"
+
+  macos:
+    needs: draft
+    if: always() && needs.draft.result != 'failure'
+    runs-on: macos-latest
+    env:
+      CARGO_TARGET_DIR: ${{ github.workspace }}/target
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
+
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: "src-tauri -> ../target"
+
+      - run: npm ci
+
+      - name: Testes
+        run: |
+          npm test
+          npx tsc --noEmit
+          cargo test --workspace --manifest-path src-tauri/Cargo.toml
+          bash scripts/tests/notify.test.sh
+          cargo build -p quacko-hook --manifest-path src-tauri/Cargo.toml
+          QUACKO_NOTIFY="$CARGO_TARGET_DIR/debug/quacko-hook" bash scripts/tests/notify.test.sh
+          bash scripts/tests/prwatch.test.sh
+
+      - name: Build e release (sem assinatura)
+        if: github.event_name == 'push' && vars.MACOS_SIGNING != 'true'
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          releaseId: ${{ needs.draft.outputs.id }}
+          args: --target universal-apple-darwin
+
+      - name: Build e release (assinado e notarizado)
+        if: github.event_name == 'push' && vars.MACOS_SIGNING == 'true'
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        with:
+          releaseId: ${{ needs.draft.outputs.id }}
+          args: --target universal-apple-darwin
+
+      - name: Build (sem release)
+        if: github.event_name != 'push'
+        run: npx tauri build --target universal-apple-darwin
+
+      - name: Guardar o .dmg
+        if: github.event_name != 'push'
+        uses: actions/upload-artifact@v4
+        with:
+          name: quacko-macos
+          path: target/universal-apple-darwin/release/bundle/dmg/*.dmg
+
+  windows:
+    needs: draft
+    if: always() && needs.draft.result != 'failure'
+    runs-on: windows-latest
+    env:
+      CARGO_TARGET_DIR: ${{ github.workspace }}/target
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: "src-tauri -> ../target"
+
+      - run: npm ci
+
+      - name: Hook (quacko-hook.exe, empacotado junto do app)
+        run: |
+          cargo build --release -p quacko-hook --manifest-path src-tauri/Cargo.toml
+          mkdir -p src-tauri/binaries
+          cp "$CARGO_TARGET_DIR/release/quacko-hook.exe" src-tauri/binaries/quacko-hook-x86_64-pc-windows-msvc.exe
+
+      - name: Testes
+        run: |
+          npm test
+          npx tsc --noEmit
+          cargo test --workspace --manifest-path src-tauri/Cargo.toml
+          QUACKO_NOTIFY="$CARGO_TARGET_DIR/release/quacko-hook.exe" bash scripts/tests/notify.test.sh
+
+      - name: Build e release
+        if: github.event_name == 'push'
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          releaseId: ${{ needs.draft.outputs.id }}
+
+      - name: Build (sem release)
+        if: github.event_name != 'push'
+        run: npx tauri build
+
+      - name: Guardar o instalador
+        if: github.event_name != 'push'
+        uses: actions/upload-artifact@v4
+        with:
+          name: quacko-windows
+          path: target/release/bundle/nsis/*.exe

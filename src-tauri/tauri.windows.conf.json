@@ -1,0 +1,11 @@
+{
+  "bundle": {
+    "targets": ["nsis"],
+    "externalBin": ["binaries/quacko-hook"],
+    "windows": {
+      "nsis": {
+        "installMode": "currentUser"
+      }
+    }
+  }
+}
