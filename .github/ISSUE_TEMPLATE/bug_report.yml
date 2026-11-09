@@ -1,0 +1,55 @@
+name: Bug report
+description: Something in Quacko doesn't work as it should
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What you did, what you expected and what you saw instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Connect Claude Code from the duck's menu
+        2. Send a prompt
+        3. ...
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - macOS (Apple Silicon)
+        - macOS (Intel)
+        - Windows 11
+        - Windows 10
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Quacko version
+      description: From the release you installed, or the commit if you built it yourself.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Which part?
+      multiple: true
+      options:
+        - Claude Code integration
+        - Cursor integration
+        - GitHub PRs / CI
+        - Sound or media pause
+        - Cards and the duck
+        - Customize / accessories
+        - Accessibility
+        - Install or update
+        - Other
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or screenshots
+      description: Anything that helps. Please remove tokens, emails or private repository names first.

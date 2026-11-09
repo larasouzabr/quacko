@@ -192,6 +192,10 @@ Never put certificates, passwords or tokens in the repository.
 
 Nothing leaves your computer. The app only listens on `127.0.0.1`, has no telemetry and doesn't log message text. The request you sent to Claude or Cursor is kept in `~/.cache/quacko/` (a folder only you can access) between sending it and the reply, and is deleted right after.
 
+## Contributing
+
+Bug reports, ideas and pull requests are welcome: see [CONTRIBUTING.md](CONTRIBUTING.md) and the [Code of Conduct](CODE_OF_CONDUCT.md). Security problems go through the private form in [SECURITY.md](SECURITY.md), and [ACCESSIBILITY.md](ACCESSIBILITY.md) lists what works today, the known limitations and how to report a barrier.
+
 ## License
 
-To be decided. The Pato Pixel and Gato Pixel characters are original and released under CC0-1.0.
+The code is under the [MIT License](LICENSE). The Pato Pixel and Gato Pixel characters are original and released under CC0-1.0.

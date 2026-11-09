@@ -3,6 +3,7 @@ name = "quacko-hook"
 version = "0.1.0"
 description = "Hook do Quacko para Claude Code e Cursor"
 edition = "2021"
+license = "MIT"
 publish = false
 
 [lib]

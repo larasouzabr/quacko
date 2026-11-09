@@ -2,6 +2,7 @@
 name = "quacko"
 version = "0.1.0"
 description = "Notificador desktop com patinho"
+license = "MIT"
 edition = "2021"
 
 [workspace]
