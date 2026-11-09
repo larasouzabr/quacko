@@ -208,7 +208,14 @@ pub fn import_zip(zip_path: &Path, dest_root: &Path, sheet: (u32, u32)) -> Resul
             // enclosed_name recusa caminhos absolutos e com "..".
             let path = entry
                 .enclosed_name()
-                .filter(|_| !raw.contains(".."))
+                // Recusa explícita de ".." e de caminho absoluto (Unix, Windows ou com drive),
+                // sem depender de como cada biblioteca normaliza.
+                .filter(|_| {
+                    !raw.contains("..")
+                        && !raw.starts_with('/')
+                        && !raw.starts_with('\\')
+                        && !raw.contains(':')
+                })
                 .ok_or_else(|| format!("caminho inválido no zip: \"{}\"", raw))?;
             let parts: Vec<String> = path
                 .components()
@@ -299,6 +306,224 @@ mod tests {
         assert!(validate_dir(dir.path(), SHEET_1X)
             .unwrap_err()
             .contains("fora do esperado"));
+    }
+
+    // ---------- testes pedidos: tamanho inválido, zip slip, arquivos fora do esperado ----------
+
+    use std::io::Write;
+    use zip::write::SimpleFileOptions;
+
+    fn fixture_6x() -> PathBuf {
+        Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/laco-6x")
+    }
+
+    /// Cópia do laço 1x numa pasta temporária, para estragar à vontade.
+    fn bow_copy() -> tempfile::TempDir {
+        let dir = tempfile::tempdir().unwrap();
+        for e in fs::read_dir(embedded_bow()).unwrap() {
+            let e = e.unwrap();
+            fs::copy(e.path(), dir.path().join(e.file_name())).unwrap();
+        }
+        dir
+    }
+
+    /// Só o começo de um PNG (assinatura + IHDR) com o tamanho pedido: basta para a checagem.
+    fn png_header(w: u32, h: u32) -> Vec<u8> {
+        let mut b = PNG_SIGNATURE.to_vec();
+        b.extend_from_slice(&13u32.to_be_bytes());
+        b.extend_from_slice(b"IHDR");
+        b.extend_from_slice(&w.to_be_bytes());
+        b.extend_from_slice(&h.to_be_bytes());
+        b.extend_from_slice(&[8, 6, 0, 0, 0, 0, 0, 0, 0]);
+        b
+    }
+
+    #[test]
+    fn laco_6x_tambem_e_aceito() {
+        assert_eq!(
+            validate_dir(&fixture_6x(), SHEET_1X),
+            Ok(AccessoryInfo {
+                id: "laco".into(),
+                scale: 6
+            })
+        );
+    }
+
+    #[test]
+    fn tamanho_fora_da_grade_e_recusado() {
+        for (w, h) in [(50, 28), (56, 30), (112, 28), (56 * 17, 28 * 17), (0, 0)] {
+            let dir = bow_copy();
+            fs::write(dir.path().join("fail.png"), png_header(w, h)).unwrap();
+            let err = validate_dir(dir.path(), SHEET_1X).unwrap_err();
+            assert!(err.contains("grade do personagem"), "{w}x{h}: {err}");
+        }
+    }
+
+    #[test]
+    fn estados_com_escalas_diferentes_sao_recusados() {
+        let dir = bow_copy();
+        fs::copy(fixture_6x().join("info.png"), dir.path().join("info.png")).unwrap();
+        assert!(validate_dir(dir.path(), SHEET_1X)
+            .unwrap_err()
+            .contains("mesmo tamanho"));
+    }
+
+    #[test]
+    fn png_falso_e_recusado() {
+        let dir = bow_copy();
+        fs::write(dir.path().join("ok.png"), "<svg onload=alert(1)>").unwrap();
+        assert!(validate_dir(dir.path(), SHEET_1X)
+            .unwrap_err()
+            .contains("PNG de verdade"));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn link_simbolico_na_pasta_e_recusado() {
+        let dir = bow_copy();
+        fs::remove_file(dir.path().join("ok.png")).unwrap();
+        std::os::unix::fs::symlink("/etc/passwd", dir.path().join("ok.png")).unwrap();
+        assert!(validate_dir(dir.path(), SHEET_1X)
+            .unwrap_err()
+            .contains("link"));
+    }
+
+    #[test]
+    fn manifest_invalido_e_recusado() {
+        for (json, expected) in [
+            (r#"{"schema":2}"#, "schema"),
+            (r#"{"schema":1,"id":"../x"}"#, "id"),
+            (
+                r#"{"schema":1,"id":"x","slot":"body","follows":"head"}"#,
+                "head",
+            ),
+        ] {
+            let dir = bow_copy();
+            fs::write(dir.path().join("accessory.json"), json).unwrap();
+            assert!(
+                validate_dir(dir.path(), SHEET_1X)
+                    .unwrap_err()
+                    .contains(expected),
+                "{json}"
+            );
+        }
+    }
+
+    /// Monta um zip com (nome, conteúdo) e, opcionalmente, um link simbólico.
+    fn make_zip(dir: &Path, entries: &[(&str, Vec<u8>)], symlink: Option<(&str, &str)>) -> PathBuf {
+        let path = dir.join("pacote.zip");
+        let mut w = zip::ZipWriter::new(fs::File::create(&path).unwrap());
+        for (name, bytes) in entries {
+            w.start_file(*name, SimpleFileOptions::default()).unwrap();
+            w.write_all(bytes).unwrap();
+        }
+        if let Some((name, target)) = symlink {
+            w.add_symlink(name, target, SimpleFileOptions::default())
+                .unwrap();
+        }
+        w.finish().unwrap();
+        path
+    }
+
+    fn bow_entries(prefix: &str) -> Vec<(String, Vec<u8>)> {
+        fs::read_dir(embedded_bow())
+            .unwrap()
+            .map(|e| {
+                let e = e.unwrap();
+                (
+                    format!("{prefix}{}", e.file_name().to_string_lossy()),
+                    fs::read(e.path()).unwrap(),
+                )
+            })
+            .collect()
+    }
+
+    fn zip_with(dir: &Path, extra: &[(&str, Vec<u8>)], symlink: Option<(&str, &str)>) -> PathBuf {
+        let mut entries: Vec<(String, Vec<u8>)> = bow_entries("laco/");
+        entries.extend(extra.iter().map(|(n, b)| (n.to_string(), b.clone())));
+        let refs: Vec<(&str, Vec<u8>)> = entries
+            .iter()
+            .map(|(n, b)| (n.as_str(), b.clone()))
+            .collect();
+        make_zip(dir, &refs, symlink)
+    }
+
+    #[test]
+    fn importa_zip_valido_e_nao_duplica() {
+        let tmp = tempfile::tempdir().unwrap();
+        let dest = tmp.path().join("accessories");
+        let zip = zip_with(tmp.path(), &[], None);
+        let installed = import_zip(&zip, &dest, SHEET_1X).unwrap();
+        assert_eq!(installed, dest.join("laco"));
+        assert!(installed.join("ok.png").is_file());
+        assert!(import_zip(&zip, &dest, SHEET_1X)
+            .unwrap_err()
+            .contains("já existe"));
+    }
+
+    #[test]
+    fn zip_slip_e_recusado_e_nada_fica_para_tras() {
+        for evil in [
+            "../fora.png",
+            "laco/../../fora.png",
+            "/etc/fora.png",
+            "C:\\fora.png",
+            "\\\\servidor\\fora.png",
+        ] {
+            let tmp = tempfile::tempdir().unwrap();
+            let dest = tmp.path().join("accessories");
+            let zip = zip_with(tmp.path(), &[(evil, png_header(56, 28))], None);
+            let err = import_zip(&zip, &dest, SHEET_1X).unwrap_err();
+            assert!(
+                err.contains("caminho") || err.contains("fora do esperado"),
+                "{evil}: {err}"
+            );
+            assert!(
+                !tmp.path().join("fora.png").exists(),
+                "{evil}: escapou da pasta"
+            );
+            let left: Vec<_> = fs::read_dir(&dest).map(|d| d.collect()).unwrap_or_default();
+            assert!(left.is_empty(), "{evil}: sobrou algo em {}", dest.display());
+        }
+    }
+
+    #[test]
+    fn link_simbolico_no_zip_e_recusado() {
+        let tmp = tempfile::tempdir().unwrap();
+        let zip = zip_with(tmp.path(), &[], Some(("laco/extra.png", "/etc/passwd")));
+        let err = import_zip(&zip, &tmp.path().join("acc"), SHEET_1X).unwrap_err();
+        assert!(err.contains("link"), "{err}");
+    }
+
+    #[test]
+    fn arquivo_inesperado_no_zip_e_recusado() {
+        for (name, bytes) in [
+            ("laco/instalar.sh", b"rm -rf ~".to_vec()),
+            ("laco/notas.txt", b"oi".to_vec()),
+        ] {
+            let tmp = tempfile::tempdir().unwrap();
+            let zip = zip_with(tmp.path(), &[(name, bytes)], None);
+            let err = import_zip(&zip, &tmp.path().join("acc"), SHEET_1X).unwrap_err();
+            assert!(err.contains("fora do esperado"), "{name}: {err}");
+        }
+    }
+
+    #[test]
+    fn png_grande_demais_no_zip_e_recusado() {
+        let tmp = tempfile::tempdir().unwrap();
+        let mut big = png_header(56, 28);
+        big.resize(MAX_FILE_BYTES as usize + 10, 0);
+        let mut entries = bow_entries("laco/");
+        entries.retain(|(n, _)| n != "laco/ok.png");
+        entries.push(("laco/ok.png".into(), big));
+        let refs: Vec<(&str, Vec<u8>)> = entries
+            .iter()
+            .map(|(n, b)| (n.as_str(), b.clone()))
+            .collect();
+        let zip = make_zip(tmp.path(), &refs, None);
+        assert!(import_zip(&zip, &tmp.path().join("acc"), SHEET_1X)
+            .unwrap_err()
+            .contains("2 MB"));
     }
 
     #[test]

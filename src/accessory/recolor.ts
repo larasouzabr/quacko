@@ -43,6 +43,10 @@ export function deriveShades(main: Rgb, base: RecolorBase): RecolorBase {
   for (let i = 0; i < 20 && contrastRatio(m, OUTLINE) < MIN_OUTLINE_CONTRAST; i++) {
     m = mix(m, [255, 255, 255], 0.1);
   }
+  // Clara demais (ex.: branco) não deixa espaço para a luz: escurece um pouco.
+  for (let i = 0; i < 20 && contrastRatio([255, 255, 255], m) < MIN_STEP_CONTRAST + 0.1; i++) {
+    m = mix(m, [0, 0, 0], 0.06);
+  }
   // Quanto a paleta original escurece/clareia (média por canal), aplicado à cor nova.
   const darken = 1 - (base.shade[0] + base.shade[1] + base.shade[2]) / (base.main[0] + base.main[1] + base.main[2]);
   const lighten =
