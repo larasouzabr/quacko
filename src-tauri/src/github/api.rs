@@ -5,6 +5,7 @@ use serde_json::{json, Value};
 use super::model::*;
 
 const GRAPHQL_URL: &str = "https://api.github.com/graphql";
+const REST_URL: &str = "https://api.github.com";
 const SEARCH: &str = "is:pr is:open author:@me archived:false";
 const QUERY: &str = r#"query($q: String!) {
   viewer { login }
@@ -117,6 +118,26 @@ pub(crate) async fn fetch(
         .send()
         .await
         .map_err(|e| ApiError::Other(e.to_string()))?;
+    parse(&read_json(response).await?)
+}
+
+pub(crate) async fn get_rest(
+    client: &reqwest::Client,
+    token: &str,
+    path: &str,
+) -> Result<Value, ApiError> {
+    let response = client
+        .get(format!("{REST_URL}{path}"))
+        .bearer_auth(token)
+        .header("Accept", "application/vnd.github+json")
+        .header("X-GitHub-Api-Version", "2022-11-28")
+        .send()
+        .await
+        .map_err(|e| ApiError::Other(e.to_string()))?;
+    read_json(response).await
+}
+
+async fn read_json(response: reqwest::Response) -> Result<Value, ApiError> {
     let status = response.status();
     let retry_after = response
         .headers()
@@ -137,9 +158,8 @@ pub(crate) async fn fetch(
         s if !(200..300).contains(&s) => return Err(ApiError::Other(format!("HTTP {s}"))),
         _ => {}
     }
-    let body: Value = response
+    response
         .json()
         .await
-        .map_err(|e| ApiError::Other(e.to_string()))?;
-    parse(&body)
+        .map_err(|e| ApiError::Other(e.to_string()))
 }

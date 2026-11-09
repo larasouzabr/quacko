@@ -8,7 +8,8 @@ use super::api::*;
 use super::card::*;
 use super::gh_cli::*;
 use super::model::*;
-use crate::model::IdGen;
+use super::runs::{RunChange, RunWatcher};
+use crate::model::{IdGen, Notification};
 
 const POLL_PENDING: Duration = Duration::from_secs(30);
 const POLL_IDLE: Duration = Duration::from_secs(180);
@@ -60,6 +61,7 @@ async fn run(app: AppHandle, mut enabled: watch::Receiver<bool>) {
         }
         tracing::info!("monitor de PRs ligado");
         let mut tracked: HashMap<String, Tracked> = HashMap::new();
+        let mut runs = RunWatcher::new(now_secs());
         let mut token: Option<String> = None;
         let mut announced = false;
         let mut retried_auth = false;
@@ -99,6 +101,21 @@ async fn run(app: AppHandle, mut enabled: watch::Receiver<bool>) {
                     backoff = BACKOFF_START;
                     let (next, finished) = diff(&tracked, &prs);
                     tracked = next;
+                    let run_changes = match runs
+                        .poll(
+                            &client,
+                            token.as_deref().unwrap_or_default(),
+                            &login,
+                            now_secs(),
+                        )
+                        .await
+                    {
+                        Ok(changes) => changes,
+                        Err(e) => {
+                            tracing::warn!(?e, "falha ao consultar os workflows");
+                            Vec::new()
+                        }
+                    };
                     if !announced {
                         announced = true;
                         tracing::info!(
@@ -114,8 +131,8 @@ async fn run(app: AppHandle, mut enabled: watch::Receiver<bool>) {
                             },
                         );
                     }
-                    deliver(&app, &finished);
-                    if any_running(&tracked) {
+                    deliver(&app, &finished, &run_changes);
+                    if any_running(&tracked) || runs.any_running() {
                         POLL_PENDING
                     } else {
                         POLL_IDLE
@@ -159,20 +176,38 @@ async fn run(app: AppHandle, mut enabled: watch::Receiver<bool>) {
     }
 }
 
-fn deliver(app: &AppHandle, changes: &[Change]) {
+fn deliver(app: &AppHandle, prs: &[Change], runs: &[RunChange]) {
     let settings = app.state::<crate::settings::Settings>();
-    if changes.is_empty() || settings.snapshot().dnd {
+    if (prs.is_empty() && runs.is_empty()) || settings.snapshot().dnd {
         return;
     }
     let lang = settings.lang();
-    for change in changes {
-        let n = notification(app.state::<IdGen>().next(), change, lang);
-        if !matches!(change, Change::Progress(_)) {
+    let ids = app.state::<IdGen>();
+    let cards: Vec<(Notification, bool)> = prs
+        .iter()
+        .map(|c| {
+            let final_state = !matches!(c, Change::Progress(_));
+            (notification(ids.next(), c, lang), final_state)
+        })
+        .chain(runs.iter().map(|c| {
+            let final_state = !matches!(c, RunChange::Progress(_));
+            (run_notification(ids.next(), c, lang), final_state)
+        }))
+        .collect();
+    for (n, final_state) in cards {
+        if final_state {
             crate::sound::play(n.status);
         }
-        tracing::info!(id = n.id, status = ?n.status, "PR mudou");
+        tracing::info!(id = n.id, status = ?n.status, "CI mudou");
         crate::overlay::present(app, n);
     }
+}
+
+fn now_secs() -> i64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs() as i64)
+        .unwrap_or(0)
 }
 
 pub fn stored_token_present() -> bool {

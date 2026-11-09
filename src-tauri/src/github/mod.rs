@@ -5,6 +5,7 @@ pub mod commands;
 pub mod gh_cli;
 pub mod model;
 pub mod monitor;
+pub mod runs;
 pub mod ui;
 
 #[cfg(test)]

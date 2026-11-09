@@ -1,4 +1,5 @@
 use super::model::*;
+use super::runs::{Run, RunChange};
 use crate::i18n::Lang;
 use crate::model::{Notification, Progress, Source, Status};
 
@@ -66,5 +67,97 @@ pub fn notification(id: u64, change: &Change, lang: Lang) -> Notification {
             failed: pr.checks.failed.min(pr.checks.total),
         }),
         sticky: !matches!(change, Change::Progress(_)),
+    }
+}
+
+const MAX_JOB_NAMES: usize = 2;
+
+fn job_names(names: &[String], lang: Lang) -> String {
+    let shown = names[..names.len().min(MAX_JOB_NAMES)].join(", ");
+    match names.len().saturating_sub(MAX_JOB_NAMES) {
+        0 => shown,
+        rest => match lang {
+            Lang::PtBr => format!("{shown} e mais {rest}"),
+            Lang::En => format!("{shown} and {rest} more"),
+        },
+    }
+}
+
+fn run_text(lang: Lang, change: &RunChange) -> String {
+    let run = match change {
+        RunChange::Progress(r) | RunChange::Passed(r) | RunChange::Failed(r) => r,
+    };
+    let Checks {
+        done,
+        total,
+        failed,
+    } = run.jobs;
+    match (lang, change) {
+        (Lang::PtBr, RunChange::Progress(_)) => {
+            let tail = match failed {
+                0 => String::new(),
+                1 => " · 1 falhou".into(),
+                n => format!(" · {n} falharam"),
+            };
+            format!("{done} de {total} jobs concluídos{tail}")
+        }
+        (Lang::PtBr, RunChange::Passed(_)) if total == 0 => "Concluído".into(),
+        (Lang::PtBr, RunChange::Passed(_)) if total == 1 => "1 job passou".into(),
+        (Lang::PtBr, RunChange::Passed(_)) => format!("{total} jobs passaram"),
+        (Lang::PtBr, RunChange::Failed(r)) if r.conclusion == "cancelled" => "Cancelado".into(),
+        (Lang::PtBr, RunChange::Failed(r)) if r.failed_jobs.is_empty() => "Falhou".into(),
+        (Lang::PtBr, RunChange::Failed(r)) => {
+            format!("Falhou: {}", job_names(&r.failed_jobs, lang))
+        }
+        (Lang::En, RunChange::Progress(_)) => {
+            let tail = if failed > 0 {
+                format!(" · {failed} failed")
+            } else {
+                String::new()
+            };
+            format!("{done} of {total} jobs done{tail}")
+        }
+        (Lang::En, RunChange::Passed(_)) if total == 0 => "Done".into(),
+        (Lang::En, RunChange::Passed(_)) if total == 1 => "1 job passed".into(),
+        (Lang::En, RunChange::Passed(_)) => format!("All {total} jobs passed"),
+        (Lang::En, RunChange::Failed(r)) if r.conclusion == "cancelled" => "Cancelled".into(),
+        (Lang::En, RunChange::Failed(r)) if r.failed_jobs.is_empty() => "Failed".into(),
+        (Lang::En, RunChange::Failed(r)) => format!("Failed: {}", job_names(&r.failed_jobs, lang)),
+    }
+}
+
+pub fn run_notification(id: u64, change: &RunChange, lang: Lang) -> Notification {
+    let (status, run, ttl_ms): (Status, &Run, u32) = match change {
+        RunChange::Progress(r) if r.jobs.failed > 0 => (Status::Fail, r, 6_000),
+        RunChange::Progress(r) => (Status::Info, r, 6_000),
+        RunChange::Passed(r) => (Status::Ok, r, 8_000),
+        RunChange::Failed(r) => (Status::Fail, r, 15_000),
+    };
+    let clip = |s: &str, max: usize| -> String { s.chars().take(max).collect() };
+    let title = if run.number > 0 {
+        format!("{} #{}", run.name.trim(), run.number)
+    } else {
+        run.name.trim().to_string()
+    };
+    let project = if run.branch.is_empty() {
+        run.repo.clone()
+    } else {
+        format!("{} · {}", run.repo, run.branch)
+    };
+    Notification {
+        id,
+        source: Source::Ci,
+        status,
+        title: Some(clip(&title, MAX_PR_TITLE_CHARS)),
+        message: Some(run_text(lang, change)),
+        project: Some(clip(&project, crate::model::MAX_PROJECT_CHARS)),
+        url: crate::model::clean_url(&run.url),
+        ttl_ms,
+        progress: (run.jobs.total > 0).then_some(Progress {
+            done: run.jobs.done.min(run.jobs.total),
+            total: run.jobs.total,
+            failed: run.jobs.failed.min(run.jobs.total),
+        }),
+        sticky: !matches!(change, RunChange::Progress(_)),
     }
 }
