@@ -16,8 +16,12 @@
 # o stdout, exceto as respostas que o Cursor espera (o stdout do UserPromptSubmit do
 # Claude entraria no contexto do Claude).
 #
+# Leitura do JSON: usa o jq se existir; senão o plutil do macOS (12+); senão um leitor
+# em awk para os campos simples. Nenhum deles precisa ser instalado.
+#
 # Variáveis: MIAU_PORT (4747), MIAU_LOG, MIAU_STATE_DIR, MIAU_DRY_RUN=1 (testes: não
-# pausa, não toca, não envia; escreve o aviso no stderr).
+# pausa, não toca, não envia; escreve o aviso no stderr), MIAU_JSON=jq|plutil|awk
+# (força o leitor de JSON; usado nos testes).
 
 PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:$PATH"
 PORT="${MIAU_PORT:-4747}"
@@ -25,6 +29,8 @@ STATE_DIR="${MIAU_STATE_DIR:-${XDG_CACHE_HOME:-$HOME/.cache}/miau}"
 LOG="${MIAU_LOG:-/tmp/miau-notify.log}"
 DRY_RUN="${MIAU_DRY_RUN:-}"
 PROMPT_CHARS=100
+# Cortes de texto contam caracteres (não bytes) mesmo quando quem chama não define locale.
+export LC_ALL=en_US.UTF-8
 
 # stdout e stderr originais ficam nos descritores 3 e 4; o resto vai para o log.
 { : >>"$LOG"; } 2>/dev/null || LOG=/dev/null
@@ -70,15 +76,97 @@ input=""
 if [ -p /dev/stdin ] || [ -f /dev/stdin ]; then
   input=$(head -c 1048576)
 fi
-have_jq=""
-command -v jq >/dev/null && have_jq=1
 
+# Leitor de JSON: jq (preferido) → plutil → awk.
+JSON_TOOL="${MIAU_JSON:-}"
+if [ -z "$JSON_TOOL" ]; then
+  if command -v jq >/dev/null; then
+    JSON_TOOL=jq
+  elif [ "$(printf '{"a":"b"}' | plutil -extract a raw -o - - 2>/dev/null)" = b ]; then
+    JSON_TOOL=plutil
+  else
+    JSON_TOOL=awk
+  fi
+fi
+
+# Campo de texto do JSON do stdin, por caminho com pontos ("cwd", "workspace_roots.0").
+# Campo ausente, nulo ou JSON inválido: nada.
 j() {
-  [ -n "$have_jq" ] && [ -n "$input" ] || return 0
-  printf '%s' "$input" | jq -r "$1" 2>/dev/null
+  [ -n "$input" ] || return 0
+  case "$JSON_TOOL" in
+    jq)
+      printf '%s' "$input" | jq -r --arg p "$1" '
+        if type == "object" then
+          (try getpath($p | split(".") | map(if test("^[0-9]+$") then tonumber else . end)) catch null)
+          | if type == "string" or type == "number" or type == "boolean" then tostring else empty end
+        else empty end' 2>/dev/null
+      ;;
+    plutil)
+      printf '%s' "$input" | plutil -extract "$1" raw -o - - 2>/dev/null
+      ;;
+    *) json_awk "$1" ;;
+  esac
 }
 
-event=$(j 'if type == "object" then .hook_event_name // empty else empty end')
+# Leitor mínimo em awk: primeira ocorrência de "chave": "texto" (ou "chave": ["texto"
+# para "chave.0"), com os escapes do JSON resolvidos. \uXXXX fica como está.
+json_awk() {
+  local key="${1%%.*}" arr=""
+  [ "$key" != "$1" ] && arr=1
+  printf '%s' "$input" | awk -v key="$key" -v arr="$arr" '
+    BEGIN { RS = "\001" }
+    {
+      s = $0; k = "\"" key "\""
+      while ((i = index(s, k)) > 0) {
+        s = substr(s, i + length(k))
+        if (!match(s, /^[ \t\r\n]*:[ \t\r\n]*/)) continue
+        s = substr(s, RLENGTH + 1)
+        if (arr) { if (!match(s, /^\[[ \t\r\n]*/)) exit; s = substr(s, RLENGTH + 1) }
+        if (substr(s, 1, 1) != "\"") exit
+        out = ""; n = length(s); p = 2
+        while (p <= n) {
+          c = substr(s, p, 1)
+          if (c == "\\") {
+            d = substr(s, p + 1, 1); p += 2
+            if (d == "n") out = out "\n"; else if (d == "t") out = out "\t"
+            else if (d == "r") out = out "\r"; else if (d == "b" || d == "f") out = out
+            else if (d == "u") { out = out "\\u" substr(s, p, 4); p += 4 }
+            else out = out d
+            continue
+          }
+          if (c == "\"") { printf "%s", out; exit }
+          out = out c; p++
+        }
+        exit
+      }
+    }' 2>/dev/null
+}
+
+# Texto como string JSON (para montar o aviso sem jq).
+json_str() {
+  local s="$1"
+  s="${s//\\/\\\\}"
+  s="${s//\"/\\\"}"
+  s="${s//$'\n'/\\n}"
+  s="${s//$'\r'/\\r}"
+  s="${s//$'\t'/\\t}"
+  s=$(printf '%s' "$s" | tr -d '\000-\010\013\014\016-\037')
+  printf '"%s"' "$s"
+}
+
+# Uma linha só, espaços colapsados, até PROMPT_CHARS caracteres (com "…" no corte).
+one_line() {
+  local p
+  p=$(printf '%s' "$1" | tr '\n\r\t' '   ' | tr -s ' ')
+  p="${p#"${p%%[! ]*}"}"
+  p="${p%"${p##*[! ]}"}"
+  if [ "${#p}" -gt "$PROMPT_CHARS" ]; then
+    p="${p:0:$((PROMPT_CHARS - 1))}…"
+  fi
+  printf '%s' "$p"
+}
+
+event=$(j hook_event_name)
 if [ -z "$from" ]; then
   case "$event" in
     Stop | StopFailure | SubagentStop | Notification | UserPromptSubmit) from=claude ;;
@@ -94,15 +182,11 @@ prompt_file() { # $1 = ferramenta, $2 = id da sessão/conversa
   [ -n "$id" ] && printf '%s/prompt-%s-%s' "$STATE_DIR" "$1" "$id"
 }
 
-save_prompt() { # $1 = arquivo; o texto vem do campo .prompt do stdin
-  [ -n "$1" ] && [ -n "$have_jq" ] || return 0
+save_prompt() { # $1 = arquivo; o texto vem do campo "prompt" do stdin
+  [ -n "$1" ] || return 0
   (umask 077 && mkdir -p "$STATE_DIR") || return 0
   find "$STATE_DIR" -name 'prompt-*' -mtime +1 -delete 2>/dev/null
-  # Espaços e quebras de linha viram um espaço; corta em PROMPT_CHARS caracteres.
-  printf '%s' "$input" | jq -r --argjson n "$PROMPT_CHARS" '
-    (.prompt // "") | gsub("\\s+"; " ") | sub("^ "; "") | sub(" $"; "")
-    | if length > $n then .[0:$n - 1] + "…" else . end' >"$1.tmp" 2>/dev/null &&
-    (umask 077 && mv "$1.tmp" "$1")
+  (umask 077 && one_line "$(j prompt)" >"$1.tmp" && mv "$1.tmp" "$1")
 }
 
 take_prompt() { # imprime e apaga o pedido guardado
@@ -118,9 +202,9 @@ case "$from" in
   claude)
     [ -z "$source" ] && source=agent
     [ -z "$title" ] && title="Claude Code"
-    cwd=$(j '.cwd // empty')
+    cwd=$(j cwd)
     [ -z "$project" ] && [ -n "$cwd" ] && project=$(basename "$cwd")
-    pfile=$(prompt_file claude "$(j '.session_id // empty')")
+    pfile=$(prompt_file claude "$(j session_id)")
     case "$event" in
       UserPromptSubmit)
         save_prompt "$pfile"
@@ -136,22 +220,22 @@ case "$from" in
         ;;
       Notification)
         if [ -z "$status" ]; then
-          case "$(j '.notification_type // empty')" in
+          case "$(j notification_type)" in
             agent_completed) status=ok ;;
             auth_success | elicitation_complete | elicitation_response | quota_* | plugin_notification) status=info ;;
             *) status=attention ;; # permissão, ociosidade, pergunta…
           esac
         fi
-        [ -z "$message" ] && message=$(j '.message // empty')
+        [ -z "$message" ] && message=$(one_line "$(j message)")
         ;;
     esac
     ;;
   cursor)
     [ -z "$source" ] && source=agent
     [ -z "$title" ] && title="Cursor"
-    root=$(j '.workspace_roots[0] // empty')
+    root=$(j workspace_roots.0)
     [ -z "$project" ] && [ -n "$root" ] && project=$(basename "$root")
-    pfile=$(prompt_file cursor "$(j '.conversation_id // empty')")
+    pfile=$(prompt_file cursor "$(j conversation_id)")
     case "$event" in
       beforeSubmitPrompt)
         save_prompt "$pfile"
@@ -160,7 +244,7 @@ case "$from" in
         ;;
       stop)
         reply='{}' # nenhuma mensagem de continuação
-        case "$(j '.status // empty')" in
+        case "$(j status)" in
           aborted) # a pessoa interrompeu: não avisa
             rm -f "$pfile" 2>/dev/null
             finish
@@ -197,7 +281,7 @@ fi
 # ---------- aviso para o app ----------
 [ -n "$status" ] || finish # sem status (forma antiga sem hook): só som e pausa
 
-if [ -n "$have_jq" ]; then
+if [ "$JSON_TOOL" = jq ]; then
   payload=$(jq -nc \
     --arg source "$source" --arg status "$status" --arg message "$message" \
     --arg title "$title" --arg project "$project" --arg url "$url" '
@@ -207,8 +291,13 @@ if [ -n "$have_jq" ]; then
     + (if $project != "" then {project: $project} else {} end)
     + (if $url != "" then {url: $url} else {} end)')
 else
-  # Sem jq, só os campos de lista fechada (seguros para montar à mão).
-  payload="{\"source\":\"$source\",\"status\":\"$status\"}"
+  # Sem jq: source e status são de lista fechada; os textos passam por json_str.
+  payload="{\"source\":\"$source\",\"status\":\"$status\""
+  [ -n "$message" ] && payload="$payload,\"message\":$(json_str "$message")"
+  [ -n "$title" ] && payload="$payload,\"title\":$(json_str "$title")"
+  [ -n "$project" ] && payload="$payload,\"project\":$(json_str "$project")"
+  [ -n "$url" ] && payload="$payload,\"url\":$(json_str "$url")"
+  payload="$payload}"
 fi
 
 if [ -n "$DRY_RUN" ]; then

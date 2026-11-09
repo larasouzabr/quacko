@@ -1,6 +1,11 @@
 #!/bin/bash
 # Testes do notify.sh em modo seco (MIAU_DRY_RUN=1): não pausa mídia, não toca som,
 # não envia nada. Confere o aviso gerado, o stdout e o código de saída.
+#
+# A suíte roda uma vez para cada leitor de JSON do script: jq (preferido), plutil e awk
+# (os caminhos sem jq). O leitor é forçado com MIAU_JSON porque no macOS 15+ o jq vem em
+# /usr/bin, junto com bash/awk/sed, e não dá para tirá-lo do PATH só para o teste.
+# Os testes usam o jq para conferir o JSON gerado (isso é do teste, não do script).
 # Uso: bash scripts/tests/notify.test.sh
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
@@ -45,6 +50,8 @@ expect_no_payload() { [ -z "$PAYLOAD" ] && ok || bad "$1" "aviso inesperado: $PA
 expect_stdout() { [ "$OUT" = "$2" ] && ok || bad "$1" "stdout='$OUT' esperado='$2'"; }
 expect_rc0() { [ "$RC" = 0 ] && ok || bad "$1" "saiu com $RC"; }
 
+suite() {
+rm -rf "$WORK/state"
 # --- aceite da spec (Marco 5) ---
 run "" --source ci --status fail --message "PR #1: checks falharam" --project teste
 expect_payload "flags explícitas" '.source=="ci" and .status=="fail" and .message=="PR #1: checks falharam" and .project=="teste"'
@@ -130,6 +137,23 @@ run "" --status info --message
 expect_payload "flag sem valor no fim não trava" '.status=="info" and .source=="custom"'
 run "" --desconhecida --status ok
 expect_payload "opção desconhecida é ignorada" '.status=="ok"'
+
+# --- caminho sem jq: textos com caracteres de controle viram JSON válido ---
+run "" --status info --message "$(printf 'tab\there\nnova linha "aspas" \\ barra')" --title 'título com "aspas"'
+expect_payload "texto com controle e aspas vira JSON válido" '.message == "tab\there\nnova linha \"aspas\" \\ barra" and .title == "título com \"aspas\""'
+run '{"session_id":"s5","hook_event_name":"UserPromptSubmit","prompt":"ação\tcom   ünïcode\nem várias linhas"}'
+run '{"session_id":"s5","hook_event_name":"Stop"}'
+expect_payload "acentos e quebras de linha no pedido" '.message=="“ação com ünïcode em várias linhas”"'
+run '{"cwd":"/tmp/x","hook_event_name":"Stop","nested":{"cwd":"/outro"},"title":null}'
+expect_payload "pega o primeiro campo e tolera null" '.project=="x"'
+}
+
+for tool in jq plutil awk; do
+  export MIAU_JSON="$tool"
+  before=$fail
+  suite
+  echo "  leitor $tool: $([ "$fail" = "$before" ] && echo ok || echo "$((fail - before)) falha(s)")"
+done
 
 echo
 echo "$pass ok, $fail falhas"
