@@ -51,6 +51,8 @@ pub struct Config {
     pub pixel_size: u8,
     /// Monitor de PRs do GitHub ligado (menu Conectar → GitHub).
     pub github: bool,
+    /// Já avisou que falta o nowplaying-cli (para não repetir a cada abertura).
+    pub media_warned: bool,
 }
 
 /// Tamanhos de pixel oferecidos: sempre inteiros, para o pixel art não deformar.
@@ -67,6 +69,7 @@ impl Default for Config {
             max_cards: MAX_CARDS_LIMIT,
             pixel_size: DEFAULT_PIXEL_SIZE,
             github: false,
+            media_warned: false,
         }
     }
 }
@@ -124,6 +127,12 @@ impl Config {
             {
                 Some(n) => config.pixel_size = n as u8,
                 None => invalid.push("pixel_size"),
+            }
+        }
+        if let Some(v) = map.get("media_warned") {
+            match v.as_bool() {
+                Some(b) => config.media_warned = b,
+                None => invalid.push("media_warned"),
             }
         }
         if let Some(v) = map.get("github") {
@@ -194,7 +203,7 @@ mod tests {
         let c = Config::default();
         assert_eq!(
             serde_json::to_value(&c).unwrap(),
-            serde_json::json!({"port": 4747, "lang": "auto", "dnd": false, "autostart": false, "max_cards": 3, "pixel_size": 3, "github": false})
+            serde_json::json!({"port": 4747, "lang": "auto", "dnd": false, "autostart": false, "max_cards": 3, "pixel_size": 3, "github": false, "media_warned": false})
         );
     }
 
@@ -213,6 +222,7 @@ mod tests {
                 max_cards: 2,
                 pixel_size: 5,
                 github: false,
+                media_warned: false,
             }
         );
     }

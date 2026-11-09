@@ -40,7 +40,11 @@ O que cada integração faz:
 - **Cursor** (`~/.cursor/hooks.json`): `beforeSubmitPrompt` e `stop` chamando `notify.sh --from cursor`.
 - **PRs**: `prwatch 1234` (ou a URL do PR, ou nada para o PR da branch atual) espera a CI terminar e avisa com o número, o título e o repositório do PR. Precisa do [GitHub CLI](https://cli.github.com) logado.
 
-Além do aviso, o `notify.sh` pausa o Spotify e a mídia do sistema (`nowplaying-cli`, se instalado) e toca um som. Ele sempre sai com código 0 e em poucos milissegundos: com o app fechado, só não aparece o gato.
+Além do aviso, o `notify.sh` pausa a mídia e toca um som:
+
+- **Spotify**: pausado por AppleScript, sem instalar nada.
+- **YouTube e outros players** (a "mídia em reprodução" do sistema): pelo [`nowplaying-cli`](https://github.com/kirtan-shah/nowplaying-cli), opcional (`brew install nowplaying-cli`). Se ele faltar e algum agente estiver conectado, o app avisa uma vez.
+- Por que não é o próprio app que pausa: desde o macOS 15.4 a Apple bloqueou o framework de "mídia em reprodução" (MediaRemote) para apps que não são dela. Testado no macOS 26.5.2: o mesmo código lê a mídia quando roda num programa da Apple e recebe `nil` num app como o Miau. O `nowplaying-cli` contorna isso carregando uma biblioteca dentro de um programa da Apple; o Miau não copia esse contorno. Ele sempre sai com código 0 e em poucos milissegundos: com o app fechado, só não aparece o gato.
 
 Qualquer outro script pode avisar o Miau:
 

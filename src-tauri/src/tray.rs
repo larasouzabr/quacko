@@ -437,3 +437,24 @@ pub fn sync_scripts_on_start(app: &AppHandle) {
         );
     });
 }
+
+/// Ao abrir o app: se algum agente está conectado e falta o nowplaying-cli, avisa uma vez.
+pub fn warn_media_on_start(app: &AppHandle) {
+    let app = app.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let Some(paths) = Paths::from_home() else {
+            return;
+        };
+        let settings = app.state::<Settings>();
+        let config = settings.snapshot();
+        let connected = integrations::status(&paths, Tool::Claude)
+            || integrations::status(&paths, Tool::Cursor);
+        let found = crate::media::find_nowplaying_cli(&paths.home).is_some();
+        if !crate::media::should_warn(connected, found, config.media_warned) || config.dnd {
+            return;
+        }
+        settings.update(|c| c.media_warned = true);
+        let t = i18n::tray_texts(settings.lang());
+        tell(&app, Status::Info, t.media_missing.to_string());
+    });
+}

@@ -198,6 +198,7 @@ Regra de ouro: **nunca usar play/pause alternado às cegas**. Consultar o estado
 - **macOS**:
   - Spotify e Music: AppleScript (consultar `player state`, pausar, retomar). Exige permissão de Automação; o app deve explicar antes de pedir.
   - Mídia de navegador e outros: a API de "Now Playing" foi restringida em versões recentes; ferramentas como `nowplaying-cli` funcionaram na sua máquina, mas a viabilidade para distribuição ampla é incerta. **VERIFICAR** projetos que contornam a restrição (ex.: adaptadores para MediaRemote) e seus riscos de manutenção. Plano B: pausar via JavaScript no Chrome/Safari (exige que o usuário habilite a opção de JavaScript por Apple Events) ou simplesmente oferecer só Spotify/Music e documentar a limitação.
+- **Resultado do VERIFICAR (2026-11-09, macOS 26.5.2)**: o MediaRemote responde a um binário assinado pela Apple (`swift`) e devolve `nil` para o mesmo código num binário com assinatura ad-hoc (como o Miau). O `nowplaying-cli` 2.1.0 funciona porque carrega a `MediaRemoteMini.dylib` dentro de um programa da Apple. Decisão: sem pausa nativa por enquanto; a pausa fica no `notify.sh` (Spotify por AppleScript; navegador pelo `nowplaying-cli`, opcional), e o app avisa quando o `nowplaying-cli` falta (`src-tauri/src/media.rs`).
 - **Windows**: System Media Transport Controls (SMTC) via crate `windows`, pausando sessões em reprodução e retomando as mesmas.
 - **Linux**: MPRIS por D-Bus (crate `zbus`), pausando players com `PlaybackStatus = Playing`.
 

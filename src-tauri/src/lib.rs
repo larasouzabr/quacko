@@ -4,6 +4,7 @@ mod i18n;
 mod integrations;
 #[cfg(target_os = "macos")]
 mod macos;
+mod media;
 mod model;
 mod server;
 mod settings;
@@ -58,6 +59,7 @@ pub fn run() {
             let status = start_server(app.handle());
             tray::create(app.handle(), status)?;
             tray::sync_scripts_on_start(app.handle());
+            tray::warn_media_on_start(app.handle());
             Ok(())
         })
         .run(tauri::generate_context!())
