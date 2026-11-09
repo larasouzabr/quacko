@@ -289,3 +289,22 @@ body,
     background-position: 0 0;
   }
 }
+
+/* ---------- só a pré-visualização (preview.html) ---------- */
+.preview-grid {
+  position: fixed;
+  inset: 0;
+  overflow: auto;
+  padding: 16px;
+  background: #3a4a5c;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.preview-slot {
+  width: 364px;
+}
+/* Fora da tela o WebKit pausa animações: na pré-visualização o cartão já entra pronto. */
+.preview-grid .card {
+  animation: none;
+}

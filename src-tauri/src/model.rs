@@ -11,6 +11,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
 pub const MAX_MESSAGE_CHARS: usize = 140;
 pub const MAX_TITLE_CHARS: usize = 60;
@@ -81,6 +82,8 @@ pub struct Notification {
     pub progress: Option<Progress>,
 }
 
+pub const MAX_PROGRESS_TOTAL: u32 = 10_000;
+
 /// "3 de 12 checks": `done` e `failed` nunca passam de `total`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 pub struct Progress {
@@ -104,6 +107,22 @@ struct RawNotification {
     url: Option<String>,
     #[serde(default)]
     ttl_ms: Option<i64>,
+    /// Opcional: barra de progresso. Valores inválidos descartam só a barra.
+    #[serde(default)]
+    progress: Option<Value>,
+}
+
+/// Aceita `{done, total, failed?}` com inteiros, `total` de 1 a 10000; o resto é ajustado.
+fn clean_progress(raw: &Value) -> Option<Progress> {
+    let int = |key: &str| raw.get(key).and_then(Value::as_u64);
+    let total = int("total").filter(|t| (1..=MAX_PROGRESS_TOTAL as u64).contains(t))? as u32;
+    let done = int("done")?.min(total as u64) as u32;
+    let failed = int("failed").unwrap_or(0).min(done as u64) as u32;
+    Some(Progress {
+        done,
+        total,
+        failed,
+    })
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -129,7 +148,7 @@ impl Notification {
             project: raw.project.and_then(|s| clean_text(&s, MAX_PROJECT_CHARS)),
             url: raw.url.and_then(|s| clean_url(&s)),
             ttl_ms: resolve_ttl(raw.ttl_ms, raw.status),
-            progress: None,
+            progress: raw.progress.as_ref().and_then(clean_progress),
         })
     }
 }
@@ -410,6 +429,46 @@ mod tests {
     fn ttl_nao_inteiro_e_rejeitado() {
         assert!(parse(r#"{"source":"claude","status":"ok","ttl_ms":"8000"}"#).is_err());
         assert!(parse(r#"{"source":"claude","status":"ok","ttl_ms":1.5}"#).is_err());
+    }
+
+    #[test]
+    fn progresso_pela_api() {
+        let n = ok(
+            r#"{"source":"custom","status":"info","progress":{"done":3,"total":12,"failed":1}}"#,
+        );
+        assert_eq!(
+            n.progress,
+            Some(Progress {
+                done: 3,
+                total: 12,
+                failed: 1
+            })
+        );
+        let n = ok(r#"{"source":"custom","status":"info","progress":{"done":30,"total":12}}"#);
+        assert_eq!(
+            n.progress,
+            Some(Progress {
+                done: 12,
+                total: 12,
+                failed: 0
+            }),
+            "done passa do total: ajusta"
+        );
+        for bad in [
+            r#"{"done":1,"total":0}"#,
+            r#"{"done":1,"total":20000}"#,
+            r#"{"done":-1,"total":3}"#,
+            r#"{"done":"1","total":3}"#,
+            r#"{"total":3}"#,
+            r#"[1,2]"#,
+        ] {
+            let n = ok(&format!(
+                r#"{{"source":"custom","status":"info","progress":{bad}}}"#
+            ));
+            assert_eq!(n.progress, None, "{bad}");
+            assert_eq!(n.status, Status::Info, "o resto do aviso continua");
+        }
+        assert_eq!(ok(r#"{"source":"custom","status":"ok"}"#).progress, None);
     }
 
     #[test]
