@@ -1,0 +1,101 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  macos:
+    runs-on: macos-latest
+    env:
+      CARGO_TARGET_DIR: ${{ github.workspace }}/target
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: "src-tauri -> ../target"
+
+      - run: npm ci
+
+      - name: Frontend
+        run: |
+          npm test
+          npm run typecheck
+
+      - name: Rust
+        working-directory: src-tauri
+        run: |
+          cargo fmt --all --check
+          cargo clippy --workspace --all-targets -- -D warnings
+          cargo test --workspace --no-fail-fast
+
+      - name: Scripts
+        run: |
+          bash scripts/tests/notify.test.sh
+          cargo build -p quacko-hook --manifest-path src-tauri/Cargo.toml
+          QUACKO_NOTIFY="$CARGO_TARGET_DIR/debug/quacko-hook" bash scripts/tests/notify.test.sh
+          bash scripts/tests/prwatch.test.sh
+          bash scripts/tests/shell.test.sh
+
+  windows:
+    runs-on: windows-latest
+    env:
+      CARGO_TARGET_DIR: ${{ github.workspace }}/target
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: "src-tauri -> ../target"
+
+      - run: npm ci
+
+      - name: Hook (quacko-hook.exe, empacotado junto do app)
+        run: |
+          cargo build -p quacko-hook --manifest-path src-tauri/Cargo.toml
+          mkdir -p src-tauri/binaries
+          cp "$CARGO_TARGET_DIR/debug/quacko-hook.exe" src-tauri/binaries/quacko-hook-x86_64-pc-windows-msvc.exe
+
+      - name: Frontend
+        run: |
+          npm test
+          npm run typecheck
+
+      - name: Rust
+        working-directory: src-tauri
+        run: |
+          cargo clippy --workspace --all-targets -- -D warnings
+          cargo test --workspace --no-fail-fast
+
+      - name: Scripts
+        run: QUACKO_NOTIFY="$CARGO_TARGET_DIR/debug/quacko-hook.exe" bash scripts/tests/notify.test.sh

@@ -15,6 +15,7 @@
   <img src="https://img.shields.io/badge/Apple%20Silicon%20%2B%20Intel-universal-6b7c93" alt="Apple Silicon and Intel">
   <img src="https://img.shields.io/badge/Tauri-2-24c8db?logo=tauri&logoColor=white" alt="Tauri 2">
   <img src="https://img.shields.io/badge/works-offline-f5c542" alt="Works offline">
+  <a href="https://github.com/larasouzabr/quacko/actions/workflows/ci.yml"><img src="https://github.com/larasouzabr/quacko/actions/workflows/ci.yml/badge.svg" alt="CI status"></a>
 </p>
 
 <p align="center">

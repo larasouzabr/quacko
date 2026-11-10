@@ -23,7 +23,7 @@ The [README](README.md#development) has the build commands for each system.
 
 ## Before opening a pull request
 
-Run every test suite; CI runs the same ones on macOS and Windows:
+Run every test suite; CI runs the same ones on macOS and Windows for every push and pull request:
 
 ```bash
 npm test
