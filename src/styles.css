@@ -179,7 +179,8 @@ body,
   line-height: 16px;
   font-weight: 700;
 }
-.card.is-hovered .title {
+.card.is-hovered .title,
+.card.is-hovered .message {
   -webkit-line-clamp: unset;
   display: block;
 }
