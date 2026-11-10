@@ -141,6 +141,19 @@ fn build_menu(app: &AppHandle) -> tauri::Result<(Menu<Wry>, String)> {
         None::<&str>,
     )?;
     let language = Submenu::with_items(app, t.language, true, &[&lang_auto, &lang_pt, &lang_en])?;
+    let notices = Submenu::with_items(
+        app,
+        t.notices,
+        true,
+        &[
+            &sound,
+            &pause_media,
+            &PredefinedMenuItem::separator(app)?,
+            &test,
+        ],
+    )?;
+    let preferences =
+        Submenu::with_items(app, t.preferences, true, &[&autostart, &language, &welcome])?;
     let connect = connect_submenu(app, t)?;
     let quit = MenuItem::with_id(app, ids::QUIT, t.quit, true, None::<&str>)?;
 
@@ -150,14 +163,11 @@ fn build_menu(app: &AppHandle) -> tauri::Result<(Menu<Wry>, String)> {
             &status_item,
             &PredefinedMenuItem::separator(app)?,
             &dnd,
-            &sound,
-            &pause_media,
-            &test,
+            &notices,
             &connect,
-            &autostart,
-            &language,
+            &PredefinedMenuItem::separator(app)?,
             &customize,
-            &welcome,
+            &preferences,
             &PredefinedMenuItem::separator(app)?,
             &quit,
         ],

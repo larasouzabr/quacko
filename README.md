@@ -63,7 +63,7 @@ Click **Download for macOS** at the top of this page (it always fetches the late
 2. The installer isn't signed with a code-signing certificate, so Windows SmartScreen may warn about it: click **More info → Run anyway**.
 3. The duck shows up in the system tray, next to the clock (it may start inside the **^** overflow; drag it onto the taskbar to keep it visible).
 
-In the duck's menu, **Test notification** shows all 4 states. Check **Open at Login** to have it start on its own.
+In the duck's menu, **Notifications → Test notification** shows all 4 states. Check **Preferences → Open at Login** to have it start on its own.
 
 ## Connect to Claude Code, Cursor and your PRs
 
@@ -72,8 +72,8 @@ From the duck's menu, under **Connect**:
 - **Claude Code**: installs the notification script and turns on the hooks in `~/.claude/settings.json`. The checkmark (✓) shows it's connected; click again to disconnect. Takes effect from the next Claude Code session.
 - **Cursor**: the same, in `~/.cursor/hooks.json` (only enabled when Cursor is installed).
 - **GitHub (PRs and workflows)**: the app follows **all your open PRs** on its own and tells you when each one's CI passes or fails (check runs and commit statuses, Jenkins included). It also follows the **GitHub Actions workflows you trigger yourself** outside a PR (a manual **Run workflow**, a push to `main`, a release tag) in the repositories you pushed to in the last 24 hours, showing the jobs' progress and which job failed. It polls every 30 s while any PR is running and every 3 min once everything has finished; a PR that had already finished when the app opened doesn't notify, and a new push restarts the tracking. Sign-in, in this order: **sign in with a code** through Quacko's GitHub App (the Sign in button on the welcome screen; the token is stored in the Keychain and renewed automatically every 8 h for up to 6 months) or an already logged-in [GitHub CLI](https://cli.github.com) (`gh auth login`), which the app finds on its own. Sign-in with a code only appears when the app knows the GitHub App's **Client ID**: `"github_client_id": "Iv23li…"` in `~/.config/quacko/config.json` or the `QUACKO_GITHUB_CLIENT_ID` variable. With the GitHub App, Quacko only sees the repositories where the app is installed (in organizations, an owner approves it once).
-- **Notify about long terminal commands (zsh)** (macOS only): installs `~/.claude/hooks/quacko.zsh` and copies the line `source ~/.claude/hooks/quacko.zsh` for you to paste at the end of `~/.zshrc` (the app never edits it; if your `~/.zshrc` comes from Nix, put the line in `programs.zsh.initContent`). See [Terminal commands](#terminal-commands).
-- **Install prwatch command (PRs)** (macOS only): creates the `prwatch` command in `~/.local/bin`.
+- **Terminal (zsh)…** (macOS only): installs `~/.claude/hooks/quacko.zsh` and copies the line `source ~/.claude/hooks/quacko.zsh` for you to paste at the end of `~/.zshrc` (the app never edits it; if your `~/.zshrc` comes from Nix, put the line in `programs.zsh.initContent`). See [Terminal commands](#terminal-commands).
+- **prwatch command…** (macOS only): creates the `prwatch` command in `~/.local/bin`.
 
 The app backs up the file before touching it (`settings.json.quacko-backup-<date>`), keeps your other hooks and settings as they were, and doesn't duplicate anything if you connect twice. If the file is managed by Nix, read-only, or has comments, it leaves it alone: it copies the snippet to the clipboard and tells you where to paste it. The result shows up on the duck's own card.
 
@@ -85,7 +85,7 @@ What each integration does:
 - **Cursor** (`~/.cursor/hooks.json`): `beforeSubmitPrompt` and `stop` calling `notify.sh --from cursor` (on Windows, `quacko-hook.exe` through PowerShell, which is how Cursor runs hooks there).
 - **PRs**: `prwatch 1234` (or the PR's URL, or nothing for the current branch's PR) waits for CI to finish and notifies you with the PR's number, title and repository. Needs a logged-in [GitHub CLI](https://cli.github.com).
 
-Besides the notification, the hook pauses your media and plays a sound. Each one has its own switch in the duck's menu (**Play sound** and **Pause music**), and **Do Not Disturb** silences everything at once: no card, no sound, music keeps playing. The hooks read these switches on every notification, so a change applies right away.
+Besides the notification, the hook pauses your media and plays a sound. Each one has its own switch in the duck's menu, under **Notifications** (**Play sound** and **Pause music**), and **Do Not Disturb** silences everything at once: no card, no sound, music keeps playing. The hooks read these switches on every notification, so a change applies right away.
 
 On **Windows**, `quacko-hook.exe` pauses whatever is playing through the system media controls (Spotify, YouTube in the browser and any other player that shows up in the volume flyout), with nothing to install, and plays the sounds from your Windows sound scheme.
 

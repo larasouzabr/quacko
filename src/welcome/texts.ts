@@ -32,7 +32,7 @@ const PT = {
   mediaHint:
     "Opcional: para pausar YouTube e outros players, instale o nowplaying-cli (brew install nowplaying-cli). O Spotify já pausa sozinho.",
   done: "Concluir",
-  reopen: "Esta tela fica no menu do pato → Boas-vindas…",
+  reopen: "Esta tela fica no menu do pato → Preferências → Boas-vindas…",
 };
 
 export type WelcomeTexts = typeof PT;
@@ -69,7 +69,7 @@ const EN: WelcomeTexts = {
   mediaHint:
     "Optional: to pause YouTube and other players, install nowplaying-cli (brew install nowplaying-cli). Spotify already pauses.",
   done: "Done",
-  reopen: "This screen stays in the duck menu → Welcome…",
+  reopen: "This screen stays in the duck menu → Preferences → Welcome…",
 };
 
 export function welcomeTexts(lang: Lang): WelcomeTexts {
