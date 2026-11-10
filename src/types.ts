@@ -6,6 +6,7 @@ export interface Settings {
   lang: "pt-BR" | "en";
   max_cards: number;
   pixel_size: number;
+  text_scale: number;
   character: string;
   accessory_enabled: boolean;
   accessory_id: string;

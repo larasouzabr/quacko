@@ -92,6 +92,15 @@ pub fn present(app: &AppHandle, notification: Notification) {
         state.visible.send_replace(true);
     }
 
+    #[cfg(target_os = "macos")]
+    if crate::history::worth_keeping(&notification) {
+        let text = crate::i18n::announcement(
+            &notification,
+            app.state::<crate::settings::Settings>().lang(),
+        );
+        let _ = app.run_on_main_thread(move || crate::macos::announce(&text));
+    }
+
     if let Err(e) = app.emit_to(OVERLAY_LABEL, "notify", notification) {
         tracing::warn!(%e, "falha ao enviar aviso ao overlay");
     }

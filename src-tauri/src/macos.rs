@@ -46,3 +46,32 @@ pub fn restore_frontmost_app() {
         app.activateWithOptions(NSApplicationActivationOptions::empty());
     }
 }
+
+pub fn announce(text: &str) {
+    use objc2::runtime::AnyObject;
+    use objc2::MainThreadMarker;
+    use objc2_app_kit::{
+        NSAccessibilityAnnouncementKey, NSAccessibilityAnnouncementRequestedNotification,
+        NSAccessibilityPostNotificationWithUserInfo, NSAccessibilityPriorityKey,
+        NSAccessibilityPriorityLevel, NSApplication,
+    };
+    use objc2_foundation::{NSDictionary, NSNumber, NSString};
+
+    let Some(mtm) = MainThreadMarker::new() else {
+        return;
+    };
+    let app = NSApplication::sharedApplication(mtm);
+    let message = NSString::from_str(text);
+    let priority = NSNumber::new_isize(NSAccessibilityPriorityLevel::High.0);
+    let keys: [&NSString; 2] =
+        unsafe { [NSAccessibilityAnnouncementKey, NSAccessibilityPriorityKey] };
+    let values: [&AnyObject; 2] = [message.as_ref(), priority.as_ref()];
+    let info = NSDictionary::from_slices(&keys, &values);
+    unsafe {
+        NSAccessibilityPostNotificationWithUserInfo(
+            app.as_ref(),
+            NSAccessibilityAnnouncementRequestedNotification,
+            Some(&info),
+        );
+    }
+}

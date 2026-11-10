@@ -38,6 +38,7 @@ mod ids {
     pub const CUSTOMIZE: &str = "customize";
     pub const CHECK_UPDATES: &str = "check-updates";
     pub const UPDATE: &str = "update";
+    pub const TEXT_PREFIX: &str = "text-scale:";
     pub const RECENT_PREFIX: &str = "recent:";
     pub const RECENT_EMPTY: &str = "recent-empty";
     pub const RECENT_CLEAR: &str = "recent-clear";
@@ -188,11 +189,30 @@ fn build_menu(app: &AppHandle) -> tauri::Result<(Menu<Wry>, String)> {
         config.check_updates,
         None::<&str>,
     )?;
+    let text_items = crate::config::TEXT_SCALES
+        .iter()
+        .zip([t.text_normal, t.text_large, t.text_larger])
+        .map(|(scale, label)| {
+            CheckMenuItem::with_id(
+                app,
+                format!("{}{scale}", ids::TEXT_PREFIX),
+                label,
+                true,
+                config.text_scale == *scale,
+                None::<&str>,
+            )
+        })
+        .collect::<tauri::Result<Vec<_>>>()?;
+    let text_refs: Vec<&dyn tauri::menu::IsMenuItem<Wry>> = text_items
+        .iter()
+        .map(|i| i as &dyn tauri::menu::IsMenuItem<Wry>)
+        .collect();
+    let text_size = Submenu::with_items(app, t.text_size, true, &text_refs)?;
     let preferences = Submenu::with_items(
         app,
         t.preferences,
         true,
-        &[&autostart, &check_updates, &language, &welcome],
+        &[&autostart, &check_updates, &language, &text_size, &welcome],
     )?;
     let connect = connect_submenu(app, t)?;
     let recent = recent_submenu(app, t)?;
@@ -299,6 +319,18 @@ fn on_menu_event(app: &AppHandle, event: MenuEvent) {
         .and_then(|id| id.parse::<u64>().ok())
     {
         open_recent(app, id);
+        return;
+    }
+    if let Some(scale) = event
+        .id()
+        .as_ref()
+        .strip_prefix(ids::TEXT_PREFIX)
+        .and_then(|s| s.parse::<u16>().ok())
+        .filter(|s| crate::config::TEXT_SCALES.contains(s))
+    {
+        settings.update(|c| c.text_scale = scale);
+        settings::broadcast(app);
+        refresh(app);
         return;
     }
     match event.id().as_ref() {

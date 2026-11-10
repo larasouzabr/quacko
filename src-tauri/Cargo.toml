@@ -42,8 +42,8 @@ tower = { version = "0.5", features = ["util"] }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 objc2 = "0.6"
-objc2-app-kit = { version = "0.3", default-features = false, features = ["std", "NSRunningApplication", "NSWorkspace", "NSWindow", "NSResponder", "NSGraphics", "libc", "NSImage", "NSImageRep", "NSBitmapImageRep", "NSStatusItem", "NSStatusBarButton", "NSButton", "NSControl", "NSView"] }
-objc2-foundation = { version = "0.3", default-features = false, features = ["std", "NSData", "NSGeometry"] }
+objc2-app-kit = { version = "0.3", default-features = false, features = ["std", "NSRunningApplication", "NSWorkspace", "NSWindow", "NSResponder", "NSGraphics", "libc", "NSImage", "NSImageRep", "NSBitmapImageRep", "NSStatusItem", "NSStatusBarButton", "NSButton", "NSControl", "NSView", "NSAccessibilityConstants", "NSApplication"] }
+objc2-foundation = { version = "0.3", default-features = false, features = ["std", "NSData", "NSGeometry", "NSDictionary", "NSString", "NSValue"] }
 plist = "1"
 
 [target.'cfg(windows)'.dependencies]

@@ -20,7 +20,10 @@ export default function Overlay() {
   const character = getCharacter(settings.character);
   const accessory = settings.accessory_enabled ? BUILTIN_ACCESSORIES[settings.accessory_id] : undefined;
   const overlay = useAccessoryOverlay(accessory, settings.accessory_color, character);
-  useOverlaySize(character, settings.pixel_size, settings.max_cards);
+  useOverlaySize(character, settings.pixel_size, settings.max_cards, settings.text_scale);
+  useEffect(() => {
+    document.documentElement.style.setProperty("--text-scale", String((settings.text_scale || 100) / 100));
+  }, [settings.text_scale]);
 
   const lastSeenId = useIncomingNotifications(dispatch);
   const [hoveredId, setHoveredId] = useHoveredCard(dispatch);

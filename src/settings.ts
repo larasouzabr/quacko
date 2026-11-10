@@ -10,6 +10,7 @@ export const DEFAULT_SETTINGS: Settings = {
   lang: "pt-BR",
   max_cards: 3,
   pixel_size: DEFAULT_PIXEL_SIZE,
+  text_scale: 100,
   character: DEFAULT_CHARACTER_ID,
   accessory_enabled: false,
   accessory_id: DEFAULT_ACCESSORY_ID,

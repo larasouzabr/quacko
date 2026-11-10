@@ -9,7 +9,10 @@ Quacko should let you know when work is done no matter how you use your computer
 - **Nothing depends on sound.** Every notification is visual; the sound only accompanies it, and **Play sound** in the menu turns it off. **Pause music** can be turned off too, and Do Not Disturb silences cards, sound and music pausing together.
 - **Cards wait for you.** Hovering a card pauses its timer, and a finished CI run stays on screen until you close it.
 - **Screens are labeled for assistive technology.** The close button has an accessible name, CI progress is exposed as a progress bar (for example, "7/12"), decorative pixel art is hidden from screen readers, and the color choices in Customize are announced by name.
+- **New cards are announced by VoiceOver** (macOS): the status, title, message and project are read out as each card appears, without taking focus from what you're doing. CI progress updates aren't announced, only the result.
+- **Bigger text.** **Preferences → Text size** makes the card text 125% or 150% larger; the card grows with it.
 - **Bigger character.** The duck can be drawn at 3, 4, 5, 6 or 8 screen pixels per art pixel.
+- **Nothing is lost.** **Recent** in the menu lists the last 10 notifications, including the ones that closed on their own.
 - **Languages.** The interface is available in English and Brazilian Portuguese, following your system language by default.
 
 ## Supported environments
@@ -20,9 +23,9 @@ Quacko should let you know when work is done no matter how you use your computer
 ## Known limitations
 
 - **The cards can't be reached with the keyboard.** The notification window is deliberately non-focusable so it never steals focus from what you're typing; that also means you can't Tab to a card. The same notifications are available in the tool that triggered them (Claude Code, Cursor or the PR on GitHub).
-- **Screen readers don't announce cards yet.** Because the window never takes focus, VoiceOver and Narrator don't read new cards aloud.
-- **Cards that aren't sticky close on their own** after about 8 seconds (between 2 and 30 for scripts that set it), which may be too short for some people.
-- **Card text doesn't follow the system text size.** Only the character can be enlarged today.
+- **Narrator doesn't announce cards yet** (Windows). VoiceOver on macOS does.
+- **Cards that aren't sticky close on their own** after about 8 seconds (between 2 and 30 for scripts that set it), which may be too short for some people. They stay in **Recent** in the menu afterwards.
+- **Card text doesn't follow the system text size on its own.** Pick a size in **Preferences → Text size** instead.
 
 ## Reporting a barrier
 

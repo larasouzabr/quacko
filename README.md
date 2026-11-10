@@ -148,6 +148,7 @@ The file `~/.config/quacko/config.json` is created on first use. The menu change
 | `port` | local port (the `QUACKO_PORT` variable wins) | `4747` |
 | `max_cards` | cards on screen at once, 1 to 3 | `3` |
 | `pixel_size` | the character's pixel size: 3, 4, 5, 6 or 8 | `3` |
+| `text_scale` | card text size in percent: 100, 125 or 150 (Preferences → Text size) | `100` |
 | `github` | PR monitor on (Connect menu → GitHub) | `false` |
 | `github_client_id` | the GitHub App's Client ID for sign-in with a code | empty |
 | `onboarded` | the welcome screen has been seen | `false` |

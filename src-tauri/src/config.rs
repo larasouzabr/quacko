@@ -46,6 +46,7 @@ pub struct Config {
     pub autostart: bool,
     pub max_cards: u8,
     pub pixel_size: u8,
+    pub text_scale: u16,
     pub github: bool,
     pub media_warned: bool,
     pub onboarded: bool,
@@ -76,6 +77,7 @@ fn valid_character_id(id: &str) -> bool {
 }
 
 pub const PIXEL_SIZES: [u8; 5] = [3, 4, 5, 6, 8];
+pub const TEXT_SCALES: [u16; 3] = [100, 125, 150];
 pub const DEFAULT_PIXEL_SIZE: u8 = 3;
 
 impl Default for Config {
@@ -93,6 +95,7 @@ impl Default for Config {
             autostart: false,
             max_cards: MAX_CARDS_LIMIT,
             pixel_size: DEFAULT_PIXEL_SIZE,
+            text_scale: 100,
             github: false,
             media_warned: false,
             onboarded: false,
@@ -175,6 +178,15 @@ impl Config {
             {
                 Some(n) => config.max_cards = n as u8,
                 None => invalid.push("max_cards"),
+            }
+        }
+        if let Some(v) = map.get("text_scale") {
+            match v
+                .as_u64()
+                .filter(|n| TEXT_SCALES.iter().any(|s| u64::from(*s) == *n))
+            {
+                Some(n) => config.text_scale = n as u16,
+                None => invalid.push("text_scale"),
             }
         }
         if let Some(v) = map.get("pixel_size") {
@@ -320,14 +332,14 @@ mod tests {
         let c = Config::default();
         assert_eq!(
             serde_json::to_value(&c).unwrap(),
-            serde_json::json!({"port": 4747, "lang": "auto", "dnd": false, "sound": true, "pause_media": true, "notify_claude": true, "notify_cursor": true, "notify_ci": true, "notify_terminal": true, "autostart": false, "max_cards": 3, "pixel_size": 3, "github": false, "media_warned": false, "onboarded": false, "github_client_id": null, "character": "pato-pixel", "accessory_enabled": false, "accessory_id": "laco", "accessory_color": "#ff6996", "check_updates": true, "update_announced": null})
+            serde_json::json!({"port": 4747, "lang": "auto", "dnd": false, "sound": true, "pause_media": true, "notify_claude": true, "notify_cursor": true, "notify_ci": true, "notify_terminal": true, "autostart": false, "max_cards": 3, "pixel_size": 3, "text_scale": 100, "github": false, "media_warned": false, "onboarded": false, "github_client_id": null, "character": "pato-pixel", "accessory_enabled": false, "accessory_id": "laco", "accessory_color": "#ff6996", "check_updates": true, "update_announced": null})
         );
     }
 
     #[test]
     fn le_config_completa() {
         let c = parse(
-            r#"{"port":5000,"lang":"en","dnd":true,"sound":false,"pause_media":false,"notify_cursor":false,"notify_terminal":false,"autostart":true,"max_cards":2,"pixel_size":5}"#,
+            r#"{"port":5000,"lang":"en","dnd":true,"sound":false,"pause_media":false,"notify_cursor":false,"notify_terminal":false,"autostart":true,"max_cards":2,"pixel_size":5,"text_scale":150}"#,
         );
         assert_eq!(
             c,
@@ -342,6 +354,7 @@ mod tests {
                 autostart: true,
                 max_cards: 2,
                 pixel_size: 5,
+                text_scale: 150,
                 ..Config::default()
             }
         );

@@ -50,6 +50,10 @@ pub struct TrayTexts {
     pub language: &'static str,
     pub notices: &'static str,
     pub preferences: &'static str,
+    pub text_size: &'static str,
+    pub text_normal: &'static str,
+    pub text_large: &'static str,
+    pub text_larger: &'static str,
     pub notify_from: &'static str,
     pub notify_ci: &'static str,
     pub notify_terminal: &'static str,
@@ -111,6 +115,10 @@ static PT_BR: TrayTexts = TrayTexts {
     language: "Idioma",
     notices: "Avisos",
     preferences: "Preferências",
+    text_size: "Tamanho do texto",
+    text_normal: "Normal",
+    text_large: "Grande",
+    text_larger: "Maior",
     notify_from: "Avisar de:",
     notify_ci: "PRs e workflows",
     notify_terminal: "Terminal",
@@ -165,6 +173,10 @@ static EN: TrayTexts = TrayTexts {
     language: "Language",
     notices: "Notifications",
     preferences: "Preferences",
+    text_size: "Text size",
+    text_normal: "Normal",
+    text_large: "Large",
+    text_larger: "Larger",
     notify_from: "Notify me about:",
     notify_ci: "PRs and workflows",
     notify_terminal: "Terminal",
@@ -207,6 +219,37 @@ static EN: TrayTexts = TrayTexts {
     media_missing: "Spotify already pauses. To pause YouTube and other players, install nowplaying-cli (brew install nowplaying-cli).",
 };
 
+#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
+pub fn announcement(n: &crate::model::Notification, lang: Lang) -> String {
+    use crate::model::Status;
+    let (word, fallback) = match (lang, n.status) {
+        (Lang::PtBr, Status::Ok) => ("Concluído", "Seu pedido finalizou!"),
+        (Lang::PtBr, Status::Fail) => ("Falhou", "Algo deu errado por aqui"),
+        (Lang::PtBr, Status::Attention) => ("Atenção", "Preciso de você!"),
+        (Lang::PtBr, Status::Info) => ("Aviso", "Aviso do Quacko"),
+        (Lang::En, Status::Ok) => ("Done", "Your request finished!"),
+        (Lang::En, Status::Fail) => ("Failed", "Something went wrong"),
+        (Lang::En, Status::Attention) => ("Attention", "I need you!"),
+        (Lang::En, Status::Info) => ("Notice", "Quacko notice"),
+    };
+    let message = n
+        .message
+        .as_deref()
+        .filter(|m| !m.trim().is_empty())
+        .unwrap_or(fallback);
+    [
+        Some(word),
+        n.title.as_deref(),
+        Some(message),
+        n.project.as_deref(),
+    ]
+    .into_iter()
+    .flatten()
+    .filter(|s| !s.trim().is_empty())
+    .collect::<Vec<_>>()
+    .join(". ")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -248,6 +291,34 @@ mod tests {
                 assert!(text.chars().count() <= 85, "{text}");
             }
         }
+    }
+
+    #[test]
+    fn anuncio_para_leitor_de_tela() {
+        use crate::model::{Notification, Source, Status};
+        let mut n = Notification {
+            id: 1,
+            source: Source::Ci,
+            status: Status::Fail,
+            message: Some("Corrige o parser".into()),
+            title: Some("PR #12".into()),
+            project: Some("lagoa-api".into()),
+            url: None,
+            ttl_ms: 8000,
+            progress: None,
+            sticky: true,
+        };
+        assert_eq!(
+            announcement(&n, Lang::PtBr),
+            "Falhou. PR #12. Corrige o parser. lagoa-api"
+        );
+        n.message = None;
+        n.project = None;
+        n.status = Status::Ok;
+        assert_eq!(
+            announcement(&n, Lang::En),
+            "Done. PR #12. Your request finished!"
+        );
     }
 
     #[test]
