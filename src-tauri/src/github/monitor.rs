@@ -218,10 +218,25 @@ pub fn stored_token_present() -> bool {
     crate::github::auth::KeychainStore.load().is_some()
 }
 
+pub const BUILT_IN_CLIENT_ID: Option<&str> = option_env!("QUACKO_BUILD_GITHUB_CLIENT_ID");
+
 pub fn device_flow_client_id(config: &crate::config::Config) -> Option<String> {
-    std::env::var("QUACKO_GITHUB_CLIENT_ID")
-        .ok()
-        .map(|v| v.trim().to_string())
-        .filter(|v| crate::github::auth::valid_client_id(v))
-        .or_else(|| config.github_client_id.clone())
+    resolve_client_id(
+        std::env::var("QUACKO_GITHUB_CLIENT_ID").ok().as_deref(),
+        config.github_client_id.as_deref(),
+        BUILT_IN_CLIENT_ID,
+    )
+}
+
+pub fn resolve_client_id(
+    env: Option<&str>,
+    config: Option<&str>,
+    built_in: Option<&str>,
+) -> Option<String> {
+    [env, config, built_in]
+        .into_iter()
+        .flatten()
+        .map(str::trim)
+        .find(|v| crate::github::auth::valid_client_id(v))
+        .map(String::from)
 }

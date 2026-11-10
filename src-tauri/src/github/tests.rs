@@ -515,3 +515,22 @@ mod workflow_runs {
         assert_eq!(n.message.as_deref(), Some("Cancelado"));
     }
 }
+
+#[test]
+fn client_id_da_variavel_da_config_ou_embutido_no_build() {
+    use super::monitor::resolve_client_id;
+    assert_eq!(
+        resolve_client_id(Some(" Iv23env "), Some("Iv23cfg"), Some("Iv23build")),
+        Some("Iv23env".to_string())
+    );
+    assert_eq!(
+        resolve_client_id(Some("tem espaço"), Some("Iv23cfg"), Some("Iv23build")),
+        Some("Iv23cfg".to_string())
+    );
+    assert_eq!(
+        resolve_client_id(None, None, Some("Iv23build")),
+        Some("Iv23build".to_string())
+    );
+    assert_eq!(resolve_client_id(None, None, Some("")), None);
+    assert_eq!(resolve_client_id(None, None, None), None);
+}

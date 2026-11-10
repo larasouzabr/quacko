@@ -83,6 +83,7 @@ jobs:
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          QUACKO_BUILD_GITHUB_CLIENT_ID: ${{ vars.QUACKO_GITHUB_CLIENT_ID }}
         with:
           releaseId: ${{ needs.draft.outputs.id }}
           args: --target universal-apple-darwin
@@ -92,6 +93,7 @@ jobs:
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          QUACKO_BUILD_GITHUB_CLIENT_ID: ${{ vars.QUACKO_GITHUB_CLIENT_ID }}
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
           APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
@@ -171,6 +173,7 @@ jobs:
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          QUACKO_BUILD_GITHUB_CLIENT_ID: ${{ vars.QUACKO_GITHUB_CLIENT_ID }}
         with:
           releaseId: ${{ needs.draft.outputs.id }}
 
