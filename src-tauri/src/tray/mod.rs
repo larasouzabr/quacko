@@ -31,6 +31,8 @@ mod ids {
     pub const CONNECT_GITHUB: &str = "connect-github";
     pub const WELCOME: &str = "welcome";
     pub const CUSTOMIZE: &str = "customize";
+    pub const CHECK_UPDATES: &str = "check-updates";
+    pub const UPDATE: &str = "update";
 }
 
 #[derive(Debug, Clone)]
@@ -152,26 +154,45 @@ fn build_menu(app: &AppHandle) -> tauri::Result<(Menu<Wry>, String)> {
             &test,
         ],
     )?;
-    let preferences =
-        Submenu::with_items(app, t.preferences, true, &[&autostart, &language, &welcome])?;
+    let check_updates = CheckMenuItem::with_id(
+        app,
+        ids::CHECK_UPDATES,
+        t.check_updates,
+        true,
+        config.check_updates,
+        None::<&str>,
+    )?;
+    let preferences = Submenu::with_items(
+        app,
+        t.preferences,
+        true,
+        &[&autostart, &check_updates, &language, &welcome],
+    )?;
     let connect = connect_submenu(app, t)?;
     let quit = MenuItem::with_id(app, ids::QUIT, t.quit, true, None::<&str>)?;
 
-    let menu = Menu::with_items(
-        app,
-        &[
-            &status_item,
-            &PredefinedMenuItem::separator(app)?,
-            &dnd,
-            &notices,
-            &connect,
-            &PredefinedMenuItem::separator(app)?,
-            &customize,
-            &preferences,
-            &PredefinedMenuItem::separator(app)?,
-            &quit,
-        ],
-    )?;
+    let menu = Menu::with_items(app, &[&status_item])?;
+    if let Some(release) = app.state::<crate::update::Available>().get() {
+        let update = MenuItem::with_id(
+            app,
+            ids::UPDATE,
+            t.update_item.replace("{version}", &release.version),
+            true,
+            None::<&str>,
+        )?;
+        menu.append(&update)?;
+    }
+    menu.append_items(&[
+        &PredefinedMenuItem::separator(app)?,
+        &dnd,
+        &notices,
+        &connect,
+        &PredefinedMenuItem::separator(app)?,
+        &customize,
+        &preferences,
+        &PredefinedMenuItem::separator(app)?,
+        &quit,
+    ])?;
     Ok((menu, status.tooltip(t)))
 }
 
@@ -214,6 +235,21 @@ fn on_menu_event(app: &AppHandle, event: MenuEvent) {
             tracing::info!(pause_media = c.pause_media, "pausar música alterado");
         }
         ids::AUTOSTART => crate::autostart::toggle_autostart(app),
+        ids::CHECK_UPDATES => {
+            let c = settings.update(|c| c.check_updates = !c.check_updates);
+            tracing::info!(
+                check_updates = c.check_updates,
+                "procurar atualizações alterado"
+            );
+        }
+        ids::UPDATE => {
+            if let Some(release) = app.state::<crate::update::Available>().get() {
+                use tauri_plugin_opener::OpenerExt;
+                if let Err(e) = app.opener().open_url(release.url, None::<&str>) {
+                    tracing::warn!(%e, "não foi possível abrir a página da versão nova");
+                }
+            }
+        }
         ids::LANG_AUTO => set_lang(app, LangPref::Auto),
         ids::LANG_PT => set_lang(app, LangPref::PtBr),
         ids::LANG_EN => set_lang(app, LangPref::En),

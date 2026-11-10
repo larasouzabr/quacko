@@ -20,6 +20,7 @@ mod sound;
 mod startup;
 mod test_sequence;
 mod tray;
+mod update;
 mod windows;
 
 use tauri::Manager;
@@ -73,6 +74,7 @@ pub fn run() {
             accessories::ensure_user_dir();
             app.manage(tray::icon::TrayAlert::default());
             app.manage(github::commands::PendingDevice::default());
+            app.manage(update::Available::default());
             let github_on = app.state::<Settings>().snapshot().github;
             github::spawn(app.handle(), github_on);
             migrate::migrate_login_item(app.handle());
@@ -83,6 +85,7 @@ pub fn run() {
             tray::create(app.handle(), status)?;
             startup::sync_scripts_on_start(app.handle());
             startup::warn_media_on_start(app.handle());
+            update::spawn(app.handle());
             if !app.state::<Settings>().snapshot().onboarded {
                 onboarding::open(app.handle());
             }

@@ -50,6 +50,8 @@ pub struct Config {
     pub accessory_enabled: bool,
     pub accessory_id: String,
     pub accessory_color: String,
+    pub check_updates: bool,
+    pub update_announced: Option<String>,
 }
 
 pub const DEFAULT_ACCESSORY: &str = "laco";
@@ -91,6 +93,8 @@ impl Default for Config {
             accessory_enabled: false,
             accessory_id: DEFAULT_ACCESSORY.to_string(),
             accessory_color: DEFAULT_ACCESSORY_COLOR.to_string(),
+            check_updates: true,
+            update_announced: None,
         }
     }
 }
@@ -202,6 +206,21 @@ impl Config {
                 _ => invalid.push("github_client_id"),
             }
         }
+        if let Some(v) = map.get("check_updates") {
+            match v.as_bool() {
+                Some(b) => config.check_updates = b,
+                None => invalid.push("check_updates"),
+            }
+        }
+        if let Some(v) = map.get("update_announced") {
+            match v {
+                Value::Null => {}
+                Value::String(s) if crate::update::is_version(s) => {
+                    config.update_announced = Some(s.clone())
+                }
+                _ => invalid.push("update_announced"),
+            }
+        }
         if let Some(v) = map.get("onboarded") {
             match v.as_bool() {
                 Some(b) => config.onboarded = b,
@@ -280,7 +299,7 @@ mod tests {
         let c = Config::default();
         assert_eq!(
             serde_json::to_value(&c).unwrap(),
-            serde_json::json!({"port": 4747, "lang": "auto", "dnd": false, "sound": true, "pause_media": true, "autostart": false, "max_cards": 3, "pixel_size": 3, "github": false, "media_warned": false, "onboarded": false, "github_client_id": null, "character": "pato-pixel", "accessory_enabled": false, "accessory_id": "laco", "accessory_color": "#ff6996"})
+            serde_json::json!({"port": 4747, "lang": "auto", "dnd": false, "sound": true, "pause_media": true, "autostart": false, "max_cards": 3, "pixel_size": 3, "github": false, "media_warned": false, "onboarded": false, "github_client_id": null, "character": "pato-pixel", "accessory_enabled": false, "accessory_id": "laco", "accessory_color": "#ff6996", "check_updates": true, "update_announced": null})
         );
     }
 
@@ -300,14 +319,7 @@ mod tests {
                 autostart: true,
                 max_cards: 2,
                 pixel_size: 5,
-                github: false,
-                media_warned: false,
-                onboarded: false,
-                github_client_id: None,
-                character: DEFAULT_CHARACTER.to_string(),
-                accessory_enabled: false,
-                accessory_id: DEFAULT_ACCESSORY.to_string(),
-                accessory_color: DEFAULT_ACCESSORY_COLOR.to_string(),
+                ..Config::default()
             }
         );
     }

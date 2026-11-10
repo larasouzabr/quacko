@@ -66,6 +66,8 @@ Click **Download for macOS** at the top of this page (it always fetches the late
 
 In the duck's menu, **Notifications → Test notification** shows all 4 states. Check **Preferences → Open at Login** to have it start on its own.
 
+**Updates:** once a day the app checks for a new release. When there is one, the duck tells you once and the menu shows **⬆ Download Quacko x.y.z…**, which opens the release page; download and install it over the old one. Turn it off in **Preferences → Tell me about new versions**.
+
 ## Connect to Claude Code, Cursor and your PRs
 
 From the duck's menu, under **Connect**:
@@ -138,6 +140,8 @@ The file `~/.config/quacko/config.json` is created on first use. The menu change
 | `character` | character: `pato-pixel` or `gato-pixel` | `pato-pixel` |
 | `accessory_enabled` | accessory (bow) on | `false` |
 | `accessory_color` | the accessory's main color, `#rrggbb` | `#ff6996` |
+| `check_updates` | check GitHub for a new version once a day | `true` |
+| `update_announced` | the last version the duck already told you about | empty |
 
 Invalid values fall back to the default without breaking the app. Changes made directly in the file apply when the app is reopened.
 
@@ -222,7 +226,7 @@ Never put certificates, passwords or tokens in the repository.
 
 ## Privacy
 
-Nothing leaves your computer. The app only listens on `127.0.0.1`, has no telemetry and doesn't log message text. The request you sent to Claude or Cursor is kept in `~/.cache/quacko/` (a folder only you can access) between sending it and the reply, and is deleted right after.
+The app only listens on `127.0.0.1`, has no telemetry and doesn't log message text. It talks to the internet in two cases only: the GitHub monitor, when you turn it on, and a check for new versions once a day (a single anonymous request to GitHub's public releases API, which you can turn off in **Preferences → Tell me about new versions**). The request you sent to Claude or Cursor is kept in `~/.cache/quacko/` (a folder only you can access) between sending it and the reply, and is deleted right after.
 
 ## Contributing
 
