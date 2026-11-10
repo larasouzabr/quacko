@@ -34,6 +34,29 @@ _quacko_quiet() {
   return 1
 }
 
+_quacko_front_pid() {
+  if [[ -n ${QUACKO_FRONT_PID:-} ]]; then
+    print -r -- $QUACKO_FRONT_PID
+    return
+  fi
+  [[ -x /usr/bin/lsappinfo ]] || return
+  local info=$(/usr/bin/lsappinfo info -only pid "$(/usr/bin/lsappinfo front 2>/dev/null)" 2>/dev/null)
+  print -r -- ${info##*=}
+}
+
+_quacko_focused() {
+  [[ ${QUACKO_SKIP_WHEN_FOCUSED:-} == 1 ]] || return 1
+  local front=$(_quacko_front_pid) pid=$$ i
+  [[ $front == <-> ]] || return 1
+  for i in {1..30}; do
+    [[ $pid == $front ]] && return 0
+    pid=$(ps -o ppid= -p $pid 2>/dev/null)
+    pid=${pid// /}
+    [[ $pid == <-> && $pid -gt 1 ]] || return 1
+  done
+  return 1
+}
+
 _quacko_duration() {
   local s=$1
   if (( s < 60 )); then
@@ -58,6 +81,7 @@ _quacko_precmd() {
   (( secs >= ${QUACKO_MIN_SECS:-30} )) || return 0
   case $rc in 130 | 131 | 146 | 148) return 0 ;; esac
   _quacko_quiet "$cmd" && return 0
+  _quacko_focused && return 0
 
   local notify=${QUACKO_NOTIFY:-$HOME/.claude/hooks/notify.sh}
   [[ -x $notify ]] || return 0

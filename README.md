@@ -126,7 +126,10 @@ It stays quiet for commands you stop yourself (Ctrl+C, Ctrl+Z) and for interacti
 ```zsh
 export QUACKO_MIN_SECS=60           # only commands that take a minute or more
 export QUACKO_IGNORE="k9s docker"   # more programs that should never notify
+export QUACKO_SKIP_WHEN_FOCUSED=1   # macOS: stay quiet while that terminal app is in front
 ```
+
+`QUACKO_SKIP_WHEN_FOCUSED` is off by default because macOS only tells which app is in front, not which tab: with it on, a build finishing in one tab stays quiet while you work in another tab of the same terminal. In VS Code's terminal it also stays quiet while you're editing code in that window.
 
 It works in zsh, in bash 3.2 or newer (it plays along with [bash-preexec](https://github.com/rcaloras/bash-preexec) and keeps your own `PROMPT_COMMAND` and `DEBUG` trap) and in PowerShell 7 or Windows PowerShell 5.1. Not yet in fish.
 

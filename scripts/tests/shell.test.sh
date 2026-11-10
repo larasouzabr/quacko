@@ -97,6 +97,15 @@ suite() {
   out=$(printf 'source %q\nfalse\n' "$SCRIPT" | HOME="$WORK" QUACKO_NOTIFY="$WORK/nao-existe" QUACKO_MIN_SECS=0 "${INTERACTIVE[@]}" 2>&1)
   check "sem o notify.sh não mostra erro" '[[ "$out" != *"nao-existe"* && "$out" != *"not found"* ]]'
 
+  SETUP='export QUACKO_SKIP_WHEN_FOCUSED=1 QUACKO_FRONT_PID=$$' WANT=0 session 'boom 1'
+  check "terminal na frente e opção ligada: não avisa" '[ "$(count)" = 0 ]'
+  SETUP='export QUACKO_SKIP_WHEN_FOCUSED=1 QUACKO_FRONT_PID=$PPID' WANT=0 session 'boom 1'
+  check "app na frente é um ancestral do shell: não avisa" '[ "$(count)" = 0 ]'
+  SETUP='export QUACKO_SKIP_WHEN_FOCUSED=1 QUACKO_FRONT_PID=999999' session 'boom 1'
+  check "outro app na frente: avisa" '[ "$(count)" = 1 ]'
+  SETUP='export QUACKO_FRONT_PID=$$' session 'boom 1'
+  check "opção desligada (padrão): avisa mesmo na frente" '[ "$(count)" = 1 ]'
+
   SETUP='PROMPT_COMMAND_TEST=1' WANT=1 session 'boom 3'
   check "funciona com outras configurações do shell" '[[ "$(calls)" == *"exit 3"* ]]'
 }
