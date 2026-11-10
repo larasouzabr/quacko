@@ -13,7 +13,10 @@ const MAX_INPUT: u64 = 1024 * 1024;
 pub fn main() -> i32 {
     let raw: Vec<String> = std::env::args().skip(1).collect();
     if raw.first().map(String::as_str) == Some(effects::EFFECTS_FLAG) {
-        effects::run_detached_effects(raw.get(1).map(String::as_str).unwrap_or_default());
+        effects::run_detached_effects(
+            raw.get(1).map(String::as_str).unwrap_or_default(),
+            raw.get(2).map(String::as_str) != Some("0"),
+        );
         return 0;
     }
     let args = args::parse(raw);
@@ -22,15 +25,21 @@ pub fn main() -> i32 {
     let plan = plan::plan(args, input.as_ref(), &store);
     let dry_run = std::env::var_os("QUACKO_DRY_RUN").is_some_and(|v| !v.is_empty());
 
-    if plan.effects && !dry_run {
-        effects::start(&plan.status, &plan.sound);
+    let config = config_text();
+    if plan.effects {
+        let prefs = effects::Prefs::from_config(config.as_deref());
+        if dry_run {
+            eprintln!("{}", effects::describe(&plan.status, &plan.sound, prefs));
+        } else {
+            effects::start(&plan.status, &plan.sound, prefs);
+        }
     }
     if let Some(payload) = &plan.payload {
         let body = payload.to_string();
         if dry_run {
             eprintln!("payload: {body}");
         } else {
-            send::post(port(), &body);
+            send::post(port(config.as_deref()), &body);
         }
     }
     if let Some(reply) = plan.reply {
@@ -71,12 +80,14 @@ fn state_dir() -> PathBuf {
     cache.join("quacko")
 }
 
-fn port() -> u16 {
-    let config = home()
-        .map(|h| h.join(".config").join("quacko").join("config.json"))
-        .and_then(|p| std::fs::read_to_string(p).ok());
-    send::port(
-        std::env::var("QUACKO_PORT").ok().as_deref(),
-        config.as_deref(),
-    )
+fn config_text() -> Option<String> {
+    std::env::var_os("QUACKO_CONFIG")
+        .filter(|v| !v.is_empty())
+        .map(PathBuf::from)
+        .or_else(|| home().map(|h| h.join(".config").join("quacko").join("config.json")))
+        .and_then(|p| std::fs::read_to_string(p).ok())
+}
+
+fn port(config: Option<&str>) -> u16 {
+    send::port(std::env::var("QUACKO_PORT").ok().as_deref(), config)
 }

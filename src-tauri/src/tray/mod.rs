@@ -16,6 +16,8 @@ use crate::tray::icon::TRAY_ID;
 mod ids {
     pub const STATUS: &str = "status";
     pub const DND: &str = "dnd";
+    pub const SOUND: &str = "sound";
+    pub const PAUSE_MEDIA: &str = "pause-media";
     pub const TEST: &str = "test";
     pub const AUTOSTART: &str = "autostart";
     pub const LANG_AUTO: &str = "lang-auto";
@@ -87,6 +89,22 @@ fn build_menu(app: &AppHandle) -> tauri::Result<(Menu<Wry>, String)> {
     let status_item =
         MenuItem::with_id(app, ids::STATUS, status.menu_text(t), false, None::<&str>)?;
     let dnd = CheckMenuItem::with_id(app, ids::DND, t.dnd, true, config.dnd, None::<&str>)?;
+    let sound = CheckMenuItem::with_id(
+        app,
+        ids::SOUND,
+        t.sound,
+        !config.dnd,
+        config.sound,
+        None::<&str>,
+    )?;
+    let pause_media = CheckMenuItem::with_id(
+        app,
+        ids::PAUSE_MEDIA,
+        t.pause_media,
+        !config.dnd,
+        config.pause_media,
+        None::<&str>,
+    )?;
     let test = MenuItem::with_id(app, ids::TEST, t.test, true, None::<&str>)?;
     let welcome = MenuItem::with_id(app, ids::WELCOME, t.welcome, true, None::<&str>)?;
     let customize = MenuItem::with_id(app, ids::CUSTOMIZE, t.customize, true, None::<&str>)?;
@@ -132,6 +150,8 @@ fn build_menu(app: &AppHandle) -> tauri::Result<(Menu<Wry>, String)> {
             &status_item,
             &PredefinedMenuItem::separator(app)?,
             &dnd,
+            &sound,
+            &pause_media,
             &test,
             &connect,
             &autostart,
@@ -174,6 +194,14 @@ fn on_menu_event(app: &AppHandle, event: MenuEvent) {
         ids::DND => {
             let c = settings.update(|c| c.dnd = !c.dnd);
             tracing::info!(dnd = c.dnd, "não perturbe alterado");
+        }
+        ids::SOUND => {
+            let c = settings.update(|c| c.sound = !c.sound);
+            tracing::info!(sound = c.sound, "som alterado");
+        }
+        ids::PAUSE_MEDIA => {
+            let c = settings.update(|c| c.pause_media = !c.pause_media);
+            tracing::info!(pause_media = c.pause_media, "pausar música alterado");
         }
         ids::AUTOSTART => crate::autostart::toggle_autostart(app),
         ids::LANG_AUTO => set_lang(app, LangPref::Auto),

@@ -4,7 +4,7 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 NOTIFY="${QUACKO_NOTIFY:-$HERE/../notify.sh}"
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
-export QUACKO_DRY_RUN=1 QUACKO_STATE_DIR="$WORK/state" QUACKO_LOG="$WORK/log"
+export QUACKO_DRY_RUN=1 QUACKO_STATE_DIR="$WORK/state" QUACKO_LOG="$WORK/log" QUACKO_CONFIG="$WORK/config.json"
 
 pass=0
 fail=0
@@ -26,6 +26,22 @@ run() {
   RC=$?
   OUT=$(cat "$WORK/out")
   PAYLOAD=$(sed -n 's/^payload: //p' "$WORK/err")
+  EFFECTS=$(sed -n 's/^effects: //p' "$WORK/err")
+}
+
+expect_effects() {
+  local pause="$2" sound="$3" got_pause got_sound
+  got_pause=$(printf '%s' "$EFFECTS" | sed -n 's/^pause=\([01]\) .*/\1/p')
+  got_sound=$(printf '%s' "$EFFECTS" | sed -n 's/^pause=[01] sound=//p')
+  if [ "$got_pause" != "$pause" ]; then
+    bad "$1" "pausa: '$EFFECTS'"
+  elif [ "$sound" = yes ] && [ -z "$got_sound" ]; then
+    bad "$1" "sem som: '$EFFECTS'"
+  elif [ "$sound" = no ] && [ -n "$got_sound" ]; then
+    bad "$1" "som inesperado: '$EFFECTS'"
+  else
+    ok
+  fi
 }
 
 expect_payload() {
@@ -141,6 +157,34 @@ for tool in jq plutil awk; do
   suite
   echo "  leitor $tool: $([ "$fail" = "$before" ] && echo ok || echo "$((fail - before)) falha(s)")"
 done
+
+unset QUACKO_JSON
+config() { printf '%s' "$1" >"$QUACKO_CONFIG"; }
+
+rm -f "$QUACKO_CONFIG"
+run "" --source ci --status ok
+expect_effects "sem config: pausa a música e toca o som" 1 yes
+config '{"port":4747,"sound":true,"pause_media":true,"dnd":false}'
+run "" --source ci --status fail
+expect_effects "tudo ligado: pausa e toca" 1 yes
+config '{"sound": false, "pause_media": true}'
+run "" --source ci --status ok
+expect_effects "som desligado: só pausa" 1 no
+expect_payload "som desligado: o cartão aparece igual" '.status=="ok"'
+config '{"sound":true,"pause_media":false}'
+run "" --source ci --status ok
+expect_effects "pausa desligada: só toca" 0 yes
+config '{"dnd":true,"sound":true,"pause_media":true}'
+run "" --source ci --status ok
+expect_effects "não perturbe: nem som nem pausa" 0 no
+config '{"sound":false,"pause_media":false}'
+run '{"session_id":"cfg","hook_event_name":"UserPromptSubmit","prompt":"x"}' --from claude
+expect_no_payload "UserPromptSubmit continua quieto com a config"
+config 'não é json'
+run "" --source ci --status ok
+expect_effects "config inválida: usa o padrão" 1 yes
+rm -f "$QUACKO_CONFIG"
+echo "  som e pausa pela config: ok"
 
 if command -v node >/dev/null; then
   run_socket() {

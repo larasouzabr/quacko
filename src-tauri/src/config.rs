@@ -37,6 +37,8 @@ pub struct Config {
     pub port: u16,
     pub lang: LangPref,
     pub dnd: bool,
+    pub sound: bool,
+    pub pause_media: bool,
     pub autostart: bool,
     pub max_cards: u8,
     pub pixel_size: u8,
@@ -76,6 +78,8 @@ impl Default for Config {
             port: DEFAULT_PORT,
             lang: LangPref::Auto,
             dnd: false,
+            sound: true,
+            pause_media: true,
             autostart: false,
             max_cards: MAX_CARDS_LIMIT,
             pixel_size: DEFAULT_PIXEL_SIZE,
@@ -119,6 +123,18 @@ impl Config {
             match v.as_bool() {
                 Some(b) => config.dnd = b,
                 None => invalid.push("dnd"),
+            }
+        }
+        if let Some(v) = map.get("sound") {
+            match v.as_bool() {
+                Some(b) => config.sound = b,
+                None => invalid.push("sound"),
+            }
+        }
+        if let Some(v) = map.get("pause_media") {
+            match v.as_bool() {
+                Some(b) => config.pause_media = b,
+                None => invalid.push("pause_media"),
             }
         }
         if let Some(v) = map.get("autostart") {
@@ -264,14 +280,14 @@ mod tests {
         let c = Config::default();
         assert_eq!(
             serde_json::to_value(&c).unwrap(),
-            serde_json::json!({"port": 4747, "lang": "auto", "dnd": false, "autostart": false, "max_cards": 3, "pixel_size": 3, "github": false, "media_warned": false, "onboarded": false, "github_client_id": null, "character": "pato-pixel", "accessory_enabled": false, "accessory_id": "laco", "accessory_color": "#ff6996"})
+            serde_json::json!({"port": 4747, "lang": "auto", "dnd": false, "sound": true, "pause_media": true, "autostart": false, "max_cards": 3, "pixel_size": 3, "github": false, "media_warned": false, "onboarded": false, "github_client_id": null, "character": "pato-pixel", "accessory_enabled": false, "accessory_id": "laco", "accessory_color": "#ff6996"})
         );
     }
 
     #[test]
     fn le_config_completa() {
         let c = parse(
-            r#"{"port":5000,"lang":"en","dnd":true,"autostart":true,"max_cards":2,"pixel_size":5}"#,
+            r#"{"port":5000,"lang":"en","dnd":true,"sound":false,"pause_media":false,"autostart":true,"max_cards":2,"pixel_size":5}"#,
         );
         assert_eq!(
             c,
@@ -279,6 +295,8 @@ mod tests {
                 port: 5000,
                 lang: LangPref::En,
                 dnd: true,
+                sound: false,
+                pause_media: false,
                 autostart: true,
                 max_cards: 2,
                 pixel_size: 5,
@@ -380,7 +398,7 @@ mod tests {
     #[test]
     fn valor_invalido_cai_no_padrao_sem_perder_os_outros() {
         let (c, invalid) = Config::from_json_lenient(
-            r#"{"port":"abc","lang":"fr","dnd":"sim","autostart":1,"max_cards":9,"pixel_size":7,"extra":true}"#,
+            r#"{"port":"abc","lang":"fr","dnd":"sim","sound":"não","pause_media":0,"autostart":1,"max_cards":9,"pixel_size":7,"extra":true}"#,
         );
         assert_eq!(c, Config::default());
         assert_eq!(
@@ -389,6 +407,8 @@ mod tests {
                 "port",
                 "lang",
                 "dnd",
+                "sound",
+                "pause_media",
                 "autostart",
                 "max_cards",
                 "pixel_size"

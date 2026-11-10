@@ -5,6 +5,7 @@ PORT="${QUACKO_PORT:-4747}"
 STATE_DIR="${QUACKO_STATE_DIR:-${XDG_CACHE_HOME:-$HOME/.cache}/quacko}"
 LOG="${QUACKO_LOG:-/tmp/quacko-notify.log}"
 DRY_RUN="${QUACKO_DRY_RUN:-}"
+CONFIG="${QUACKO_CONFIG:-$HOME/.config/quacko/config.json}"
 PROMPT_CHARS=100
 export LC_ALL=en_US.UTF-8
 
@@ -237,18 +238,35 @@ detach() {
   fi
 }
 
-if [ -z "$DRY_RUN" ]; then
-  detach /bin/bash -c '
+setting_is() {
+  [ -f "$CONFIG" ] && grep -Eq "\"$1\"[[:space:]]*:[[:space:]]*$2" "$CONFIG" 2>/dev/null
+}
+
+pause=1
+play=1
+if setting_is dnd true; then
+  pause=""
+  play=""
+fi
+setting_is pause_media false && pause=""
+setting_is sound false && play=""
+
+if [ -z "$sound" ]; then
+  case "$status" in
+    fail) sound=/System/Library/Sounds/Basso.aiff ;;
+    attention | info) sound=/System/Library/Sounds/Ping.aiff ;;
+    *) sound=/System/Library/Sounds/Glass.aiff ;;
+  esac
+fi
+[ -n "$play" ] || sound=""
+
+if [ -n "$DRY_RUN" ]; then
+  printf 'effects: pause=%s sound=%s\n' "${pause:-0}" "$sound" >&4
+else
+  [ -n "$pause" ] && detach /bin/bash -c '
     osascript -e "if application \"Spotify\" is running then tell application \"Spotify\" to pause"
     command -v nowplaying-cli >/dev/null && nowplaying-cli pause'
-  if [ -z "$sound" ]; then
-    case "$status" in
-      fail) sound=/System/Library/Sounds/Basso.aiff ;;
-      attention | info) sound=/System/Library/Sounds/Ping.aiff ;;
-      *) sound=/System/Library/Sounds/Glass.aiff ;;
-    esac
-  fi
-  [ -f "$sound" ] && detach /usr/bin/afplay "$sound"
+  [ -n "$sound" ] && [ -f "$sound" ] && detach /usr/bin/afplay "$sound"
 fi
 
 [ -n "$status" ] || finish

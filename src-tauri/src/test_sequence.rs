@@ -14,7 +14,7 @@ pub fn run_test_sequence(app: &AppHandle) {
                 tokio::time::sleep(Duration::from_millis(2500)).await;
             }
             let id = app.state::<IdGen>().next();
-            crate::sound::play(status);
+            crate::sound::play(&app.state::<crate::settings::Settings>().snapshot(), status);
             crate::overlay::present(
                 &app,
                 Notification {

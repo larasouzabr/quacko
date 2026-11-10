@@ -22,6 +22,30 @@ pub fn default_sound(status: &str) -> &'static str {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Prefs {
+    pub sound: bool,
+    pub pause: bool,
+}
+
+impl Prefs {
+    pub fn from_config(text: Option<&str>) -> Self {
+        let config = text.and_then(|t| serde_json::from_str::<serde_json::Value>(t).ok());
+        let flag = |key: &str, default: bool| {
+            config
+                .as_ref()
+                .and_then(|c| c.get(key))
+                .and_then(serde_json::Value::as_bool)
+                .unwrap_or(default)
+        };
+        let quiet = flag("dnd", false);
+        Self {
+            sound: !quiet && flag("sound", true),
+            pause: !quiet && flag("pause_media", true),
+        }
+    }
+}
+
 fn chosen(status: &str, sound: &str) -> String {
     if sound.is_empty() {
         default_sound(status).to_string()
@@ -30,8 +54,24 @@ fn chosen(status: &str, sound: &str) -> String {
     }
 }
 
-pub fn start(status: &str, sound: &str) {
-    let sound = chosen(status, sound);
+pub fn sound_for(status: &str, sound: &str, prefs: Prefs) -> String {
+    if prefs.sound {
+        chosen(status, sound)
+    } else {
+        String::new()
+    }
+}
+
+pub fn describe(status: &str, sound: &str, prefs: Prefs) -> String {
+    format!(
+        "effects: pause={} sound={}",
+        u8::from(prefs.pause),
+        sound_for(status, sound, prefs)
+    )
+}
+
+pub fn start(status: &str, sound: &str, prefs: Prefs) {
+    let sound = sound_for(status, sound, prefs);
     #[cfg(target_os = "macos")]
     {
         use std::os::unix::process::CommandExt;
@@ -44,25 +84,31 @@ pub fn start(status: &str, sound: &str) {
                 .process_group(0)
                 .spawn();
         };
-        detached(Command::new("/bin/bash").args(["-c", MAC_PAUSE]));
-        if std::path::Path::new(&sound).is_file() {
+        if prefs.pause {
+            detached(Command::new("/bin/bash").args(["-c", MAC_PAUSE]));
+        }
+        if !sound.is_empty() && std::path::Path::new(&sound).is_file() {
             detached(Command::new("/usr/bin/afplay").arg(&sound));
         }
     }
     #[cfg(windows)]
-    windows::spawn_effects(&sound);
+    if prefs.pause || !sound.is_empty() {
+        windows::spawn_effects(&sound, prefs.pause);
+    }
     #[cfg(not(any(target_os = "macos", windows)))]
-    let _ = sound;
+    let _ = (sound, prefs);
 }
 
-pub fn run_detached_effects(sound: &str) {
+pub fn run_detached_effects(sound: &str, pause: bool) {
     #[cfg(windows)]
     {
-        windows::pause_media();
+        if pause {
+            windows::pause_media();
+        }
         windows::play(sound, true);
     }
     #[cfg(not(windows))]
-    let _ = sound;
+    let _ = (sound, pause);
 }
 
 pub fn play_async(status: &str) {
@@ -91,13 +137,13 @@ mod windows {
     const CREATE_NEW_PROCESS_GROUP: u32 = 0x0000_0200;
     const CREATE_BREAKAWAY_FROM_JOB: u32 = 0x0100_0000;
 
-    pub fn spawn_effects(sound: &str) {
+    pub fn spawn_effects(sound: &str, pause: bool) {
         let Ok(exe) = std::env::current_exe() else {
             return;
         };
         let spawn = |flags: u32| {
             Command::new(&exe)
-                .args([super::EFFECTS_FLAG, sound])
+                .args([super::EFFECTS_FLAG, sound, if pause { "1" } else { "0" }])
                 .stdin(Stdio::null())
                 .stdout(Stdio::null())
                 .stderr(Stdio::null())
@@ -155,6 +201,51 @@ mod tests {
             let sound = default_sound(status);
             assert!(script.contains(sound), "{status}: {sound}");
         }
+    }
+
+    #[test]
+    fn preferencias_da_config() {
+        let on = Prefs {
+            sound: true,
+            pause: true,
+        };
+        assert_eq!(Prefs::from_config(None), on);
+        assert_eq!(Prefs::from_config(Some("não é json")), on);
+        assert_eq!(Prefs::from_config(Some(r#"{"sound":"não"}"#)), on);
+        assert_eq!(
+            Prefs::from_config(Some(r#"{"sound":false}"#)),
+            Prefs {
+                sound: false,
+                pause: true
+            }
+        );
+        assert_eq!(
+            Prefs::from_config(Some(r#"{"pause_media":false}"#)),
+            Prefs {
+                sound: true,
+                pause: false
+            }
+        );
+        assert_eq!(
+            Prefs::from_config(Some(r#"{"dnd":true,"sound":true,"pause_media":true}"#)),
+            Prefs {
+                sound: false,
+                pause: false
+            }
+        );
+    }
+
+    #[test]
+    fn sem_som_nao_escolhe_arquivo() {
+        let mute = Prefs {
+            sound: false,
+            pause: true,
+        };
+        assert_eq!(sound_for("ok", "/x/meu.wav", mute), "");
+        assert_eq!(
+            describe("ok", "/x/meu.wav", mute),
+            "effects: pause=1 sound="
+        );
     }
 
     #[test]

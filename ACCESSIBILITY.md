@@ -6,7 +6,7 @@ Quacko should let you know when work is done no matter how you use your computer
 
 - **State is never shown by color alone.** Every card has an icon and a word (Done, Failed, Attention, Notice) next to the color, and the duck's pose changes too.
 - **Reduced motion is respected.** With "Reduce motion" turned on in your system settings, the duck stops animating and cards appear without sliding.
-- **Nothing depends on sound.** Every notification is visual; the sound only accompanies it.
+- **Nothing depends on sound.** Every notification is visual; the sound only accompanies it, and **Play sound** in the menu turns it off. **Pause music** can be turned off too, and Do Not Disturb silences cards, sound and music pausing together.
 - **Cards wait for you.** Hovering a card pauses its timer, and a finished CI run stays on screen until you close it.
 - **Screens are labeled for assistive technology.** The close button has an accessible name, CI progress is exposed as a progress bar (for example, "7/12"), decorative pixel art is hidden from screen readers, and the color choices in Customize are announced by name.
 - **Bigger character.** The duck can be drawn at 3, 4, 5, 6 or 8 screen pixels per art pixel.
@@ -23,7 +23,6 @@ Quacko should let you know when work is done no matter how you use your computer
 - **Screen readers don't announce cards yet.** Because the window never takes focus, VoiceOver and Narrator don't read new cards aloud.
 - **Cards that aren't sticky close on their own** after about 8 seconds (between 2 and 30 for scripts that set it), which may be too short for some people.
 - **Card text doesn't follow the system text size.** Only the character can be enlarged today.
-- **The hook's sound plays even with Do Not Disturb on.** Do Not Disturb hides the cards, but the sound comes from the Claude Code or Cursor hook, which doesn't know about it yet.
 
 ## Reporting a barrier
 

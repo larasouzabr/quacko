@@ -9,7 +9,10 @@ fn status_name(status: Status) -> &'static str {
     }
 }
 
-pub fn play(status: Status) {
+pub fn play(config: &crate::config::Config, status: Status) {
+    if !config.sound || config.dnd {
+        return;
+    }
     #[cfg(target_os = "macos")]
     {
         use std::process::{Command, Stdio};

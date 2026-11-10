@@ -196,7 +196,10 @@ fn deliver(app: &AppHandle, prs: &[Change], runs: &[RunChange]) {
         .collect();
     for (n, final_state) in cards {
         if final_state {
-            crate::sound::play(n.status);
+            crate::sound::play(
+                &app.state::<crate::settings::Settings>().snapshot(),
+                n.status,
+            );
         }
         tracing::info!(id = n.id, status = ?n.status, "CI mudou");
         crate::overlay::present(app, n);

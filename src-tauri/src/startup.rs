@@ -53,7 +53,10 @@ pub fn warn_media_on_start(app: &AppHandle) {
         let connected = integrations::status(&paths, Tool::Claude)
             || integrations::status(&paths, Tool::Cursor);
         let found = crate::media::find_nowplaying_cli(&paths.home).is_some();
-        if !crate::media::should_warn(connected, found, config.media_warned) || config.dnd {
+        if !crate::media::should_warn(connected, found, config.media_warned)
+            || config.dnd
+            || !config.pause_media
+        {
             return;
         }
         settings.update(|c| c.media_warned = true);
