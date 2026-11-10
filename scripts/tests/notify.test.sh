@@ -180,11 +180,33 @@ expect_effects "não perturbe: nem som nem pausa" 0 no
 config '{"sound":false,"pause_media":false}'
 run '{"session_id":"cfg","hook_event_name":"UserPromptSubmit","prompt":"x"}' --from claude
 expect_no_payload "UserPromptSubmit continua quieto com a config"
+config '{"notify_cursor": false}'
+run '{"hook_event_name":"stop","status":"completed","conversation_id":"c1","workspace_roots":["/x/y"]}'
+expect_no_payload "Cursor desligado: sem cartão"
+expect_stdout "Cursor desligado: ainda responde {} ao Cursor" '{}'
+[ -z "$EFFECTS" ] && ok || bad "Cursor desligado: sem som nem pausa" "$EFFECTS"
+run '{"session_id":"o1","cwd":"/x/app","hook_event_name":"Stop"}' --from claude
+expect_payload "Cursor desligado não cala o Claude" '.title=="Claude Code"'
+config '{"notify_claude":false}'
+run '{"session_id":"o1","cwd":"/x/app","hook_event_name":"Stop"}' --from claude
+expect_no_payload "Claude desligado: sem cartão"
+config '{"notify_ci":false}'
+run "" --source ci --status fail --title "PR #1"
+expect_no_payload "CI desligada: prwatch fica quieto"
+run "" --source custom --status ok
+expect_payload "CI desligada não cala scripts próprios" '.source=="custom"'
+config '{"notify_terminal":false}'
+run "" --from terminal --source custom --status ok --title "cargo build"
+expect_no_payload "terminal desligado: sem cartão"
+[ -z "$EFFECTS" ] && ok || bad "terminal desligado: sem som nem pausa" "$EFFECTS"
+config '{"notify_terminal":true}'
+run "" --from terminal --source custom --status ok --title "cargo build"
+expect_payload "terminal ligado avisa" '.title=="cargo build" and .source=="custom"'
 config 'não é json'
 run "" --source ci --status ok
 expect_effects "config inválida: usa o padrão" 1 yes
 rm -f "$QUACKO_CONFIG"
-echo "  som e pausa pela config: ok"
+echo "  som, pausa e origens pela config: ok"
 
 if command -v node >/dev/null; then
   run_socket() {

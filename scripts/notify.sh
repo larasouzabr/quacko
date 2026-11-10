@@ -242,6 +242,12 @@ setting_is() {
   [ -f "$CONFIG" ] && grep -Eq "\"$1\"[[:space:]]*:[[:space:]]*$2" "$CONFIG" 2>/dev/null
 }
 
+case "$from" in
+  claude | cursor | terminal) origin="$from" ;;
+  *) [ "$source" = ci ] && origin=ci || origin="" ;;
+esac
+[ -n "$origin" ] && setting_is "notify_$origin" false && finish
+
 pause=1
 play=1
 if setting_is dnd true; then

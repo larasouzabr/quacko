@@ -26,7 +26,8 @@ pub fn main() -> i32 {
     let dry_run = std::env::var_os("QUACKO_DRY_RUN").is_some_and(|v| !v.is_empty());
 
     let config = config_text();
-    if plan.effects {
+    let enabled = effects::origin_enabled(config.as_deref(), &plan.origin);
+    if plan.effects && enabled {
         let prefs = effects::Prefs::from_config(config.as_deref());
         if dry_run {
             eprintln!("{}", effects::describe(&plan.status, &plan.sound, prefs));
@@ -34,7 +35,7 @@ pub fn main() -> i32 {
             effects::start(&plan.status, &plan.sound, prefs);
         }
     }
-    if let Some(payload) = &plan.payload {
+    if let Some(payload) = plan.payload.as_ref().filter(|_| enabled) {
         let body = payload.to_string();
         if dry_run {
             eprintln!("payload: {body}");

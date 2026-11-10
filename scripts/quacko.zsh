@@ -64,7 +64,7 @@ _quacko_precmd() {
   local title=${${cmd//$'\n'/ }//$'\t'/ }
   (( ${#title} > 60 )) && title="${title[1,59]}…"
   local took=$(_quacko_duration $secs)
-  local -a args=(--source custom --title "$title" --project "${PWD:t}")
+  local -a args=(--from terminal --source custom --title "$title" --project "${PWD:t}")
   if (( rc == 0 )); then
     args+=(--status ok --message "$took")
   else

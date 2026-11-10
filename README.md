@@ -98,7 +98,7 @@ What each integration does:
 - **Cursor** (`~/.cursor/hooks.json`): `beforeSubmitPrompt` and `stop` calling `notify.sh --from cursor` (on Windows, `quacko-hook.exe` through PowerShell, which is how Cursor runs hooks there).
 - **PRs**: `prwatch 1234` (or the PR's URL, or nothing for the current branch's PR) waits for CI to finish and notifies you with the PR's number, title and repository. Needs a logged-in [GitHub CLI](https://cli.github.com).
 
-Besides the notification, the hook pauses your media and plays a sound. Each one has its own switch in the duck's menu, under **Notifications** (**Play sound** and **Pause music**), and **Do Not Disturb** silences everything at once: no card, no sound, music keeps playing. The hooks read these switches on every notification, so a change applies right away.
+Besides the notification, the hook pauses your media and plays a sound. Each one has its own switch in the duck's menu, under **Notifications** (**Play sound** and **Pause music**), and **Do Not Disturb** silences everything at once: no card, no sound, music keeps playing. Under **Notifications → Notify me about** you can also turn off a single source (Claude Code, Cursor, PRs and workflows, or Terminal) and keep the others: a source that's off shows no card, plays no sound and leaves your music alone. The hooks read these switches on every notification, so a change applies right away.
 
 On **Windows**, `quacko-hook.exe` pauses whatever is playing through the system media controls (Spotify, YouTube in the browser and any other player that shows up in the volume flyout), with nothing to install, and plays the sounds from your Windows sound scheme.
 
@@ -140,6 +140,7 @@ The file `~/.config/quacko/config.json` is created on first use. The menu change
 | `dnd` | Do Not Disturb: no cards, no sound and no pausing music | `false` |
 | `sound` | Play sound | `true` |
 | `pause_media` | Pause music when a notification arrives | `true` |
+| `notify_claude`, `notify_cursor`, `notify_ci`, `notify_terminal` | which sources may notify (Notifications → Notify me about) | `true` |
 | `autostart` | Open at Login | `false` |
 | `port` | local port (the `QUACKO_PORT` variable wins) | `4747` |
 | `max_cards` | cards on screen at once, 1 to 3 | `3` |

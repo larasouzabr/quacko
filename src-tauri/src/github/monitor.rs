@@ -178,7 +178,7 @@ async fn run(app: AppHandle, mut enabled: watch::Receiver<bool>) {
 
 fn deliver(app: &AppHandle, prs: &[Change], runs: &[RunChange]) {
     let settings = app.state::<crate::settings::Settings>();
-    if prs.is_empty() && runs.is_empty() {
+    if (prs.is_empty() && runs.is_empty()) || !settings.snapshot().notify_ci {
         return;
     }
     let dnd = settings.snapshot().dnd;

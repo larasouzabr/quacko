@@ -26,6 +26,7 @@ pub const CURSOR_EMPTY: &str = "{}";
 #[derive(Debug, Default, PartialEq)]
 pub struct Plan {
     pub reply: Option<&'static str>,
+    pub origin: String,
     pub effects: bool,
     pub status: String,
     pub sound: String,
@@ -128,10 +129,21 @@ pub fn plan(mut a: Args, input: Option<&Value>, store: &Store) -> Plan {
     let payload = (!a.status.is_empty()).then(|| payload(&a));
     Plan {
         reply,
+        origin: origin(&a.from, &a.source).to_string(),
         effects: true,
         status: a.status,
         sound: a.sound,
         payload,
+    }
+}
+
+pub fn origin(from: &str, source: &str) -> &'static str {
+    match (from, source) {
+        ("claude", _) => "claude",
+        ("cursor", _) => "cursor",
+        ("terminal", _) => "terminal",
+        (_, "ci") => "ci",
+        _ => "",
     }
 }
 

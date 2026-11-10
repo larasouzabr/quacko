@@ -18,6 +18,11 @@ mod ids {
     pub const DND: &str = "dnd";
     pub const SOUND: &str = "sound";
     pub const PAUSE_MEDIA: &str = "pause-media";
+    pub const NOTIFY_FROM: &str = "notify-from";
+    pub const NOTIFY_CLAUDE: &str = "notify-claude";
+    pub const NOTIFY_CURSOR: &str = "notify-cursor";
+    pub const NOTIFY_CI: &str = "notify-ci";
+    pub const NOTIFY_TERMINAL: &str = "notify-terminal";
     pub const TEST: &str = "test";
     pub const AUTOSTART: &str = "autostart";
     pub const LANG_AUTO: &str = "lang-auto";
@@ -146,6 +151,18 @@ fn build_menu(app: &AppHandle) -> tauri::Result<(Menu<Wry>, String)> {
         None::<&str>,
     )?;
     let language = Submenu::with_items(app, t.language, true, &[&lang_auto, &lang_pt, &lang_en])?;
+    let origin = |id: &str, label: &str, on: bool| {
+        CheckMenuItem::with_id(app, id, label, !config.dnd, on, None::<&str>)
+    };
+    let from_label = MenuItem::with_id(app, ids::NOTIFY_FROM, t.notify_from, false, None::<&str>)?;
+    let from_claude = origin(ids::NOTIFY_CLAUDE, "Claude Code", config.notify_claude)?;
+    let from_cursor = origin(ids::NOTIFY_CURSOR, "Cursor", config.notify_cursor)?;
+    let from_ci = origin(ids::NOTIFY_CI, t.notify_ci, config.notify_ci)?;
+    let from_terminal = origin(
+        ids::NOTIFY_TERMINAL,
+        t.notify_terminal,
+        config.notify_terminal,
+    )?;
     let notices = Submenu::with_items(
         app,
         t.notices,
@@ -153,6 +170,12 @@ fn build_menu(app: &AppHandle) -> tauri::Result<(Menu<Wry>, String)> {
         &[
             &sound,
             &pause_media,
+            &PredefinedMenuItem::separator(app)?,
+            &from_label,
+            &from_claude,
+            &from_cursor,
+            &from_ci,
+            &from_terminal,
             &PredefinedMenuItem::separator(app)?,
             &test,
         ],
@@ -298,6 +321,18 @@ fn on_menu_event(app: &AppHandle, event: MenuEvent) {
         ids::PAUSE_MEDIA => {
             let c = settings.update(|c| c.pause_media = !c.pause_media);
             tracing::info!(pause_media = c.pause_media, "pausar música alterado");
+        }
+        ids::NOTIFY_CLAUDE => {
+            settings.update(|c| c.notify_claude = !c.notify_claude);
+        }
+        ids::NOTIFY_CURSOR => {
+            settings.update(|c| c.notify_cursor = !c.notify_cursor);
+        }
+        ids::NOTIFY_CI => {
+            settings.update(|c| c.notify_ci = !c.notify_ci);
+        }
+        ids::NOTIFY_TERMINAL => {
+            settings.update(|c| c.notify_terminal = !c.notify_terminal);
         }
         ids::AUTOSTART => crate::autostart::toggle_autostart(app),
         ids::CHECK_UPDATES => {

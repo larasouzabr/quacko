@@ -46,6 +46,19 @@ impl Prefs {
     }
 }
 
+pub fn origin_enabled(config: Option<&str>, origin: &str) -> bool {
+    if origin.is_empty() {
+        return true;
+    }
+    config
+        .and_then(|t| serde_json::from_str::<serde_json::Value>(t).ok())
+        .and_then(|c| {
+            c.get(format!("notify_{origin}"))
+                .and_then(serde_json::Value::as_bool)
+        })
+        .unwrap_or(true)
+}
+
 fn chosen(status: &str, sound: &str) -> String {
     if sound.is_empty() {
         default_sound(status).to_string()
@@ -233,6 +246,17 @@ mod tests {
                 pause: false
             }
         );
+    }
+
+    #[test]
+    fn origem_desligada_na_config() {
+        let config = r#"{"notify_cursor": false, "notify_ci": true}"#;
+        assert!(!origin_enabled(Some(config), "cursor"));
+        assert!(origin_enabled(Some(config), "ci"));
+        assert!(origin_enabled(Some(config), "claude"));
+        assert!(origin_enabled(Some(config), ""));
+        assert!(origin_enabled(None, "cursor"));
+        assert!(origin_enabled(Some(r#"{"notify_cursor":"não"}"#), "cursor"));
     }
 
     #[test]

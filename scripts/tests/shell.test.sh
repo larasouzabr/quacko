@@ -43,7 +43,7 @@ check "falha mostra o código de saída e o tempo" '[[ "$(calls)" == *"--message
 check "falha fica na tela até fechar (--sticky)" '[[ "$(calls)" == *"--sticky|"* ]]'
 check "título é o comando" '[[ "$(calls)" == *"--title|boom 2|"* ]]'
 check "projeto é a pasta atual" '[[ "$(calls)" == *"--project|projeto-lagoa|"* ]]'
-check "origem custom" '[[ "$(calls)" == *"--source|custom|"* ]]'
+check "origem custom, vindo do terminal" '[[ "$(calls)" == *"--from|terminal|--source|custom|"* ]]'
 
 session 'boom 0'
 check "sucesso avisa com status ok" '[[ "$(calls)" == *"--status|ok|"* && "$(calls)" == *"--message|0s|"* ]]'
