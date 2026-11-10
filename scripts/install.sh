@@ -23,6 +23,7 @@ echo "Quacko: instalando scripts em $DEST"
 install_one notify.sh notify.sh
 install_one prwatch prwatch
 install_one quacko.zsh quacko.zsh
+install_one quacko.bash quacko.bash
 
 N="$DEST/notify.sh"
 cat <<EOF
@@ -74,10 +75,12 @@ cat <<EOF
 
    Uso: prwatch 1234   |   prwatch https://github.com/dono/repo/pull/1234   |   prwatch (PR da branch atual)
 
-4) Avisos de comandos longos do terminal (zsh): adicione ao fim do ~/.zshrc
+4) Avisos de comandos longos do terminal: adicione ao fim do ~/.zshrc
    (ou em programs.zsh.initContent, se ele vem do Nix):
 
      source $DEST/quacko.zsh
+
+   No bash, use ~/.bash_profile e source $DEST/quacko.bash.
 
 Teste rápido (com o app Quacko aberto):
   $N --source ci --status fail --title "PR #1" --message "Teste do Quacko" --project teste

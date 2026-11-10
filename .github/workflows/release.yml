@@ -77,6 +77,7 @@ jobs:
           QUACKO_NOTIFY="$CARGO_TARGET_DIR/debug/quacko-hook" bash scripts/tests/notify.test.sh
           bash scripts/tests/prwatch.test.sh
           bash scripts/tests/shell.test.sh
+          pwsh -NoProfile -File scripts/tests/shell.test.ps1
 
       - name: Build e release (sem assinatura)
         if: github.event_name == 'push' && vars.MACOS_SIGNING != 'true'
@@ -167,6 +168,7 @@ jobs:
           npx tsc --noEmit
           cargo test --workspace --no-fail-fast --manifest-path src-tauri/Cargo.toml
           QUACKO_NOTIFY="$CARGO_TARGET_DIR/release/quacko-hook.exe" bash scripts/tests/notify.test.sh
+          pwsh -NoProfile -File scripts/tests/shell.test.ps1
 
       - name: Build e release
         if: github.event_name == 'push'

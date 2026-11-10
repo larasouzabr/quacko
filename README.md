@@ -85,7 +85,7 @@ From the duck's menu, under **Connect**:
 - **Claude Code**: installs the notification script and turns on the hooks in `~/.claude/settings.json`. The checkmark (✓) shows it's connected; click again to disconnect. Takes effect from the next Claude Code session.
 - **Cursor**: the same, in `~/.cursor/hooks.json` (only enabled when Cursor is installed).
 - **GitHub (PRs and workflows)**: the app follows **all your open PRs** on its own and tells you when each one's CI passes or fails (check runs and commit statuses, Jenkins included). It also follows the **GitHub Actions workflows you trigger yourself** outside a PR (a manual **Run workflow**, a push to `main`, a release tag) in the repositories you pushed to in the last 24 hours, showing the jobs' progress and which job failed. It polls every 30 s while any PR is running and every 3 min once everything has finished; a PR that had already finished when the app opened doesn't notify, and a new push restarts the tracking. Sign-in, in this order: **sign in with a code** through Quacko's GitHub App (the Sign in button on the welcome screen; the token is stored in the Keychain and renewed automatically every 8 h for up to 6 months) or an already logged-in [GitHub CLI](https://cli.github.com) (`gh auth login`), which the app finds on its own. Sign-in with a code only appears when the app knows the GitHub App's **Client ID**: release builds carry one (see [Releases](#releases)), and `"github_client_id": "Iv23li…"` in `~/.config/quacko/config.json` or the `QUACKO_GITHUB_CLIENT_ID` variable override it. With the GitHub App, Quacko only sees the repositories where the app is installed (in organizations, an owner approves it once).
-- **Terminal (zsh)…** (macOS only): installs `~/.claude/hooks/quacko.zsh` and copies the line `source ~/.claude/hooks/quacko.zsh` for you to paste at the end of `~/.zshrc` (the app never edits it; if your `~/.zshrc` comes from Nix, put the line in `programs.zsh.initContent`). See [Terminal commands](#terminal-commands).
+- **Terminal…**: installs the terminal script for your shell (zsh, bash or PowerShell on Windows) in `~/.claude/hooks/` and copies the line to paste into your shell's startup file: `~/.zshrc`, `~/.bash_profile` or `$PROFILE` (open it with `notepad $PROFILE`). The app never edits that file; if it comes from Nix, put the line in your home-manager config (`programs.zsh.initContent` or `programs.bash.initExtra`). See [Terminal commands](#terminal-commands).
 - **prwatch command…** (macOS only): creates the `prwatch` command in `~/.local/bin`.
 
 The app backs up the file before touching it (`settings.json.quacko-backup-<date>`), keeps your other hooks and settings as they were, and doesn't duplicate anything if you connect twice. If the file is managed by Nix, read-only, or has comments, it leaves it alone: it copies the snippet to the clipboard and tells you where to paste it. The result shows up on the duck's own card.
@@ -119,16 +119,16 @@ Fields: `source` (`agent`, `claude`, `ci`, `custom`), `status` (`ok`, `fail`, `a
 
 ### Terminal commands
 
-With the line in your `~/.zshrc`, any command that takes **30 seconds or more** shows a card when it ends: the command as the title, the folder as the project, and how long it took. A failure shows the exit code (`exit 101 · 2m 14s`) and stays on screen until you close it; a success goes away on its own. Like the agent hooks, it also pauses your music and plays a sound.
+With the line in your shell's startup file, any command that takes **30 seconds or more** shows a card when it ends: the command as the title, the folder as the project, and how long it took. A failure shows the exit code (`exit 101 · 2m 14s`) and stays on screen until you close it; a success goes away on its own. Like the agent hooks, it also pauses your music and plays a sound.
 
-It stays quiet for commands you stop yourself (Ctrl+C, Ctrl+Z) and for interactive programs where you're already looking at the terminal (`vim`, `less`, `ssh`, `top`, `claude`…). `python`, `node`, `psql` and shells only stay quiet when opened bare, as a REPL: `python train.py` still notifies. You can tune it anywhere in `~/.zshrc`:
+It stays quiet for commands you stop yourself (Ctrl+C, Ctrl+Z) and for interactive programs where you're already looking at the terminal (`vim`, `less`, `ssh`, `top`, `claude`…). `python`, `node`, `psql` and shells only stay quiet when opened bare, as a REPL: `python train.py` still notifies. You can tune it in the same file (in PowerShell, `$env:QUACKO_MIN_SECS = 60`):
 
 ```zsh
 export QUACKO_MIN_SECS=60           # only commands that take a minute or more
 export QUACKO_IGNORE="k9s docker"   # more programs that should never notify
 ```
 
-It works in zsh only for now (the default shell on macOS).
+It works in zsh, in bash 3.2 or newer (it plays along with [bash-preexec](https://github.com/rcaloras/bash-preexec) and keeps your own `PROMPT_COMMAND` and `DEBUG` trap) and in PowerShell 7 or Windows PowerShell 5.1. Not yet in fish.
 
 ## Configuration
 
@@ -172,6 +172,7 @@ bash scripts/tests/notify.test.sh
 (cd src-tauri && cargo build -p quacko-hook) && QUACKO_NOTIFY=src-tauri/target.noindex/debug/quacko-hook bash scripts/tests/notify.test.sh
 bash scripts/tests/prwatch.test.sh
 bash scripts/tests/shell.test.sh
+pwsh -NoProfile -File scripts/tests/shell.test.ps1
 
 npm run build:mac        # .app and .dmg for this Mac, in src-tauri/target.noindex/release/bundle/
 npm run build:mac:universal  # universal .dmg (Apple Silicon + Intel), in src-tauri/target.noindex/universal-apple-darwin/release/bundle/dmg/

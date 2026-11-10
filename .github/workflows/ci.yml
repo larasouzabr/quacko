@@ -54,6 +54,7 @@ jobs:
           QUACKO_NOTIFY="$CARGO_TARGET_DIR/debug/quacko-hook" bash scripts/tests/notify.test.sh
           bash scripts/tests/prwatch.test.sh
           bash scripts/tests/shell.test.sh
+          pwsh -NoProfile -File scripts/tests/shell.test.ps1
 
   windows:
     runs-on: windows-latest
@@ -98,4 +99,6 @@ jobs:
           cargo test --workspace --no-fail-fast
 
       - name: Scripts
-        run: QUACKO_NOTIFY="$CARGO_TARGET_DIR/debug/quacko-hook.exe" bash scripts/tests/notify.test.sh
+        run: |
+          QUACKO_NOTIFY="$CARGO_TARGET_DIR/debug/quacko-hook.exe" bash scripts/tests/notify.test.sh
+          pwsh -NoProfile -File scripts/tests/shell.test.ps1

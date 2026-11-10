@@ -34,6 +34,7 @@ bash scripts/tests/notify.test.sh
 (cd src-tauri && cargo build -p quacko-hook) && QUACKO_NOTIFY=src-tauri/target.noindex/debug/quacko-hook bash scripts/tests/notify.test.sh
 bash scripts/tests/prwatch.test.sh
 bash scripts/tests/shell.test.sh
+pwsh -NoProfile -File scripts/tests/shell.test.ps1   # if you have PowerShell 7
 ```
 
 A few house rules:

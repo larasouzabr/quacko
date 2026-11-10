@@ -2,7 +2,9 @@ use crate::feedback::tell;
 use tauri::{AppHandle, Manager};
 
 use crate::i18n::{self};
-use crate::integrations::{self, ManualReason, Outcome, Paths, PrwatchOutcome, ShellOutcome, Tool};
+use crate::integrations::{
+    self, ManualReason, Outcome, Paths, PrwatchOutcome, Shell, ShellOutcome, Tool,
+};
 use crate::model::Status;
 use crate::settings::Settings;
 
@@ -73,7 +75,9 @@ pub fn install_shell(app: &AppHandle) {
             return;
         };
         let t = i18n::tray_texts(app.state::<Settings>().lang());
-        let (status, message) = match integrations::install_shell(&paths) {
+        let shell = Shell::detect(cfg!(windows), std::env::var("SHELL").ok().as_deref());
+        let exe = integrations::hook_exe().filter(|p| p.is_file());
+        let (status, message) = match integrations::install_shell(&paths, shell, exe.as_deref()) {
             Ok(ShellOutcome::Copied { line, nix }) => {
                 crate::clipboard::copy_to_clipboard(&line);
                 let text = if nix {
@@ -81,9 +85,11 @@ pub fn install_shell(app: &AppHandle) {
                 } else {
                     t.shell_copied
                 };
-                (Status::Attention, text.to_string())
+                (Status::Attention, text.replace("{file}", shell.rc_name()))
             }
-            Ok(ShellOutcome::AlreadySourced) => (Status::Ok, t.shell_ready.to_string()),
+            Ok(ShellOutcome::AlreadySourced) => {
+                (Status::Ok, t.shell_ready.replace("{file}", shell.rc_name()))
+            }
             Err(e) => (Status::Fail, format!("{} {e}", t.error)),
         };
         tell(&app, status, message);

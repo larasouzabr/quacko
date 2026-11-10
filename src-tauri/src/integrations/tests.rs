@@ -418,6 +418,8 @@ fn scripts_embutidos_sao_os_do_repositorio() {
     assert!(NOTIFY_SH.contains("--from"));
     assert!(PRWATCH.contains("gh pr checks"));
     assert!(QUACKO_ZSH.contains("add-zsh-hook preexec"));
+    assert!(QUACKO_BASH.contains("PROMPT_COMMAND") && QUACKO_BASH.contains(OURS_MARKER));
+    assert!(QUACKO_PS1.contains("__QUACKO_HOOK__") && QUACKO_PS1.contains(OURS_MARKER));
     assert!(
         NOTIFY_SH.contains(OURS_MARKER)
             && PRWATCH.contains(OURS_MARKER)
@@ -516,7 +518,7 @@ fn terminal_instala_o_script_e_so_le_o_zshrc() {
     let zshrc = paths.home.join(".zshrc");
     fs::write(&zshrc, "# source ~/.claude/hooks/quacko.zsh\nexport A=1\n").unwrap();
     assert!(matches!(
-        install_shell(&paths).unwrap(),
+        install_shell(&paths, Shell::Zsh, None).unwrap(),
         ShellOutcome::Copied { line, nix: false } if line == "source ~/.claude/hooks/quacko.zsh"
     ));
     assert_eq!(fs::read_to_string(paths.quacko_zsh()).unwrap(), QUACKO_ZSH);
@@ -533,7 +535,7 @@ fn terminal_instala_o_script_e_so_le_o_zshrc() {
     )
     .unwrap();
     assert!(matches!(
-        install_shell(&paths).unwrap(),
+        install_shell(&paths, Shell::Zsh, None).unwrap(),
         ShellOutcome::AlreadySourced
     ));
 }
@@ -542,7 +544,7 @@ fn terminal_instala_o_script_e_so_le_o_zshrc() {
 fn terminal_sem_zshrc_copia_a_linha() {
     let (_dir, paths) = temp_home();
     assert!(matches!(
-        install_shell(&paths).unwrap(),
+        install_shell(&paths, Shell::Zsh, None).unwrap(),
         ShellOutcome::Copied { nix: false, .. }
     ));
     assert!(!paths.home.join(".zshrc").exists());
@@ -558,7 +560,80 @@ fn terminal_com_zshrc_do_nix_avisa_onde_colocar() {
     )
     .unwrap();
     assert!(matches!(
-        install_shell(&paths).unwrap(),
+        install_shell(&paths, Shell::Zsh, None).unwrap(),
         ShellOutcome::Copied { nix: true, .. }
+    ));
+}
+
+#[test]
+fn terminal_escolhe_o_shell() {
+    assert_eq!(Shell::detect(false, Some("/bin/zsh")), Shell::Zsh);
+    assert_eq!(
+        Shell::detect(false, Some("/opt/homebrew/bin/bash")),
+        Shell::Bash
+    );
+    assert_eq!(
+        Shell::detect(false, Some("/usr/local/bin/fish")),
+        Shell::Zsh
+    );
+    assert_eq!(Shell::detect(false, None), Shell::Zsh);
+    assert_eq!(Shell::detect(true, Some("/bin/bash")), Shell::Pwsh);
+}
+
+#[test]
+fn terminal_bash_le_o_bash_profile_e_o_bashrc() {
+    let (_dir, paths) = temp_home();
+    assert!(matches!(
+        install_shell(&paths, Shell::Bash, None).unwrap(),
+        ShellOutcome::Copied { line, .. } if line == "source ~/.claude/hooks/quacko.bash"
+    ));
+    assert_eq!(
+        fs::read_to_string(paths.hooks_dir().join("quacko.bash")).unwrap(),
+        QUACKO_BASH
+    );
+    fs::write(
+        paths.home.join(".bashrc"),
+        "source ~/.claude/hooks/quacko.bash\n",
+    )
+    .unwrap();
+    assert!(matches!(
+        install_shell(&paths, Shell::Bash, None).unwrap(),
+        ShellOutcome::AlreadySourced
+    ));
+}
+
+#[test]
+fn terminal_powershell_aponta_para_o_hook_do_app() {
+    let (_dir, paths) = temp_home();
+    let exe = PathBuf::from(r"C:\Users\Ana D'Ávila\AppData\Local\Quacko\quacko-hook.exe");
+    assert!(matches!(
+        install_shell(&paths, Shell::Pwsh, Some(&exe)).unwrap(),
+        ShellOutcome::Copied { line, nix: false } if line == r#". "$HOME\.claude\hooks\quacko.ps1""#
+    ));
+    let script = fs::read_to_string(paths.hooks_dir().join("quacko.ps1")).unwrap();
+    assert!(script.contains(
+        r"$global:QuackoHookDefault = 'C:\Users\Ana D''Ávila\AppData\Local\Quacko\quacko-hook.exe'"
+    ));
+    assert!(!script.contains("__QUACKO_HOOK__"));
+    assert!(!paths.notify_sh().exists(), "no Windows o hook é o .exe");
+    assert!(install_shell(&paths, Shell::Pwsh, None).is_err());
+
+    let moved = PathBuf::from(r"D:\Apps\Quacko\quacko-hook.exe");
+    assert!(sync_powershell(&paths, &moved));
+    assert!(!sync_powershell(&paths, &moved), "já atualizado");
+    assert!(fs::read_to_string(paths.hooks_dir().join("quacko.ps1"))
+        .unwrap()
+        .contains(r"'D:\Apps\Quacko\quacko-hook.exe'"));
+
+    let profile = paths.home.join("Documents").join("PowerShell");
+    fs::create_dir_all(&profile).unwrap();
+    fs::write(
+        profile.join("Microsoft.PowerShell_profile.ps1"),
+        ". \"$HOME\\.claude\\hooks\\quacko.ps1\"\n",
+    )
+    .unwrap();
+    assert!(matches!(
+        install_shell(&paths, Shell::Pwsh, Some(&exe)).unwrap(),
+        ShellOutcome::AlreadySourced
     ));
 }

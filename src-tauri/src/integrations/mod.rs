@@ -17,7 +17,8 @@ use serde_json::Value;
 
 pub use hooks::Hook;
 pub use scripts::{
-    install_prwatch, install_shell, sync_installed_scripts, PrwatchOutcome, ShellOutcome,
+    install_prwatch, install_shell, sync_installed_scripts, sync_powershell, PrwatchOutcome, Shell,
+    ShellOutcome,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -64,7 +65,7 @@ impl Paths {
     pub fn from_home() -> Option<Self> {
         dirs::home_dir().map(|home| Self { home })
     }
-    fn hooks_dir(&self) -> PathBuf {
+    pub(crate) fn hooks_dir(&self) -> PathBuf {
         self.home.join(".claude").join("hooks")
     }
     pub fn notify_sh(&self) -> PathBuf {

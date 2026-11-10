@@ -408,6 +408,8 @@ fn connect_submenu(app: &AppHandle, t: &TrayTexts) -> tauri::Result<Submenu<Wry>
         None::<&str>,
     )?;
     let submenu = Submenu::with_items(app, t.connect, true, &[&claude, &cursor, &github])?;
+    let shell = MenuItem::with_id(app, ids::SHELL, t.shell_item, paths.is_some(), None::<&str>)?;
+    submenu.append_items(&[&PredefinedMenuItem::separator(app)?, &shell])?;
     if cfg!(target_os = "macos") {
         let prwatch = MenuItem::with_id(
             app,
@@ -416,9 +418,7 @@ fn connect_submenu(app: &AppHandle, t: &TrayTexts) -> tauri::Result<Submenu<Wry>
             paths.is_some(),
             None::<&str>,
         )?;
-        let shell =
-            MenuItem::with_id(app, ids::SHELL, t.shell_item, paths.is_some(), None::<&str>)?;
-        submenu.append_items(&[&PredefinedMenuItem::separator(app)?, &shell, &prwatch])?;
+        submenu.append(&prwatch)?;
     }
     Ok(submenu)
 }

@@ -127,10 +127,10 @@ static PT_BR: TrayTexts = TrayTexts {
     connect: "Conectar",
     not_found: "(não encontrado)",
     prwatch_item: "Comando prwatch…",
-    shell_item: "Terminal (zsh)…",
-    shell_copied: "Copiei uma linha: cole no fim do ~/.zshrc e abra um terminal novo.",
-    shell_copied_nix: "Seu ~/.zshrc vem do Nix: copiei a linha, coloque em programs.zsh.initContent.",
-    shell_ready: "Já está no seu ~/.zshrc. Atualizei o script; vale nos terminais novos.",
+    shell_item: "Terminal…",
+    shell_copied: "Copiei uma linha: cole no fim do {file} e abra um terminal novo.",
+    shell_copied_nix: "Seu {file} vem do Nix: copiei a linha, coloque no home-manager.",
+    shell_ready: "Já está no seu {file}. Atualizei o script; vale nos terminais novos.",
     connected: "conectado. Vale a partir da próxima sessão.",
     disconnected: "desconectado.",
     manual_prefix: "Não consegui editar",
@@ -181,10 +181,10 @@ static EN: TrayTexts = TrayTexts {
     connect: "Connect",
     not_found: "(not found)",
     prwatch_item: "prwatch command…",
-    shell_item: "Terminal (zsh)…",
-    shell_copied: "Line copied: paste it at the end of ~/.zshrc and open a new terminal.",
-    shell_copied_nix: "Your ~/.zshrc comes from Nix: line copied, add it to programs.zsh.initContent.",
-    shell_ready: "Already in your ~/.zshrc. Script updated; it applies to new terminals.",
+    shell_item: "Terminal…",
+    shell_copied: "Line copied: paste it at the end of {file} and open a new terminal.",
+    shell_copied_nix: "Your {file} comes from Nix: line copied, add it to home-manager.",
+    shell_ready: "Already in your {file}. Script updated; it applies to new terminals.",
     connected: "connected. Takes effect in new sessions.",
     disconnected: "disconnected.",
     manual_prefix: "Couldn't edit",
@@ -244,6 +244,7 @@ mod tests {
     fn avisos_do_terminal_cabem_nas_tres_linhas_do_cartao() {
         for t in [&PT_BR, &EN] {
             for text in [t.shell_copied, t.shell_copied_nix, t.shell_ready] {
+                let text = text.replace("{file}", "~/.bash_profile");
                 assert!(text.chars().count() <= 85, "{text}");
             }
         }

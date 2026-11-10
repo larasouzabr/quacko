@@ -15,6 +15,9 @@ pub fn sync_scripts_on_start(app: &AppHandle) {
         };
         if !cfg!(target_os = "macos") {
             if let Some(exe) = integrations::hook_exe().filter(|p| p.is_file()) {
+                if integrations::sync_powershell(&paths, &exe) {
+                    tracing::info!("quacko.ps1 aponta para o novo lugar do app");
+                }
                 let moved = integrations::refresh_exe_hooks(&paths, &exe);
                 if !moved.is_empty() {
                     tracing::info!(?moved, "hooks apontam para o novo lugar do app");
