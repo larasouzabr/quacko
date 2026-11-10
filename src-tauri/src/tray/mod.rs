@@ -33,6 +33,9 @@ mod ids {
     pub const CUSTOMIZE: &str = "customize";
     pub const CHECK_UPDATES: &str = "check-updates";
     pub const UPDATE: &str = "update";
+    pub const RECENT_PREFIX: &str = "recent:";
+    pub const RECENT_EMPTY: &str = "recent-empty";
+    pub const RECENT_CLEAR: &str = "recent-clear";
 }
 
 #[derive(Debug, Clone)]
@@ -169,6 +172,7 @@ fn build_menu(app: &AppHandle) -> tauri::Result<(Menu<Wry>, String)> {
         &[&autostart, &check_updates, &language, &welcome],
     )?;
     let connect = connect_submenu(app, t)?;
+    let recent = recent_submenu(app, t)?;
     let quit = MenuItem::with_id(app, ids::QUIT, t.quit, true, None::<&str>)?;
 
     let menu = Menu::with_items(app, &[&status_item])?;
@@ -186,6 +190,7 @@ fn build_menu(app: &AppHandle) -> tauri::Result<(Menu<Wry>, String)> {
         &PredefinedMenuItem::separator(app)?,
         &dnd,
         &notices,
+        &recent,
         &connect,
         &PredefinedMenuItem::separator(app)?,
         &customize,
@@ -212,9 +217,69 @@ pub fn refresh(app: &AppHandle) {
     });
 }
 
+fn recent_submenu(app: &AppHandle, t: &TrayTexts) -> tauri::Result<Submenu<Wry>> {
+    let entries = app.state::<crate::history::History>().entries();
+    let submenu = Submenu::with_id(app, "recent", t.recent, true)?;
+    if entries.is_empty() {
+        submenu.append(&MenuItem::with_id(
+            app,
+            ids::RECENT_EMPTY,
+            t.recent_empty,
+            false,
+            None::<&str>,
+        )?)?;
+        return Ok(submenu);
+    }
+    for entry in &entries {
+        submenu.append(&MenuItem::with_id(
+            app,
+            format!("{}{}", ids::RECENT_PREFIX, entry.notification.id),
+            crate::history::label(entry, t.silenced),
+            true,
+            None::<&str>,
+        )?)?;
+    }
+    submenu.append(&PredefinedMenuItem::separator(app)?)?;
+    submenu.append(&MenuItem::with_id(
+        app,
+        ids::RECENT_CLEAR,
+        t.recent_clear,
+        true,
+        None::<&str>,
+    )?)?;
+    Ok(submenu)
+}
+
+fn open_recent(app: &AppHandle, id: u64) {
+    let Some(entry) = app.state::<crate::history::History>().find(id) else {
+        return;
+    };
+    if let Some(url) = entry.notification.url.clone() {
+        use tauri_plugin_opener::OpenerExt;
+        if let Err(e) = app.opener().open_url(url, None::<&str>) {
+            tracing::warn!(%e, "não foi possível abrir o link do aviso");
+        }
+        return;
+    }
+    let mut again = entry.notification;
+    again.id = app.state::<crate::model::IdGen>().next();
+    again.sticky = false;
+    crate::overlay::present(app, again);
+}
+
 fn on_menu_event(app: &AppHandle, event: MenuEvent) {
     let settings = app.state::<Settings>();
+    if let Some(id) = event
+        .id()
+        .as_ref()
+        .strip_prefix(ids::RECENT_PREFIX)
+        .and_then(|id| id.parse::<u64>().ok())
+    {
+        open_recent(app, id);
+        return;
+    }
     match event.id().as_ref() {
+        ids::RECENT_CLEAR => app.state::<crate::history::History>().clear(),
         ids::QUIT => {
             app.exit(0);
             return;

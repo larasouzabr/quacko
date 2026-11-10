@@ -28,6 +28,7 @@ pub struct ServerState {
     deliver: Deliver,
     ids: IdGen,
     limiter: Arc<Mutex<RateLimiter>>,
+    silenced: Option<Deliver>,
 }
 
 impl ServerState {
@@ -37,7 +38,13 @@ impl ServerState {
             deliver,
             ids,
             limiter: Arc::new(Mutex::new(RateLimiter::new(RATE_LIMIT_PER_SEC))),
+            silenced: None,
         }
+    }
+
+    pub fn with_silenced(mut self, silenced: Deliver) -> Self {
+        self.silenced = Some(silenced);
+        self
     }
 }
 
@@ -122,6 +129,10 @@ async fn notify(State(state): State<ServerState>, headers: HeaderMap, body: Body
 
     if state.dnd.load(Ordering::Relaxed) {
         tracing::info!(source = ?notification.source, status = ?notification.status, "não perturbe: aviso descartado");
+        if let Some(silenced) = &state.silenced {
+            notification.id = state.ids.next();
+            silenced(notification);
+        }
         return (StatusCode::ACCEPTED, Json(json!({ "delivered": false }))).into_response();
     }
 
@@ -460,6 +471,24 @@ mod tests {
         assert_eq!(status, StatusCode::ACCEPTED);
         assert_eq!(body, json!({ "delivered": false }));
         assert!(h.delivered.lock().unwrap().is_empty());
+    }
+
+    #[tokio::test]
+    async fn nao_perturbe_guarda_o_aviso_silenciado_no_historico() {
+        let h = harness();
+        let quiet = Arc::new(Mutex::new(Vec::new()));
+        let sink = quiet.clone();
+        let state = h
+            .state
+            .clone()
+            .with_silenced(Arc::new(move |n| sink.lock().unwrap().push(n)));
+        h.dnd.store(true, Ordering::Relaxed);
+        let (_, body) = send(&state, json_req(VALID)).await;
+        assert_eq!(body, json!({ "delivered": false }));
+        assert!(h.delivered.lock().unwrap().is_empty());
+        let quiet = quiet.lock().unwrap();
+        assert_eq!(quiet.len(), 1);
+        assert!(quiet[0].id > 0);
     }
 
     #[tokio::test]

@@ -178,9 +178,10 @@ async fn run(app: AppHandle, mut enabled: watch::Receiver<bool>) {
 
 fn deliver(app: &AppHandle, prs: &[Change], runs: &[RunChange]) {
     let settings = app.state::<crate::settings::Settings>();
-    if (prs.is_empty() && runs.is_empty()) || settings.snapshot().dnd {
+    if prs.is_empty() && runs.is_empty() {
         return;
     }
+    let dnd = settings.snapshot().dnd;
     let lang = settings.lang();
     let ids = app.state::<IdGen>();
     let cards: Vec<(Notification, bool)> = prs
@@ -195,6 +196,12 @@ fn deliver(app: &AppHandle, prs: &[Change], runs: &[RunChange]) {
         }))
         .collect();
     for (n, final_state) in cards {
+        if final_state {
+            crate::history::remember(app, &n, dnd);
+        }
+        if dnd {
+            continue;
+        }
         if final_state {
             crate::sound::play(
                 &app.state::<crate::settings::Settings>().snapshot(),

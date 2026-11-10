@@ -74,6 +74,8 @@ brew install --cask larasouzabr/quacko/quacko
 
 In the duck's menu, **Notifications → Test notification** shows all 4 states. Check **Preferences → Open at Login** to have it start on its own.
 
+**Recent:** the menu keeps the last 10 notifications, with the time each one arrived, including the ones Do Not Disturb silenced (marked as such). Click one to open its link (a PR, a workflow run) or to show the card again. The list lives in memory only and is gone when the app quits.
+
 **Updates:** once a day the app checks for a new release. When there is one, the duck tells you once and the menu shows **⬆ Download Quacko x.y.z…**, which opens the release page; download and install it over the old one. Turn it off in **Preferences → Tell me about new versions**.
 
 ## Connect to Claude Code, Cursor and your PRs

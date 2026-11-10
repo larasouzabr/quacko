@@ -73,13 +73,19 @@ pub fn start_server(app: &tauri::AppHandle) -> crate::tray::ServerStatus {
     );
 
     let handle = app.clone();
-    let deliver: crate::server::Deliver =
-        Arc::new(move |notification| crate::overlay::present(&handle, notification));
+    let deliver: crate::server::Deliver = Arc::new(move |notification| {
+        crate::history::remember(&handle, &notification, false);
+        crate::overlay::present(&handle, notification)
+    });
+    let handle = app.clone();
+    let silenced: crate::server::Deliver =
+        Arc::new(move |notification| crate::history::remember(&handle, &notification, true));
     let state = crate::server::ServerState::new(
         settings.dnd_flag(),
         app.state::<IdGen>().inner().clone(),
         deliver,
-    );
+    )
+    .with_silenced(silenced);
 
     match crate::server::bind(port) {
         Ok(listener) => {

@@ -5,6 +5,7 @@ mod config;
 mod customize;
 mod feedback;
 mod github;
+mod history;
 mod i18n;
 mod integrations;
 #[cfg(target_os = "macos")]
@@ -75,6 +76,7 @@ pub fn run() {
             app.manage(tray::icon::TrayAlert::default());
             app.manage(github::commands::PendingDevice::default());
             app.manage(update::Available::default());
+            app.manage(history::History::default());
             let github_on = app.state::<Settings>().snapshot().github;
             github::spawn(app.handle(), github_on);
             migrate::migrate_login_item(app.handle());
