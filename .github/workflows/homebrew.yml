@@ -1,0 +1,49 @@
+name: Homebrew
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag da release (ex.: v0.2.0)"
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  cask:
+    runs-on: ubuntu-latest
+    env:
+      TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+      TAG: ${{ github.event.release.tag_name || inputs.tag }}
+    steps:
+      - name: Sem token do tap
+        if: env.TAP_TOKEN == ''
+        run: echo "::notice::Defina o segredo HOMEBREW_TAP_TOKEN para atualizar o tap do Homebrew."
+
+      - uses: actions/checkout@v4
+        if: env.TAP_TOKEN != ''
+
+      - name: Atualiza o cask
+        if: env.TAP_TOKEN != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          case "$TAG" in v[0-9]*) ;; *) echo "::error::tag inválida: $TAG"; exit 1 ;; esac
+          version="${TAG#v}"
+          gh release download "$TAG" -R "$GITHUB_REPOSITORY" -p Quacko_universal.dmg -D dl
+          sha=$(sha256sum dl/Quacko_universal.dmg | cut -d' ' -f1)
+          git clone --depth 1 "https://x-access-token:${TAP_TOKEN}@github.com/${GITHUB_REPOSITORY_OWNER}/homebrew-quacko.git" tap
+          mkdir -p tap/Casks
+          sed -e "s/^  version \".*\"/  version \"$version\"/" \
+              -e "s/^  sha256 .*/  sha256 \"$sha\"/" \
+              packaging/homebrew/quacko.rb >tap/Casks/quacko.rb
+          cd tap
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Casks/quacko.rb
+          git diff --cached --quiet && { echo "cask já está em $version"; exit 0; }
+          git commit -m "quacko $version"
+          git push

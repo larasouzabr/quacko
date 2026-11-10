@@ -58,6 +58,14 @@ Click **Download for macOS** at the top of this page (it always fetches the late
    - in Terminal: `xattr -dr com.apple.quarantine /Applications/Quacko.app`
 3. From then on it opens like any other app. The duck shows up in the menu bar (not in the Dock).
 
+Or with [Homebrew](https://brew.sh) (the first launch needs the same **Open Anyway** step):
+
+```bash
+brew install --cask larasouzabr/quacko/quacko
+```
+
+`brew upgrade --cask quacko` updates it, and `brew uninstall --zap --cask quacko` removes the app with its settings.
+
 ### Windows 10 and 11 (x64)
 
 1. Click **Download for Windows** at the top of this page and run the installer. It installs for your user only, with no admin rights needed.
@@ -201,6 +209,12 @@ It creates a **draft** release, runs the tests on both systems and uploads both 
    - `APPLE_CERTIFICATE_PASSWORD`: the `.p12` password.
    - `APPLE_SIGNING_IDENTITY`: the certificate's name, e.g. `Developer ID Application: Name (TEAMID)`.
    - `APPLE_ID`, `APPLE_PASSWORD` (an app-specific password generated at appleid.apple.com) and `APPLE_TEAM_ID`: for notarization.
+
+**Homebrew tap** (optional). The cask template is [`packaging/homebrew/quacko.rb`](packaging/homebrew/quacko.rb), and the [`homebrew.yml`](.github/workflows/homebrew.yml) workflow copies it to the tap with the new version and the `.dmg`'s SHA-256 every time a release is published. To turn it on:
+
+1. Create the public repository `larasouzabr/homebrew-quacko` (empty is fine).
+2. Create a fine-grained token with **Contents: Read and write** on that repository only, and save it as the repository secret `HOMEBREW_TAP_TOKEN` here.
+3. For a release that's already out, run **Actions → Homebrew → Run workflow** with its tag.
 
 **Sign in to GitHub with a code** (so people don't need the GitHub CLI). The release build carries the Client ID of a GitHub App, which is public information (no secret is involved in the device flow):
 
