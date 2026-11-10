@@ -25,6 +25,7 @@ mod ids {
     pub const CONNECT_CLAUDE: &str = "connect-claude";
     pub const CONNECT_CURSOR: &str = "connect-cursor";
     pub const PRWATCH: &str = "prwatch";
+    pub const SHELL: &str = "shell";
     pub const CONNECT_GITHUB: &str = "connect-github";
     pub const WELCOME: &str = "welcome";
     pub const CUSTOMIZE: &str = "customize";
@@ -181,6 +182,7 @@ fn on_menu_event(app: &AppHandle, event: MenuEvent) {
         ids::CONNECT_CLAUDE => crate::integrations::actions::toggle_integration(app, Tool::Claude),
         ids::CONNECT_CURSOR => crate::integrations::actions::toggle_integration(app, Tool::Cursor),
         ids::PRWATCH => crate::integrations::actions::install_prwatch(app),
+        ids::SHELL => crate::integrations::actions::install_shell(app),
         ids::CONNECT_GITHUB => crate::github::ui::toggle_github(app),
         _ => return,
     }
@@ -240,7 +242,9 @@ fn connect_submenu(app: &AppHandle, t: &TrayTexts) -> tauri::Result<Submenu<Wry>
             paths.is_some(),
             None::<&str>,
         )?;
-        submenu.append_items(&[&PredefinedMenuItem::separator(app)?, &prwatch])?;
+        let shell =
+            MenuItem::with_id(app, ids::SHELL, t.shell_item, paths.is_some(), None::<&str>)?;
+        submenu.append_items(&[&PredefinedMenuItem::separator(app)?, &shell, &prwatch])?;
     }
     Ok(submenu)
 }

@@ -33,6 +33,7 @@ npm run typecheck
 bash scripts/tests/notify.test.sh
 (cd src-tauri && cargo build -p quacko-hook) && QUACKO_NOTIFY=src-tauri/target.noindex/debug/quacko-hook bash scripts/tests/notify.test.sh
 bash scripts/tests/prwatch.test.sh
+bash scripts/tests/shell.test.sh
 ```
 
 A few house rules:

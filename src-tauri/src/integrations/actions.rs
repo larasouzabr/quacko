@@ -2,7 +2,7 @@ use crate::feedback::tell;
 use tauri::{AppHandle, Manager};
 
 use crate::i18n::{self};
-use crate::integrations::{self, ManualReason, Outcome, Paths, PrwatchOutcome, Tool};
+use crate::integrations::{self, ManualReason, Outcome, Paths, PrwatchOutcome, ShellOutcome, Tool};
 use crate::model::Status;
 use crate::settings::Settings;
 
@@ -60,6 +60,30 @@ pub fn install_prwatch(app: &AppHandle) {
         let (status, message) = match integrations::install_prwatch(&paths) {
             Ok(PrwatchOutcome::Linked) => (Status::Ok, t.prwatch_linked.to_string()),
             Ok(PrwatchOutcome::Conflict) => (Status::Attention, t.prwatch_conflict.to_string()),
+            Err(e) => (Status::Fail, format!("{} {e}", t.error)),
+        };
+        tell(&app, status, message);
+    });
+}
+
+pub fn install_shell(app: &AppHandle) {
+    let app = app.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let Some(paths) = Paths::from_home() else {
+            return;
+        };
+        let t = i18n::tray_texts(app.state::<Settings>().lang());
+        let (status, message) = match integrations::install_shell(&paths) {
+            Ok(ShellOutcome::Copied { line, nix }) => {
+                crate::clipboard::copy_to_clipboard(&line);
+                let text = if nix {
+                    t.shell_copied_nix
+                } else {
+                    t.shell_copied
+                };
+                (Status::Attention, text.to_string())
+            }
+            Ok(ShellOutcome::AlreadySourced) => (Status::Ok, t.shell_ready.to_string()),
             Err(e) => (Status::Fail, format!("{} {e}", t.error)),
         };
         tell(&app, status, message);

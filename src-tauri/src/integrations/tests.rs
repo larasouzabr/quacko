@@ -417,8 +417,11 @@ fn scripts_embutidos_sao_os_do_repositorio() {
     assert!(NOTIFY_SH.starts_with("#!/bin/bash"));
     assert!(NOTIFY_SH.contains("--from"));
     assert!(PRWATCH.contains("gh pr checks"));
+    assert!(QUACKO_ZSH.contains("add-zsh-hook preexec"));
     assert!(
-        NOTIFY_SH.contains(OURS_MARKER) && PRWATCH.contains(OURS_MARKER),
+        NOTIFY_SH.contains(OURS_MARKER)
+            && PRWATCH.contains(OURS_MARKER)
+            && QUACKO_ZSH.contains(OURS_MARKER),
         "a sincronização depende da marca"
     );
 }
@@ -505,4 +508,57 @@ fn app_movido_atualiza_o_caminho_dos_hooks() {
     let text = fs::read_to_string(paths.config_file(Tool::Claude)).unwrap();
     assert!(text.contains("novo") && !text.contains("antigo"));
     assert_eq!(refresh_exe_hooks(&paths, &new), Vec::<Tool>::new());
+}
+
+#[test]
+fn terminal_instala_o_script_e_so_le_o_zshrc() {
+    let (_dir, paths) = temp_home();
+    let zshrc = paths.home.join(".zshrc");
+    fs::write(&zshrc, "# source ~/.claude/hooks/quacko.zsh\nexport A=1\n").unwrap();
+    assert!(matches!(
+        install_shell(&paths).unwrap(),
+        ShellOutcome::Copied { line, nix: false } if line == "source ~/.claude/hooks/quacko.zsh"
+    ));
+    assert_eq!(fs::read_to_string(paths.quacko_zsh()).unwrap(), QUACKO_ZSH);
+    assert_eq!(fs::read_to_string(paths.notify_sh()).unwrap(), NOTIFY_SH);
+    assert_eq!(
+        fs::read_to_string(&zshrc).unwrap(),
+        "# source ~/.claude/hooks/quacko.zsh\nexport A=1\n",
+        "o .zshrc nunca é editado"
+    );
+
+    fs::write(
+        &zshrc,
+        "export A=1\n  source \"$HOME/.claude/hooks/quacko.zsh\"\n",
+    )
+    .unwrap();
+    assert!(matches!(
+        install_shell(&paths).unwrap(),
+        ShellOutcome::AlreadySourced
+    ));
+}
+
+#[test]
+fn terminal_sem_zshrc_copia_a_linha() {
+    let (_dir, paths) = temp_home();
+    assert!(matches!(
+        install_shell(&paths).unwrap(),
+        ShellOutcome::Copied { nix: false, .. }
+    ));
+    assert!(!paths.home.join(".zshrc").exists());
+}
+
+#[cfg(unix)]
+#[test]
+fn terminal_com_zshrc_do_nix_avisa_onde_colocar() {
+    let (_dir, paths) = temp_home();
+    std::os::unix::fs::symlink(
+        "/nix/store/abc-home-manager-files/.zshrc",
+        paths.home.join(".zshrc"),
+    )
+    .unwrap();
+    assert!(matches!(
+        install_shell(&paths).unwrap(),
+        ShellOutcome::Copied { nix: true, .. }
+    ));
 }

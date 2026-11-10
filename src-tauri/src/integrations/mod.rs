@@ -16,7 +16,9 @@ use scripts::NOTIFY_SH;
 use serde_json::Value;
 
 pub use hooks::Hook;
-pub use scripts::{install_prwatch, sync_installed_scripts, PrwatchOutcome};
+pub use scripts::{
+    install_prwatch, install_shell, sync_installed_scripts, PrwatchOutcome, ShellOutcome,
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Tool {
@@ -70,6 +72,9 @@ impl Paths {
     }
     fn prwatch(&self) -> PathBuf {
         self.hooks_dir().join("prwatch")
+    }
+    pub fn quacko_zsh(&self) -> PathBuf {
+        self.hooks_dir().join("quacko.zsh")
     }
     pub fn local_bin_prwatch(&self) -> PathBuf {
         self.home.join(".local").join("bin").join("prwatch")

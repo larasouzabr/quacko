@@ -76,6 +76,7 @@ jobs:
           cargo build -p quacko-hook --manifest-path src-tauri/Cargo.toml
           QUACKO_NOTIFY="$CARGO_TARGET_DIR/debug/quacko-hook" bash scripts/tests/notify.test.sh
           bash scripts/tests/prwatch.test.sh
+          bash scripts/tests/shell.test.sh
 
       - name: Build e release (sem assinatura)
         if: github.event_name == 'push' && vars.MACOS_SIGNING != 'true'

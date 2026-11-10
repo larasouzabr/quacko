@@ -52,6 +52,10 @@ pub struct TrayTexts {
     pub connect: &'static str,
     pub not_found: &'static str,
     pub prwatch_item: &'static str,
+    pub shell_item: &'static str,
+    pub shell_copied: &'static str,
+    pub shell_copied_nix: &'static str,
+    pub shell_ready: &'static str,
     pub connected: &'static str,
     pub disconnected: &'static str,
     pub manual_prefix: &'static str,
@@ -95,6 +99,10 @@ static PT_BR: TrayTexts = TrayTexts {
     connect: "Conectar",
     not_found: "(não encontrado)",
     prwatch_item: "Instalar comando prwatch (PRs)",
+    shell_item: "Avisar comandos longos do terminal (zsh)…",
+    shell_copied: "Copiei uma linha: cole no fim do ~/.zshrc e abra um terminal novo. O pato avisa comandos com mais de 30 s.",
+    shell_copied_nix: "Seu ~/.zshrc vem do Nix: copiei a linha, coloque em programs.zsh.initContent no home-manager.",
+    shell_ready: "Avisos do terminal já estão no seu ~/.zshrc. Atualizei o script; vale nos terminais novos.",
     connected: "conectado. Vale a partir da próxima sessão.",
     disconnected: "desconectado.",
     manual_prefix: "Não consegui editar",
@@ -131,6 +139,10 @@ static EN: TrayTexts = TrayTexts {
     connect: "Connect",
     not_found: "(not found)",
     prwatch_item: "Install prwatch command (PRs)",
+    shell_item: "Notify about long terminal commands (zsh)…",
+    shell_copied: "Copied a line: paste it at the end of ~/.zshrc and open a new terminal. The duck will tell you about commands that take over 30 s.",
+    shell_copied_nix: "Your ~/.zshrc comes from Nix: line copied, add it to programs.zsh.initContent in home-manager.",
+    shell_ready: "Terminal notifications are already in your ~/.zshrc. Script updated; it applies to new terminals.",
     connected: "connected. Takes effect in new sessions.",
     disconnected: "disconnected.",
     manual_prefix: "Couldn't edit",
@@ -184,6 +196,18 @@ mod tests {
     fn nao_confunde_prefixos_parecidos() {
         assert_eq!(resolve(LangPref::Auto, ["ptx", "pt-BR"]), Lang::PtBr);
         assert_eq!(resolve(LangPref::Auto, ["eng", "pt-BR"]), Lang::PtBr);
+    }
+
+    #[test]
+    fn avisos_do_terminal_cabem_no_cartao() {
+        for t in [&PT_BR, &EN] {
+            for text in [t.shell_copied, t.shell_copied_nix, t.shell_ready] {
+                assert!(
+                    text.chars().count() <= crate::model::MAX_MESSAGE_CHARS,
+                    "{text}"
+                );
+            }
+        }
     }
 
     #[test]
