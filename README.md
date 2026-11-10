@@ -243,7 +243,7 @@ Never put certificates, passwords or tokens in the repository.
 - **Build not signed by Apple** (ad-hoc signature, free): hence the warning on first launch. Signing and notarizing require an Apple Developer account.
 - **`macOSPrivateApi`** (needed for the transparent window) rules out the Mac App Store; distribution is direct.
 - **"Open at Login" in development mode** registers the development binary, which doesn't start on its own without `npm run tauri dev`. Turn it on from the installed app.
-- **Windows**: new and not yet tested on a real Windows machine (the code is compiled and linted for Windows, and CI runs the tests there). The card appears at the top right of the screen; `prwatch` is macOS-only, since the app already watches your PRs by itself. The installer isn't code-signed, hence the SmartScreen warning.
+- **Windows**: new and not yet tested on a real Windows machine (the code is compiled and linted for Windows, and CI runs the tests there). If you have Windows, the [testing checklist](docs/testing-windows.md) takes about 15 minutes. The card appears at the top right of the screen; `prwatch` is macOS-only, since the app already watches your PRs by itself. The installer isn't code-signed, hence the SmartScreen warning.
 - **Linux**: not yet.
 
 ## Privacy
