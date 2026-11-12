@@ -106,6 +106,8 @@ fn run_with_timeout(cmd: &mut Command, limit: Duration) -> Option<String> {
         const CREATE_NO_WINDOW: u32 = 0x0800_0000;
         cmd.creation_flags(CREATE_NO_WINDOW);
     }
+    #[cfg(unix)]
+    without_terminal(cmd);
     let mut child = cmd
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
@@ -129,4 +131,35 @@ fn run_with_timeout(cmd: &mut Command, limit: Duration) -> Option<String> {
     use std::io::Read;
     child.stdout.take()?.read_to_string(&mut out).ok()?;
     Some(out)
+}
+
+#[cfg(unix)]
+fn without_terminal(cmd: &mut Command) {
+    use std::os::unix::process::CommandExt;
+    unsafe {
+        cmd.pre_exec(|| {
+            if libc::setsid() == -1 {
+                return Err(std::io::Error::last_os_error());
+            }
+            Ok(())
+        });
+    }
+}
+
+#[cfg(all(test, unix))]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn child_runs_in_its_own_session_without_the_terminal() {
+        let out = run_with_timeout(
+            Command::new("/bin/sh")
+                .args(["-c", "echo $$ $(ps -o pgid= -p $$) $(ps -o tty= -p $$)"]),
+            Duration::from_secs(5),
+        )
+        .expect("sh roda");
+        let parts: Vec<&str> = out.split_whitespace().collect();
+        assert_eq!(parts[0], parts[1], "vira líder do próprio grupo: {out}");
+        assert!(parts[2].starts_with('?'), "sem terminal: {out}");
+    }
 }

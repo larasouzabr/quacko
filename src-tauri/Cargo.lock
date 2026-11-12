@@ -2946,6 +2946,7 @@ dependencies = [
  "futures-util",
  "http-body-util",
  "keyring",
+ "libc",
  "objc2",
  "objc2-app-kit",
  "objc2-foundation",
