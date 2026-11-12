@@ -22,6 +22,7 @@ mod ids {
     pub const NOTIFY_CLAUDE: &str = "notify-claude";
     pub const NOTIFY_CURSOR: &str = "notify-cursor";
     pub const NOTIFY_CI: &str = "notify-ci";
+    pub const NOTIFY_REVIEWS: &str = "notify-reviews";
     pub const NOTIFY_TERMINAL: &str = "notify-terminal";
     pub const TEST: &str = "test";
     pub const AUTOSTART: &str = "autostart";
@@ -159,6 +160,7 @@ fn build_menu(app: &AppHandle) -> tauri::Result<(Menu<Wry>, String)> {
     let from_claude = origin(ids::NOTIFY_CLAUDE, "Claude Code", config.notify_claude)?;
     let from_cursor = origin(ids::NOTIFY_CURSOR, "Cursor", config.notify_cursor)?;
     let from_ci = origin(ids::NOTIFY_CI, t.notify_ci, config.notify_ci)?;
+    let from_reviews = origin(ids::NOTIFY_REVIEWS, t.notify_reviews, config.notify_reviews)?;
     let from_terminal = origin(
         ids::NOTIFY_TERMINAL,
         t.notify_terminal,
@@ -176,6 +178,7 @@ fn build_menu(app: &AppHandle) -> tauri::Result<(Menu<Wry>, String)> {
             &from_claude,
             &from_cursor,
             &from_ci,
+            &from_reviews,
             &from_terminal,
             &PredefinedMenuItem::separator(app)?,
             &test,
@@ -362,6 +365,9 @@ fn on_menu_event(app: &AppHandle, event: MenuEvent) {
         }
         ids::NOTIFY_CI => {
             settings.update(|c| c.notify_ci = !c.notify_ci);
+        }
+        ids::NOTIFY_REVIEWS => {
+            settings.update(|c| c.notify_reviews = !c.notify_reviews);
         }
         ids::NOTIFY_TERMINAL => {
             settings.update(|c| c.notify_terminal = !c.notify_terminal);

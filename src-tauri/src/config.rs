@@ -42,6 +42,7 @@ pub struct Config {
     pub notify_claude: bool,
     pub notify_cursor: bool,
     pub notify_ci: bool,
+    pub notify_reviews: bool,
     pub notify_terminal: bool,
     pub autostart: bool,
     pub max_cards: u8,
@@ -91,6 +92,7 @@ impl Default for Config {
             notify_claude: true,
             notify_cursor: true,
             notify_ci: true,
+            notify_reviews: true,
             notify_terminal: true,
             autostart: false,
             max_cards: MAX_CARDS_LIMIT,
@@ -156,6 +158,7 @@ impl Config {
             ("notify_claude", &mut config.notify_claude),
             ("notify_cursor", &mut config.notify_cursor),
             ("notify_ci", &mut config.notify_ci),
+            ("notify_reviews", &mut config.notify_reviews),
             ("notify_terminal", &mut config.notify_terminal),
         ] {
             if let Some(v) = map.get(key) {
@@ -332,7 +335,7 @@ mod tests {
         let c = Config::default();
         assert_eq!(
             serde_json::to_value(&c).unwrap(),
-            serde_json::json!({"port": 4747, "lang": "auto", "dnd": false, "sound": true, "pause_media": true, "notify_claude": true, "notify_cursor": true, "notify_ci": true, "notify_terminal": true, "autostart": false, "max_cards": 3, "pixel_size": 3, "text_scale": 100, "github": false, "media_warned": false, "onboarded": false, "github_client_id": null, "character": "pato-pixel", "accessory_enabled": false, "accessory_id": "laco", "accessory_color": "#ff6996", "check_updates": true, "update_announced": null})
+            serde_json::json!({"port": 4747, "lang": "auto", "dnd": false, "sound": true, "pause_media": true, "notify_claude": true, "notify_cursor": true, "notify_ci": true, "notify_reviews": true, "notify_terminal": true, "autostart": false, "max_cards": 3, "pixel_size": 3, "text_scale": 100, "github": false, "media_warned": false, "onboarded": false, "github_client_id": null, "character": "pato-pixel", "accessory_enabled": false, "accessory_id": "laco", "accessory_color": "#ff6996", "check_updates": true, "update_announced": null})
         );
     }
 

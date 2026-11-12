@@ -21,6 +21,15 @@ const QUERY: &str = r#"query($q: String!) {
             statusContextCountsByState { state count }
           }
         } } } }
+        reviews(last: 10) { nodes {
+          id state url updatedAt
+          author { login __typename }
+          comments { totalCount }
+        } }
+        comments(last: 10) { nodes {
+          id url updatedAt
+          author { login __typename }
+        } }
       }
     }
   }
@@ -34,17 +43,23 @@ pub enum ApiError {
 }
 
 pub fn parse(body: &Value) -> Result<(String, Vec<Pr>), ApiError> {
-    if let Some(errors) = body.get("errors").and_then(Value::as_array) {
-        let msg = errors
+    let errors = body.get("errors").and_then(Value::as_array).map(|errors| {
+        errors
             .iter()
             .filter_map(|e| e.get("message").and_then(Value::as_str))
             .collect::<Vec<_>>()
-            .join("; ");
-        return Err(ApiError::Other(format!("GraphQL: {msg}")));
-    }
-    let data = body
-        .get("data")
-        .ok_or_else(|| ApiError::Other("resposta sem data".into()))?;
+            .join("; ")
+    });
+    let data = body.get("data").filter(|d| d["search"].is_object());
+    let data = match (data, errors) {
+        (Some(data), Some(msg)) => {
+            tracing::warn!(%msg, "GraphQL respondeu em parte");
+            data
+        }
+        (Some(data), None) => data,
+        (None, Some(msg)) => return Err(ApiError::Other(format!("GraphQL: {msg}"))),
+        (None, None) => return Err(ApiError::Other("resposta sem data".into())),
+    };
     let login = data["viewer"]["login"]
         .as_str()
         .unwrap_or_default()
@@ -70,6 +85,7 @@ fn parse_pr(node: &Value) -> Option<Pr> {
         head: commit["oid"].as_str()?.to_string(),
         rollup: serde_json::from_value(rollup["state"].clone()).ok(),
         checks: count_checks(&rollup["contexts"]),
+        activity: super::reviews::parse_activity(node),
     })
 }
 
@@ -111,14 +127,29 @@ pub(crate) async fn fetch(
     client: &reqwest::Client,
     token: &str,
 ) -> Result<(String, Vec<Pr>), ApiError> {
+    parse(
+        &graphql(
+            client,
+            token,
+            &json!({ "query": QUERY, "variables": { "q": SEARCH } }),
+        )
+        .await?,
+    )
+}
+
+pub(crate) async fn graphql(
+    client: &reqwest::Client,
+    token: &str,
+    request: &Value,
+) -> Result<Value, ApiError> {
     let response = client
         .post(GRAPHQL_URL)
         .bearer_auth(token)
-        .json(&json!({ "query": QUERY, "variables": { "q": SEARCH } }))
+        .json(request)
         .send()
         .await
         .map_err(|e| ApiError::Other(e.to_string()))?;
-    parse(&read_json(response).await?)
+    read_json(response).await
 }
 
 pub(crate) async fn get_rest(

@@ -25,6 +25,7 @@ fn pr(n: u64, head: &str, rollup: Option<Rollup>, done: u32, total: u32, failed:
             total,
             failed,
         },
+        activity: Vec::new(),
     }
 }
 
@@ -533,4 +534,375 @@ fn client_id_da_variavel_da_config_ou_embutido_no_build() {
     );
     assert_eq!(resolve_client_id(None, None, Some("")), None);
     assert_eq!(resolve_client_id(None, None, None), None);
+}
+
+mod reviews {
+    use super::*;
+    use crate::github::reviews::*;
+
+    fn act(id: &str, kind: Kind, author: &str, bot: bool, updated: &str) -> Activity {
+        Activity {
+            id: id.into(),
+            kind,
+            author: author.into(),
+            bot,
+            url: format!("https://github.com/o/r/pull/1#{id}"),
+            updated: updated.into(),
+            inline: 0,
+        }
+    }
+
+    fn pr_with(n: u64, activity: Vec<Activity>) -> Pr {
+        Pr {
+            activity,
+            ..pr(n, "a", Some(Success), 1, 1, 0)
+        }
+    }
+
+    fn ids(c: &[Candidate]) -> Vec<(&str, bool)> {
+        c.iter()
+            .map(|c| (c.activity.id.as_str(), c.edited))
+            .collect()
+    }
+
+    const T1: &str = "2026-11-12T10:00:00Z";
+    const T2: &str = "2026-11-12T10:05:00Z";
+    const T3: &str = "2026-11-12T10:09:00Z";
+
+    #[test]
+    fn le_reviews_e_comentarios_do_graphql() {
+        let node = json!({
+            "reviews": {"nodes": [
+                {"id": "R1", "state": "APPROVED", "url": "u1", "updatedAt": T1, "author": {"login": "ana", "__typename": "User"}, "comments": {"totalCount": 0}},
+                {"id": "R2", "state": "COMMENTED", "url": "u2", "updatedAt": T1, "author": {"login": "greptile-apps", "__typename": "Bot"}, "comments": {"totalCount": 3}},
+                {"id": "R3", "state": "PENDING", "url": "u3", "updatedAt": T1, "author": {"login": "ana", "__typename": "User"}},
+                {"id": "R4", "state": "DISMISSED", "url": "u4", "updatedAt": T1, "author": null},
+                {"id": "R5", "state": "CHANGES_REQUESTED", "url": "u5", "updatedAt": T1, "author": null}
+            ]},
+            "comments": {"nodes": [
+                {"id": "C1", "url": "c1", "updatedAt": T2, "author": {"login": "bia", "__typename": "User"}},
+                {"url": "sem-id"}
+            ]}
+        });
+        let got = crate::github::reviews::parse_activity(&node);
+        let summary: Vec<_> = got
+            .iter()
+            .map(|a| (a.id.as_str(), a.kind, a.author.as_str(), a.bot, a.inline))
+            .collect();
+        assert_eq!(
+            summary,
+            vec![
+                ("R1", Kind::Approved, "ana", false, 0),
+                ("R2", Kind::Reviewed, "greptile-apps", true, 3),
+                ("R5", Kind::ChangesRequested, "ghost", false, 0),
+                ("C1", Kind::Comment, "bia", false, 0),
+            ],
+            "rascunho e review descartado ficam de fora"
+        );
+    }
+
+    #[test]
+    fn resposta_parcial_do_graphql_ainda_serve() {
+        let body = json!({
+            "errors": [{"message": "Resource not accessible by integration"}],
+            "data": {"viewer": {"login": "lara"}, "search": {"nodes": [
+                {"number": 1, "title": "T", "url": "https://github.com/o/r/pull/1",
+                 "repository": {"nameWithOwner": "o/r"},
+                 "commits": {"nodes": [{"commit": {"oid": "a", "statusCheckRollup": null}}]},
+                 "comments": null}
+            ]}}
+        });
+        let (_, prs) = parse(&body).unwrap();
+        assert_eq!(prs.len(), 1);
+        assert!(prs[0].activity.is_empty());
+    }
+
+    #[test]
+    fn so_avisa_o_que_chegou_depois_e_nao_o_que_e_seu() {
+        let mut w = ReviewWatcher::new();
+        let first = vec![pr_with(1, vec![act("C1", Kind::Comment, "bia", false, T1)])];
+        assert!(
+            w.diff(&first, "lara").is_empty(),
+            "primeira leitura não avisa"
+        );
+
+        let second = vec![
+            pr_with(
+                1,
+                vec![
+                    act("C1", Kind::Comment, "bia", false, T1),
+                    act("C2", Kind::Comment, "Lara", false, T2),
+                    act("R1", Kind::Approved, "ana", false, T2),
+                ],
+            ),
+            pr_with(2, vec![act("X", Kind::Comment, "bia", false, T2)]),
+        ];
+        assert_eq!(
+            ids(&w.diff(&second, "lara")),
+            vec![("R1", false)],
+            "o seu comentário e o PR novo não avisam"
+        );
+        assert_eq!(ids(&w.diff(&second, "lara")), vec![], "nem duas vezes");
+    }
+
+    #[test]
+    fn edicao_so_conta_para_bot_e_comentario_antigo_nao_volta() {
+        let mut w = ReviewWatcher::new();
+        let read = |bot_updated: &str, human_updated: &str| {
+            vec![pr_with(
+                1,
+                vec![
+                    act("B", Kind::Comment, "greptile-apps", true, bot_updated),
+                    act("H", Kind::Comment, "bia", false, human_updated),
+                ],
+            )]
+        };
+        w.diff(&read(T2, T2), "lara");
+        assert_eq!(ids(&w.diff(&read(T3, T3), "lara")), vec![("B", true)]);
+
+        let older = vec![pr_with(
+            1,
+            vec![
+                act("OLD", Kind::Comment, "bia", false, T1),
+                act("B", Kind::Comment, "greptile-apps", true, T3),
+            ],
+        )];
+        assert!(
+            w.diff(&older, "lara").is_empty(),
+            "um comentário apagado faz um antigo voltar à janela, e esse não avisa"
+        );
+    }
+
+    #[test]
+    fn texto_decide_o_que_vira_cartao() {
+        let mut w = ReviewWatcher::new();
+        let pr_ref = || PrRef {
+            number: 1,
+            title: "T".into(),
+            repo: "o/r".into(),
+        };
+        let cand = |a: Activity, edited: bool| Candidate {
+            pr: pr_ref(),
+            activity: a,
+            edited,
+        };
+        w.diff(
+            &[pr_with(
+                1,
+                vec![act("B", Kind::Comment, "greptile-apps", true, T1)],
+            )],
+            "lara",
+        );
+        let texts: HashMap<String, String> = [
+            (
+                "B".to_string(),
+                "Summary\nConfidence score: 4/5".to_string(),
+            ),
+            ("E".to_string(), "   \n".to_string()),
+        ]
+        .into();
+
+        let out = w.resolve(
+            vec![
+                cand(act("B", Kind::Comment, "greptile-apps", true, T2), true),
+                cand(act("E", Kind::Reviewed, "ana", false, T2), false),
+                cand(act("A", Kind::Approved, "ana", false, T2), false),
+            ],
+            &texts,
+        );
+        let got: Vec<_> = out
+            .iter()
+            .map(|e| (e.activity.id.as_str(), e.score))
+            .collect();
+        assert_eq!(
+            got,
+            vec![("B", Some((4, 5))), ("A", None)],
+            "review vazio sem comentários some; aprovação vazia fica"
+        );
+
+        let again = w.resolve(
+            vec![cand(
+                act("B", Kind::Comment, "greptile-apps", true, T3),
+                true,
+            )],
+            &texts,
+        );
+        assert!(
+            again.is_empty(),
+            "mesma nota depois de editar não avisa de novo"
+        );
+        let no_score: HashMap<String, String> =
+            [("B".to_string(), "Reviewing…".to_string())].into();
+        let none = w.resolve(
+            vec![cand(
+                act("B", Kind::Comment, "greptile-apps", true, T3),
+                true,
+            )],
+            &no_score,
+        );
+        assert!(none.is_empty(), "edição sem nota não avisa");
+    }
+
+    #[test]
+    fn le_a_nota_de_confianca() {
+        assert_eq!(confidence("Confidence score: 4/5"), Some((4, 5)));
+        assert_eq!(
+            confidence("bla\n**Confidence Score: 2 / 5**\n"),
+            Some((2, 5))
+        );
+        assert_eq!(confidence("Confidence: 9/10 - looks good"), Some((9, 10)));
+        assert_eq!(confidence("Confidence 7/5"), None);
+        assert_eq!(confidence("score 4/5"), None);
+        assert_eq!(confidence(""), None);
+    }
+
+    #[test]
+    fn nome_do_bot_fica_apresentavel() {
+        assert_eq!(display_name("greptile-apps", true), "Greptile");
+        assert_eq!(display_name("coderabbitai[bot]", true), "Coderabbitai");
+        assert_eq!(display_name("ana-app", false), "ana-app");
+    }
+
+    fn event(kind: Kind, author: &str, bot: bool, text: &str, inline: u32, edited: bool) -> Event {
+        Event {
+            pr: PrRef {
+                number: 446,
+                title: "Update dependencies".into(),
+                repo: "pondworks/breadcrumbs".into(),
+            },
+            activity: Activity {
+                inline,
+                ..act("X", kind, author, bot, T1)
+            },
+            edited,
+            text: text.into(),
+            score: confidence(text),
+        }
+    }
+
+    #[test]
+    fn cartoes_de_review() {
+        let n = |e: &Event, lang| {
+            let n = crate::github::reviews::notification(1, e, lang);
+            (n.status, n.message.unwrap(), n.sticky)
+        };
+        let greptile = event(
+            Kind::Reviewed,
+            "greptile-apps",
+            true,
+            "Confidence score: 4/5",
+            3,
+            false,
+        );
+        assert_eq!(
+            n(&greptile, Lang::En),
+            (
+                Status::Ok,
+                "Greptile reviewed · Confidence 4/5".into(),
+                false
+            )
+        );
+        assert_eq!(
+            n(&greptile, Lang::PtBr).1,
+            "Greptile revisou · Confiança 4/5"
+        );
+        let low = event(
+            Kind::Reviewed,
+            "greptile-apps",
+            true,
+            "Confidence score: 2/5",
+            0,
+            false,
+        );
+        assert_eq!(n(&low, Lang::En).0, Status::Attention);
+        assert!(n(&low, Lang::En).2, "nota baixa fica até fechar");
+        let mid = event(
+            Kind::Comment,
+            "greptile-apps",
+            true,
+            "Confidence score: 3/5",
+            0,
+            true,
+        );
+        assert_eq!(
+            n(&mid, Lang::PtBr),
+            (
+                Status::Info,
+                "Greptile atualizou o review · Confiança 3/5".into(),
+                false
+            )
+        );
+        assert_eq!(
+            n(
+                &event(Kind::Approved, "ana", false, "", 0, false),
+                Lang::PtBr
+            ),
+            (Status::Ok, "ana aprovou".into(), false)
+        );
+        assert_eq!(
+            n(
+                &event(Kind::ChangesRequested, "ana", false, "x", 0, false),
+                Lang::En
+            ),
+            (Status::Attention, "ana requested changes".into(), true)
+        );
+        assert_eq!(
+            n(
+                &event(
+                    Kind::Comment,
+                    "bia",
+                    false,
+                    "\n  Can you add a test?\nthanks",
+                    0,
+                    false
+                ),
+                Lang::En
+            )
+            .1,
+            "bia: “Can you add a test?”"
+        );
+        assert_eq!(
+            n(
+                &event(Kind::Reviewed, "bia", false, "", 1, false),
+                Lang::PtBr
+            )
+            .1,
+            "bia deixou 1 comentário"
+        );
+        assert_eq!(
+            n(&event(Kind::Reviewed, "bia", false, "", 4, false), Lang::En).1,
+            "bia left 4 comments"
+        );
+
+        let card = crate::github::reviews::notification(7, &greptile, Lang::En);
+        assert_eq!(card.title.as_deref(), Some("PR #446 · Update dependencies"));
+        assert_eq!(card.project.as_deref(), Some("pondworks/breadcrumbs#446"));
+        assert_eq!(card.url.as_deref(), Some("https://github.com/o/r/pull/1#X"));
+        assert_eq!(card.progress, None);
+
+        let long = event(
+            Kind::Comment,
+            "bia",
+            false,
+            &"palavra ".repeat(60),
+            0,
+            false,
+        );
+        let msg = n(&long, Lang::PtBr).1;
+        assert_eq!(msg.chars().count(), crate::model::MAX_MESSAGE_CHARS);
+        assert!(msg.ends_with('…'));
+    }
+
+    #[test]
+    fn le_os_textos_pedidos() {
+        let body = json!({"data": {"nodes": [
+            {"id": "A", "bodyText": "oi"},
+            {"id": "B", "bodyText": null},
+            null
+        ]}});
+        let t = crate::github::reviews::parse_texts(&body);
+        assert_eq!(t.get("A").map(String::as_str), Some("oi"));
+        assert_eq!(t.get("B").map(String::as_str), Some(""));
+        assert_eq!(t.len(), 2);
+    }
 }

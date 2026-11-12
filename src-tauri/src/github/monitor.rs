@@ -8,6 +8,7 @@ use super::api::*;
 use super::card::*;
 use super::gh_cli::*;
 use super::model::*;
+use super::reviews::{fetch_texts, ReviewWatcher};
 use super::runs::{RunChange, RunWatcher};
 use crate::model::{IdGen, Notification};
 
@@ -62,6 +63,7 @@ async fn run(app: AppHandle, mut enabled: watch::Receiver<bool>) {
         tracing::info!("monitor de PRs ligado");
         let mut tracked: HashMap<String, Tracked> = HashMap::new();
         let mut runs = RunWatcher::new(now_secs());
+        let mut reviews = ReviewWatcher::new();
         let mut token: Option<String> = None;
         let mut announced = false;
         let mut retried_auth = false;
@@ -116,6 +118,21 @@ async fn run(app: AppHandle, mut enabled: watch::Receiver<bool>) {
                             Vec::new()
                         }
                     };
+                    let candidates = reviews.diff(&prs, &login);
+                    let review_events = if candidates.is_empty() {
+                        Vec::new()
+                    } else {
+                        let ids: Vec<String> =
+                            candidates.iter().map(|c| c.activity.id.clone()).collect();
+                        let texts =
+                            fetch_texts(&client, token.as_deref().unwrap_or_default(), &ids)
+                                .await
+                                .unwrap_or_else(|e| {
+                                    tracing::warn!(?e, "falha ao ler os comentários");
+                                    HashMap::new()
+                                });
+                        reviews.resolve(candidates, &texts)
+                    };
                     if !announced {
                         announced = true;
                         tracing::info!(
@@ -132,6 +149,7 @@ async fn run(app: AppHandle, mut enabled: watch::Receiver<bool>) {
                         );
                     }
                     deliver(&app, &finished, &run_changes);
+                    deliver_reviews(&app, &review_events);
                     if any_running(&tracked) || runs.any_running() {
                         POLL_PENDING
                     } else {
@@ -209,6 +227,26 @@ fn deliver(app: &AppHandle, prs: &[Change], runs: &[RunChange]) {
             );
         }
         tracing::info!(id = n.id, status = ?n.status, "CI mudou");
+        crate::overlay::present(app, n);
+    }
+}
+
+fn deliver_reviews(app: &AppHandle, events: &[super::reviews::Event]) {
+    let settings = app.state::<crate::settings::Settings>();
+    let config = settings.snapshot();
+    if events.is_empty() || !config.notify_reviews {
+        return;
+    }
+    let lang = settings.lang();
+    let ids = app.state::<IdGen>();
+    for event in events {
+        let n = super::reviews::notification(ids.next(), event, lang);
+        crate::history::remember(app, &n, config.dnd);
+        if config.dnd {
+            continue;
+        }
+        crate::sound::play(&config, n.status);
+        tracing::info!(id = n.id, status = ?n.status, "review ou comentário novo");
         crate::overlay::present(app, n);
     }
 }

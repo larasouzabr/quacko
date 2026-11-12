@@ -28,6 +28,7 @@ pub struct Pr {
     pub head: String,
     pub rollup: Option<Rollup>,
     pub checks: Checks,
+    pub activity: Vec<super::reviews::Activity>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
