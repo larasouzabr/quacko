@@ -229,7 +229,7 @@ It creates a **draft** release, runs the tests on both systems and uploads both 
 1. Create a GitHub App at **GitHub → Settings → Developer settings → GitHub Apps → New GitHub App**: any homepage URL (the repository's), **Webhook** off, **Enable Device Flow** on, and the read-only repository permissions **Checks**, **Commit statuses**, **Actions**, **Pull requests** and **Metadata**. Choose **Any account** so other people can install it.
 2. Copy its **Client ID** (`Iv23li…`) into the repository variable `QUACKO_GITHUB_CLIENT_ID` (Settings → Secrets and variables → Actions → Variables).
 
-The next release shows **Sign in with GitHub** on the welcome screen. The `QUACKO_GITHUB_CLIENT_ID` environment variable and `github_client_id` in the config still win over the built-in one.
+The next release shows **Sign in with GitHub** on the welcome screen. The `QUACKO_GITHUB_CLIENT_ID` environment variable and `github_client_id` in the config still win over the built-in one. To try the sign-in on a machine that already has the GitHub CLI logged in, start the app with `QUACKO_GH=none`: it then acts as if `gh` weren't installed.
 
 Never put certificates, passwords or tokens in the repository.
 

@@ -4,10 +4,9 @@ use std::process::{Command, Stdio};
 use std::time::{Duration, Instant};
 
 pub fn find_gh(home: &Path) -> Option<PathBuf> {
-    if let Some(custom) = std::env::var_os("QUACKO_GH").map(PathBuf::from) {
-        if custom.is_file() {
-            return Some(custom);
-        }
+    if let Some(custom) = std::env::var_os("QUACKO_GH").filter(|v| !v.is_empty()) {
+        let custom = PathBuf::from(custom);
+        return custom.is_file().then_some(custom);
     }
     if cfg!(windows) {
         return windows_candidates(home, |key| std::env::var_os(key))
@@ -149,6 +148,14 @@ fn without_terminal(cmd: &mut Command) {
 #[cfg(all(test, unix))]
 mod tests {
     use super::*;
+
+    #[test]
+    fn quacko_gh_pointing_nowhere_means_no_gh() {
+        std::env::set_var("QUACKO_GH", "/nao/existe/gh");
+        let found = find_gh(Path::new("/"));
+        std::env::remove_var("QUACKO_GH");
+        assert_eq!(found, None);
+    }
 
     #[test]
     fn child_runs_in_its_own_session_without_the_terminal() {
