@@ -25,7 +25,8 @@ function global:Test-QuackoQuiet([string]$CommandLine) {
     $words = @($words | Select-Object -Skip 1)
   }
   if ($words.Count -eq 0) { return $true }
-  $program = [System.IO.Path]::GetFileNameWithoutExtension($words[0].Trim("'", '"'))
+  $leaf = @($words[0].Trim("'", '"') -split '[\\/]')[-1]
+  $program = [System.IO.Path]::GetFileNameWithoutExtension($leaf)
   if ($global:QuackoInteractive -contains $program) { return $true }
   $ignored = @("$env:QUACKO_IGNORE" -split '\s+' | Where-Object { $_ -ne '' })
   if ($ignored -contains $program) { return $true }
