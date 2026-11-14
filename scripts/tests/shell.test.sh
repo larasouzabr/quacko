@@ -31,7 +31,8 @@ session() {
     printf '%s\n' "$@"
   } | (cd "$WORK/projeto-lagoa" && HOME="$WORK" FAKE_NOTIFY_LOG="$LOG" QUACKO_NOTIFY="$WORK/notify" \
     QUACKO_MIN_SECS="${MIN:-0}" QUACKO_IGNORE="${IGNORE:-}" "${INTERACTIVE[@]}" >/dev/null 2>&1)
-  for _ in 1 2 3 4 5 6 7 8 9 10; do
+  # O hook avisa em segundo plano; no CI isso pode passar de 1 s.
+  for _ in $(seq 40); do
     [ "$(count)" -ge "${WANT:-1}" ] && break
     sleep 0.1
   done

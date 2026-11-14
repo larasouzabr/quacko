@@ -58,14 +58,6 @@ Click **Download for macOS** at the top of this page (it always fetches the late
    - in Terminal: `xattr -dr com.apple.quarantine /Applications/Quacko.app`
 3. From then on it opens like any other app. The duck shows up in the menu bar (not in the Dock).
 
-Or with [Homebrew](https://brew.sh) (the first launch needs the same **Open Anyway** step):
-
-```bash
-brew install --cask larasouzabr/quacko/quacko
-```
-
-`brew upgrade --cask quacko` updates it, and `brew uninstall --zap --cask quacko` removes the app with its settings.
-
 ### Windows 10 and 11 (x64)
 
 1. Click **Download for Windows** at the top of this page and run the installer. It installs for your user only, with no admin rights needed.
@@ -201,15 +193,16 @@ Layout: `src/` is the overlay (React + TypeScript), `src-tauri/` is the app (Rus
 
 ## Releases
 
-The workflow [`.github/workflows/release.yml`](.github/workflows/release.yml) builds the universal macOS `.dmg` and the Windows installer when a `v*` tag is pushed:
+Every merge into `main` that touches the app (`src/`, `src-tauri/`, `scripts/` outside the tests, `index.html`, `vite.config.ts` or the npm files) becomes a new version through [`.github/workflows/release.yml`](.github/workflows/release.yml). Changes to docs, the README or `.github/` don't.
 
-```bash
-git tag v0.1.0 && git push origin v0.1.0
-```
+1. The next version comes from the latest `v*` tag: a **patch** by default (`v0.1.0` → `v0.1.1`), or a **minor** or **major** when the merged pull request has the `minor` or `major` label.
+2. A draft release is created with the list of merged pull requests. The macOS and Windows jobs wait for approval in the `release` environment (**Review deployments** on the run's page).
+3. After approval, each job writes the version into `package.json`, `tauri.conf.json` and the `Cargo.toml` files for that build only ([`.github/release/set-version.mjs`](.github/release/set-version.mjs), nothing is committed), runs the tests and uploads its installer.
+4. When both installers are up, the release is published, which creates the tag. The README download buttons, the in-app update notice and, when `HOMEBREW_TAP` is `true`, the Homebrew cask pick it up.
 
-It creates a **draft** release, then the macOS and Windows jobs wait for approval in the `release` environment (**Review deployments** on the run's page). After approval they run the tests on both systems and upload both installers to the draft; the release only goes public when someone clicks **Publish release** on GitHub. To try the builds without a release, open **Actions → Release → Run workflow**: the `.dmg` and the `.exe` come out as downloadable artifacts of the run.
+The version files in the repository stay at their last value; the tags are the source of truth. Merges are queued, so two quick merges become two versions in order. If a run fails, the next merge reuses its draft. To try the builds without a release, open **Actions → Release → Run workflow**: the `.dmg` and the `.exe` come out as downloadable artifacts of the run.
 
-**Protections.** Rulesets block force pushes and deletion on `main`, require a pull request with the `macos` and `windows` checks green, and only let admins create, move or delete `v*` tags. The `release` environment only accepts `v*` tags, requires a reviewer, and holds the signing and Homebrew secrets. Every action is pinned to a commit SHA, with the version in a comment, and [Dependabot](.github/dependabot.yml) proposes weekly updates for actions, crates and npm packages.
+**Protections.** Rulesets block force pushes and deletion on `main` and require a pull request with the `macos` and `windows` checks green. `v*` tags can't be moved or deleted. The `release` environment only accepts `main` and `v*` tags, requires a reviewer, and holds the signing and Homebrew secrets. Every action is pinned to a commit SHA, with the version in a comment, and [Dependabot](.github/dependabot.yml) proposes weekly updates for actions, crates and npm packages.
 
 **Signing and notarization** (optional, off by default). Without it, people who download the app see the macOS warning on first launch and allow it in **System Settings → Privacy & Security → Open Anyway** (or with `xattr -dr com.apple.quarantine /Applications/Quacko.app`), as described in [Install](#macos-11-apple-silicon-and-intel). To sign and notarize, you need an Apple Developer account (about US$ 99/year) and:
 
@@ -224,7 +217,8 @@ It creates a **draft** release, then the macOS and Windows jobs wait for approva
 
 1. Create the public repository `larasouzabr/homebrew-quacko` (empty is fine).
 2. Create a fine-grained token with **Contents: Read and write** on that repository only, and save it as `HOMEBREW_TAP_TOKEN` in the `release` environment's secrets (Settings → Environments → release).
-3. For a release that's already out, run **Actions → Homebrew → Run workflow**, choosing the release tag in **Use workflow from** and typing it in the field (the `release` environment only accepts `v*` tags). The job waits for approval like the release jobs.
+3. Set the repository variable `HOMEBREW_TAP` = `true` (Settings → Secrets and variables → Actions → Variables). From then on each release updates the cask after it's published; the job waits for approval like the builds.
+4. For a release that's already out, run **Actions → Homebrew → Run workflow** on `main` with its tag.
 
 **Sign in to GitHub with a code** (so people don't need the GitHub CLI). The release build carries the Client ID of a GitHub App, which is public information (no secret is involved in the device flow):
 
