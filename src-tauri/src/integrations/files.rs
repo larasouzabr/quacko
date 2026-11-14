@@ -42,6 +42,10 @@ pub(super) fn tempfile_in(dir: &Path) -> io::Result<()> {
 }
 
 pub(super) fn write_atomic(path: &Path, contents: &str) -> io::Result<()> {
+    write_atomic_bytes(path, contents.as_bytes())
+}
+
+pub(super) fn write_atomic_bytes(path: &Path, contents: &[u8]) -> io::Result<()> {
     let dir = path
         .parent()
         .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "caminho sem pasta"))?;
@@ -55,7 +59,7 @@ pub(super) fn write_atomic(path: &Path, contents: &str) -> io::Result<()> {
     ));
     {
         let mut file = fs::File::create(&tmp)?;
-        file.write_all(contents.as_bytes())?;
+        file.write_all(contents)?;
         file.sync_all()?;
     }
     if let Ok(meta) = fs::metadata(path) {

@@ -98,7 +98,7 @@ pub fn gh_token(gh: &Path) -> Option<String> {
     (!token.is_empty() && !token.contains(char::is_whitespace)).then_some(token)
 }
 
-fn run_with_timeout(cmd: &mut Command, limit: Duration) -> Option<String> {
+pub(crate) fn run_with_timeout(cmd: &mut Command, limit: Duration) -> Option<String> {
     #[cfg(windows)]
     {
         use std::os::windows::process::CommandExt;

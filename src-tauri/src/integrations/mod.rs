@@ -1,6 +1,7 @@
 pub mod actions;
 pub mod files;
 pub mod hooks;
+pub mod pwsh;
 pub mod scripts;
 
 #[cfg(test)]
