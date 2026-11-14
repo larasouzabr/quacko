@@ -207,12 +207,14 @@ The workflow [`.github/workflows/release.yml`](.github/workflows/release.yml) bu
 git tag v0.1.0 && git push origin v0.1.0
 ```
 
-It creates a **draft** release, runs the tests on both systems and uploads both installers to it; the release only goes public when someone clicks **Publish release** on GitHub. To try the builds without a release, open **Actions → Release → Run workflow**: the `.dmg` and the `.exe` come out as downloadable artifacts of the run.
+It creates a **draft** release, then the macOS and Windows jobs wait for approval in the `release` environment (**Review deployments** on the run's page). After approval they run the tests on both systems and upload both installers to the draft; the release only goes public when someone clicks **Publish release** on GitHub. To try the builds without a release, open **Actions → Release → Run workflow**: the `.dmg` and the `.exe` come out as downloadable artifacts of the run.
+
+**Protections.** Rulesets block force pushes and deletion on `main`, require a pull request with the `macos` and `windows` checks green, and only let admins create, move or delete `v*` tags. The `release` environment only accepts `v*` tags, requires a reviewer, and holds the signing and Homebrew secrets.
 
 **Signing and notarization** (optional, off by default). Without it, people who download the app see the macOS warning on first launch and allow it in **System Settings → Privacy & Security → Open Anyway** (or with `xattr -dr com.apple.quarantine /Applications/Quacko.app`), as described in [Install](#macos-11-apple-silicon-and-intel). To sign and notarize, you need an Apple Developer account (about US$ 99/year) and:
 
 1. Repository variable (Settings → Secrets and variables → Actions → Variables): `MACOS_SIGNING` = `true`.
-2. Repository secrets:
+2. Secrets of the `release` environment (Settings → Environments → release → Environment secrets), so only approved release jobs can read them:
    - `APPLE_CERTIFICATE`: the **Developer ID Application** certificate exported as `.p12`, in base64 (`base64 -i certificate.p12 | pbcopy`).
    - `APPLE_CERTIFICATE_PASSWORD`: the `.p12` password.
    - `APPLE_SIGNING_IDENTITY`: the certificate's name, e.g. `Developer ID Application: Name (TEAMID)`.
@@ -221,8 +223,8 @@ It creates a **draft** release, runs the tests on both systems and uploads both 
 **Homebrew tap** (optional). The cask template is [`packaging/homebrew/quacko.rb`](packaging/homebrew/quacko.rb), and the [`homebrew.yml`](.github/workflows/homebrew.yml) workflow copies it to the tap with the new version and the `.dmg`'s SHA-256 every time a release is published. To turn it on:
 
 1. Create the public repository `larasouzabr/homebrew-quacko` (empty is fine).
-2. Create a fine-grained token with **Contents: Read and write** on that repository only, and save it as the repository secret `HOMEBREW_TAP_TOKEN` here.
-3. For a release that's already out, run **Actions → Homebrew → Run workflow** with its tag.
+2. Create a fine-grained token with **Contents: Read and write** on that repository only, and save it as `HOMEBREW_TAP_TOKEN` in the `release` environment's secrets (Settings → Environments → release).
+3. For a release that's already out, run **Actions → Homebrew → Run workflow**, choosing the release tag in **Use workflow from** and typing it in the field (the `release` environment only accepts `v*` tags). The job waits for approval like the release jobs.
 
 **Sign in to GitHub with a code** (so people don't need the GitHub CLI). The release build carries the Client ID of a GitHub App, which is public information (no secret is involved in the device flow):
 

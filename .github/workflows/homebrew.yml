@@ -15,6 +15,7 @@ permissions:
 jobs:
   cask:
     runs-on: ubuntu-latest
+    environment: release
     env:
       TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
       TAG: ${{ github.event.release.tag_name || inputs.tag }}

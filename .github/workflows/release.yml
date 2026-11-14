@@ -47,6 +47,7 @@ jobs:
     needs: draft
     if: always() && (needs.draft.result == 'success' || needs.draft.result == 'skipped')
     runs-on: macos-latest
+    environment: ${{ github.event_name == 'push' && 'release' || '' }}
     env:
       CARGO_TARGET_DIR: ${{ github.workspace }}/target
     steps:
@@ -135,6 +136,7 @@ jobs:
     needs: draft
     if: always() && (needs.draft.result == 'success' || needs.draft.result == 'skipped')
     runs-on: windows-latest
+    environment: ${{ github.event_name == 'push' && 'release' || '' }}
     env:
       CARGO_TARGET_DIR: ${{ github.workspace }}/target
     defaults:
