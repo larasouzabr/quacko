@@ -44,6 +44,7 @@
       "endpoints": [
         "https://github.com/larasouzabr/quacko/releases/latest/download/latest.json"
       ],
+      "requireSignedVersion": true,
       "windows": {
         "installMode": "passive"
       }
