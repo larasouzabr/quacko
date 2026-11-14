@@ -68,7 +68,7 @@ In the duck's menu, **Notifications → Test notification** shows all 4 states. 
 
 **Recent:** the menu keeps the last 10 notifications, with the time each one arrived, including the ones Do Not Disturb silenced (marked as such). Click one to open its link (a PR, a workflow run) or to show the card again. The list lives in memory only and is gone when the app quits.
 
-**Updates:** once a day the app checks for a new release. When there is one, the duck tells you once and the menu shows **⬆ Download Quacko x.y.z…**, which opens the release page; download and install it over the old one. Turn it off in **Preferences → Tell me about new versions**.
+**Updates:** once a day the app checks for a new release, downloads it in the background and checks its signature. The duck tells you once, and clicking the card (or **⬆ Restart and update to x.y.z** in the menu) installs it and reopens Quacko, with your settings and connections kept. Nothing is installed without that click. If the download or the install fails, the same click opens the release page so you can install it by hand. Versions up to 0.2.1 don't have this yet: install 0.3.0 by hand once, and from then on it updates itself. Turn it off in **Preferences → Update automatically**.
 
 ## Connect to Claude Code, Cursor and your PRs
 
@@ -147,7 +147,7 @@ The file `~/.config/quacko/config.json` is created on first use. The menu change
 | `character` | character: `pato-pixel` or `gato-pixel` | `pato-pixel` |
 | `accessory_enabled` | accessory (bow) on | `false` |
 | `accessory_color` | the accessory's main color, `#rrggbb` | `#ff6996` |
-| `check_updates` | check GitHub for a new version once a day | `true` |
+| `check_updates` | check GitHub for a new version once a day and download it | `true` |
 | `update_announced` | the last version the duck already told you about | empty |
 
 Invalid values fall back to the default without breaking the app. Changes made directly in the file apply when the app is reopened.
@@ -198,11 +198,13 @@ Every merge into `main` that touches the app (`src/`, `src-tauri/`, `scripts/` o
 1. The next version comes from the latest `v*` tag: a **patch** by default (`v0.1.0` → `v0.1.1`), or a **minor** or **major** when the merged pull request has the `minor` or `major` label.
 2. A draft release is created with the list of merged pull requests. The macOS and Windows jobs wait for approval in the `release` environment (**Review deployments** on the run's page).
 3. After approval, each job writes the version into `package.json`, `tauri.conf.json` and the `Cargo.toml` files for that build only ([`.github/release/set-version.mjs`](.github/release/set-version.mjs), nothing is committed), runs the tests and uploads its installer.
-4. When both installers are up, the release is published, which creates the tag. The README download buttons, the in-app update notice and, when `HOMEBREW_TAP` is `true`, the Homebrew cask pick it up.
+4. When both installers are up, [`.github/release/latest-json.mjs`](.github/release/latest-json.mjs) attaches the `latest.json` that the app reads to update itself, and the release is published, which creates the tag. The README download buttons, the in-app updates and, when `HOMEBREW_TAP` is `true`, the Homebrew cask pick it up.
 
 The version files in the repository stay at their last value; the tags are the source of truth. Merges are queued, so two quick merges become two versions in order. If a run fails, the next merge reuses its draft. To try the builds without a release, open **Actions → Release → Run workflow**: the `.dmg` and the `.exe` come out as downloadable artifacts of the run.
 
 **Protections.** Rulesets block force pushes and deletion on `main` and require a pull request with the `macos` and `windows` checks green. `v*` tags can't be moved or deleted. The `release` environment only accepts `main` and `v*` tags, requires a reviewer, and holds the signing and Homebrew secrets. Every action is pinned to a commit SHA, with the version in a comment, and [Dependabot](.github/dependabot.yml) proposes weekly updates for actions, crates and npm packages.
+
+**Update signing** (required). Each release signs its update packages (`.app.tar.gz` and `-setup.exe`, with a `.sig` next to them), and the app only installs a package signed by the key whose public half is in `plugins.updater.pubkey` in [`tauri.conf.json`](src-tauri/tauri.conf.json). The private key lives in the `release` environment's secrets as `TAURI_SIGNING_PRIVATE_KEY` (the content of the key file) and `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`. Without them the builds stop at **Confere a chave das atualizações**. Before publishing, `latest-json.mjs` refuses any signature made with a different key. Keep a copy of the key and its password in a password manager: if they are lost, installed copies can no longer update themselves, and everyone has to install the next version by hand, signed with a new key.
 
 **Signing and notarization** (optional, off by default). Without it, people who download the app see the macOS warning on first launch and allow it in **System Settings → Privacy & Security → Open Anyway** (or with `xattr -dr com.apple.quarantine /Applications/Quacko.app`), as described in [Install](#macos-11-apple-silicon-and-intel). To sign and notarize, you need an Apple Developer account (about US$ 99/year) and:
 
@@ -244,7 +246,7 @@ Never put certificates, passwords or tokens in the repository.
 
 ## Privacy
 
-The app only listens on `127.0.0.1`, has no telemetry and doesn't log message text. It talks to the internet in two cases only: the GitHub monitor, when you turn it on, and a check for new versions once a day (a single anonymous request to GitHub's public releases API, which you can turn off in **Preferences → Tell me about new versions**). The request you sent to Claude or Cursor is kept in `~/.cache/quacko/` (a folder only you can access) between sending it and the reply, and is deleted right after.
+The app only listens on `127.0.0.1`, has no telemetry and doesn't log message text. It talks to the internet in two cases only: the GitHub monitor, when you turn it on, and a check for new versions once a day (an anonymous download of the release's `latest.json` from GitHub, plus the update package when there is a new version, which you can turn off in **Preferences → Update automatically**). The request you sent to Claude or Cursor is kept in `~/.cache/quacko/` (a folder only you can access) between sending it and the reply, and is deleted right after.
 
 ## Contributing
 

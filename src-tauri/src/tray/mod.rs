@@ -226,7 +226,12 @@ fn build_menu(app: &AppHandle) -> tauri::Result<(Menu<Wry>, String)> {
         let update = MenuItem::with_id(
             app,
             ids::UPDATE,
-            t.update_item.replace("{version}", &release.version),
+            if release.ready {
+                t.update_restart_item
+            } else {
+                t.update_item
+            }
+            .replace("{version}", &release.version),
             true,
             None::<&str>,
         )?;
@@ -300,6 +305,10 @@ fn open_recent(app: &AppHandle, id: u64) {
     let Some(entry) = app.state::<crate::history::History>().find(id) else {
         return;
     };
+    if entry.notification.url.as_deref() == Some(crate::update::APPLY_ACTION) {
+        crate::update::apply(app);
+        return;
+    }
     if let Some(url) = entry.notification.url.clone() {
         use tauri_plugin_opener::OpenerExt;
         if let Err(e) = app.opener().open_url(url, None::<&str>) {
@@ -380,14 +389,7 @@ fn on_menu_event(app: &AppHandle, event: MenuEvent) {
                 "procurar atualizações alterado"
             );
         }
-        ids::UPDATE => {
-            if let Some(release) = app.state::<crate::update::Available>().get() {
-                use tauri_plugin_opener::OpenerExt;
-                if let Err(e) = app.opener().open_url(release.url, None::<&str>) {
-                    tracing::warn!(%e, "não foi possível abrir a página da versão nova");
-                }
-            }
-        }
+        ids::UPDATE => crate::update::apply(app),
         ids::LANG_AUTO => set_lang(app, LangPref::Auto),
         ids::LANG_PT => set_lang(app, LangPref::PtBr),
         ids::LANG_EN => set_lang(app, LangPref::En),

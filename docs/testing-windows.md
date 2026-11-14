@@ -42,6 +42,15 @@ Quacko's Windows build is compiled and unit-tested in CI, but it hasn't been tri
 - [ ] **Connect → GitHub (PRs and workflows)** with the GitHub CLI logged in (`gh auth login`), or **Sign in** on the welcome screen.
 - [ ] Open a PR or push to a repository with Actions: when CI finishes, a card shows the result. Clicking it opens the PR or the run in the browser.
 
+## Automatic update
+
+Only works from 0.3.0 on, and only when a newer release exists.
+
+- [ ] About a minute after opening, the duck shows **Quacko x.y.z**: "New version downloaded. Click to restart and update." The menu shows **⬆ Restart and update to x.y.z**.
+- [ ] Clicking it shows the installer's progress bar, with no questions and no admin prompt, and Quacko opens again on its own. `Invoke-RestMethod http://127.0.0.1:4747/health` shows the new version.
+- [ ] Claude Code, Cursor and the Terminal keep working without reconnecting (the app refreshes the hooks when it starts).
+- [ ] With **Preferences → Update automatically** off, nothing is downloaded.
+
 ## Uninstall
 
 - [ ] **Settings → Apps → Quacko → Uninstall** removes the app. The hooks stay in `settings.json` until you disconnect them from the menu first.
