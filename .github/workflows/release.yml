@@ -1,12 +1,31 @@
 name: Release
 
+# Cada merge na main que mexe no app vira uma versão nova: patch por padrão,
+# minor ou major com o label de mesmo nome na PR. Os builds esperam aprovação
+# no environment release e, quando os dois passam, a release é publicada.
+# "Run workflow" continua gerando só os instaladores, sem release.
+
 on:
   push:
-    tags: ["v*"]
+    branches: [main]
+    paths:
+      - "src/**"
+      - "src-tauri/**"
+      - "scripts/**"
+      - "!scripts/tests/**"
+      - "index.html"
+      - "vite.config.ts"
+      - "package.json"
+      - "package-lock.json"
   workflow_dispatch:
 
 permissions:
   contents: write
+  pull-requests: read
+
+concurrency:
+  group: release
+  cancel-in-progress: false
 
 jobs:
   draft:
@@ -14,34 +33,59 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       id: ${{ steps.create.outputs.id }}
+      version: ${{ steps.create.outputs.version }}
+      tag: ${{ steps.create.outputs.tag }}
     steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          sparse-checkout: .github/release
+
       - id: create
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SIGNED: ${{ vars.MACOS_SIGNING }}
         run: |
+          repo="repos/$GITHUB_REPOSITORY"
+          releases=$(gh api "$repo/releases?per_page=100" --jq '.[] | "\(.id) \(.tag_name) \(.draft) \(.target_commitish)"')
+
+          # Rodada repetida deste commit: reaproveita o rascunho dele.
+          read -r id tag _ _ < <(awk -v sha="$GITHUB_SHA" '$4 == sha' <<<"$releases" | head -1) || true
+          if [ -z "${id:-}" ]; then
+            latest=$(gh api --paginate "$repo/tags?per_page=100" --jq '.[].name' | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1 || true)
+            labels=$(gh api "$repo/commits/$GITHUB_SHA/pulls" --jq '[.[0].labels[]?.name] | join(" ")' 2>/dev/null || true)
+            tag="v$(bash .github/release/next-version.sh "${latest:-v0.0.0}" "$labels")"
+            echo "última tag: ${latest:-nenhuma} · labels: ${labels:-nenhum} · nova: $tag"
+            # Rascunho que sobrou de uma rodada que falhou: passa a apontar para este commit.
+            read -r id _ draft _ < <(awk -v t="$tag" '$2 == t' <<<"$releases" | head -1) || true
+            if [ -n "${id:-}" ] && [ "$draft" != true ]; then
+              echo "::error::$tag já foi publicada, mas a tag não existe"
+              exit 1
+            fi
+          fi
+
           if [ "$SIGNED" = true ]; then
             mac="macOS: build assinado e notarizado pela Apple."
           else
             mac="macOS: build sem assinatura da Apple. Na primeira abertura, use Ajustes do Sistema → Privacidade e Segurança → Abrir Mesmo Assim (instruções no README)."
           fi
           win="Windows: instalador sem certificado. Se o SmartScreen avisar, clique em Mais informações → Executar assim mesmo."
-          id=$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$GITHUB_REF_NAME" --jq .id 2>/dev/null || true)
-          case "$id" in "" | *[!0-9]*) id="" ;; esac
-          if [ -n "$id" ]; then
-            echo "usando a release que já existe para $GITHUB_REF_NAME"
+
+          if [ -n "${id:-}" ]; then
+            echo "usando o rascunho $id de $tag"
+            gh api -X PATCH "$repo/releases/$id" -f target_commitish="$GITHUB_SHA" --silent
           else
-            id=$(gh api "repos/$GITHUB_REPOSITORY/releases" \
-              -f tag_name="$GITHUB_REF_NAME" -f name="Quacko $GITHUB_REF_NAME" \
-              -f body="$mac"$'\n\n'"$win" -F draft=true --jq .id)
+            id=$(gh api "$repo/releases" \
+              -f tag_name="$tag" -f target_commitish="$GITHUB_SHA" -f name="Quacko $tag" \
+              -f body="$mac"$'\n\n'"$win" -F draft=true -F generate_release_notes=true --jq .id)
           fi
-          case "$id" in "" | *[!0-9]*) id="" ;; esac
-          if [ -z "$id" ]; then
-            echo "::error::o GitHub não devolveu o id do rascunho"
-            exit 1
-          fi
-          echo "rascunho $id"
-          echo "id=$id" >> "$GITHUB_OUTPUT"
+          case "$id" in "" | *[!0-9]*) echo "::error::o GitHub não devolveu o id do rascunho"; exit 1 ;; esac
+
+          echo "rascunho $id para $tag"
+          {
+            echo "id=$id"
+            echo "tag=$tag"
+            echo "version=${tag#v}"
+          } >> "$GITHUB_OUTPUT"
 
   macos:
     needs: draft
@@ -67,6 +111,12 @@ jobs:
           workspaces: "src-tauri -> ../target"
 
       - run: npm ci
+
+      - name: Versão da release
+        if: github.event_name == 'push'
+        env:
+          VERSION: ${{ needs.draft.outputs.version }}
+        run: node .github/release/set-version.mjs "$VERSION"
 
       - name: Testes
         run: |
@@ -158,6 +208,12 @@ jobs:
 
       - run: npm ci
 
+      - name: Versão da release
+        if: github.event_name == 'push'
+        env:
+          VERSION: ${{ needs.draft.outputs.version }}
+        run: node .github/release/set-version.mjs "$VERSION"
+
       - name: Hook (quacko-hook.exe, empacotado junto do app)
         run: |
           cargo build --release -p quacko-hook --manifest-path src-tauri/Cargo.toml
@@ -206,3 +262,24 @@ jobs:
         with:
           name: quacko-windows
           path: target/release/bundle/nsis/*.exe
+
+  publish:
+    needs: [draft, macos, windows]
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Publica a release (cria a tag)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_ID: ${{ needs.draft.outputs.id }}
+        run: |
+          gh api -X PATCH "repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID" \
+            -F draft=false -f make_latest=true --jq '"publicada: \(.html_url)"'
+
+  homebrew:
+    needs: [draft, publish]
+    if: vars.HOMEBREW_TAP == 'true'
+    uses: ./.github/workflows/homebrew.yml
+    with:
+      tag: ${{ needs.draft.outputs.tag }}
+    secrets: inherit
