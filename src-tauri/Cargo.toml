@@ -34,6 +34,7 @@ keyring = { version = "3", features = ["apple-native", "windows-native"] }
 zip = { version = "9.5.0", default-features = false, features = ["deflate"] }
 quacko-hook = { path = "hook" }
 chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
+tauri-plugin-updater = "2"
 
 [dev-dependencies]
 futures-util = { version = "0.3", default-features = false, features = ["std"] }

@@ -58,6 +58,10 @@ pub fn set_interactive(app: AppHandle, interactive: bool) {
 
 #[tauri::command]
 pub fn card_action(app: AppHandle, url: Option<String>) {
+    if url.as_deref() == Some(crate::update::APPLY_ACTION) {
+        crate::update::apply(&app);
+        return;
+    }
     let Some(url) = url.as_deref().and_then(crate::model::clean_url) else {
         #[cfg(target_os = "macos")]
         let _ = app.run_on_main_thread(crate::macos::restore_frontmost_app);
