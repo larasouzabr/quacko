@@ -7,8 +7,9 @@ mkdir -p "$WORK/projeto-lagoa"
 
 cat >"$WORK/notify" <<'NT'
 #!/bin/bash
-printf '%s|' "$@" >>"$FAKE_NOTIFY_LOG"
-echo >>"$FAKE_NOTIFY_LOG"
+# Uma escrita só por aviso: dois avisos em paralelo não se misturam na mesma linha.
+line=$(printf '%s|' "$@")
+printf '%s\n' "$line" >>"$FAKE_NOTIFY_LOG"
 NT
 chmod +x "$WORK/notify"
 LOG="$WORK/notify.log"
