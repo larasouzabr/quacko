@@ -209,7 +209,7 @@ git tag v0.1.0 && git push origin v0.1.0
 
 It creates a **draft** release, then the macOS and Windows jobs wait for approval in the `release` environment (**Review deployments** on the run's page). After approval they run the tests on both systems and upload both installers to the draft; the release only goes public when someone clicks **Publish release** on GitHub. To try the builds without a release, open **Actions → Release → Run workflow**: the `.dmg` and the `.exe` come out as downloadable artifacts of the run.
 
-**Protections.** Rulesets block force pushes and deletion on `main`, require a pull request with the `macos` and `windows` checks green, and only let admins create, move or delete `v*` tags. The `release` environment only accepts `v*` tags, requires a reviewer, and holds the signing and Homebrew secrets.
+**Protections.** Rulesets block force pushes and deletion on `main`, require a pull request with the `macos` and `windows` checks green, and only let admins create, move or delete `v*` tags. The `release` environment only accepts `v*` tags, requires a reviewer, and holds the signing and Homebrew secrets. Every action is pinned to a commit SHA, with the version in a comment.
 
 **Signing and notarization** (optional, off by default). Without it, people who download the app see the macOS warning on first launch and allow it in **System Settings → Privacy & Security → Open Anyway** (or with `xattr -dr com.apple.quarantine /Applications/Quacko.app`), as described in [Install](#macos-11-apple-silicon-and-intel). To sign and notarize, you need an Apple Developer account (about US$ 99/year) and:
 
