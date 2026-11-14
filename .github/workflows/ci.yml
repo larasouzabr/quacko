@@ -39,6 +39,7 @@ jobs:
         run: |
           npm test
           npm run typecheck
+          node --test .github/release/latest-json.test.mjs
 
       - name: Rust
         working-directory: src-tauri
