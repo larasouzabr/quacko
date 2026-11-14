@@ -27,7 +27,12 @@ Quacko's Windows build is compiled and unit-tested in CI, but it hasn't been tri
 
 ## Terminal (PowerShell)
 
-- [ ] **Connect → Terminal…**: the card says a line was copied. Run `notepad $PROFILE`, paste the line at the end, save and open a new PowerShell window.
+- [ ] On a fresh Windows (scripts blocked, `Get-ExecutionPolicy` says `Restricted`): **Connect → Terminal…** opens a dialog explaining it. **Allow and connect** → card "Terminal connected". `Get-ExecutionPolicy -Scope CurrentUser` now says `RemoteSigned`, and `$PROFILE` ends with Quacko's line (a `.quacko-backup-…` copy sits next to it if the file already existed).
+- [ ] Open a new PowerShell window: no red error, and `Get-Command Get-QuackoArgs` finds the function.
+- [ ] **Connect → Terminal…** again: card "already in your $PROFILE", no dialog, the line isn't added twice.
+- [ ] Choosing **Not now** in the dialog: nothing changes, the line is copied and the card explains the manual steps.
+- [ ] With PowerShell 7 installed (`pwsh`), its profile (`Documents\PowerShell\…`) gets the line too.
+- [ ] If Documents is in OneDrive, the line lands in the OneDrive profile (the one `$PROFILE` shows).
 - [ ] Run `Start-Sleep 35`: a card shows "Start-Sleep 35" and "35s".
 - [ ] Run `pwsh -c "Start-Sleep 35; exit 3"`: a red card with "exit 3" stays until you close it.
 - [ ] Press Ctrl+C on a long command: no card.
